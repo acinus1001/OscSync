@@ -6,9 +6,15 @@ import com.illposed.osc.OSCPacketEvent
 import com.illposed.osc.OSCPacketListener
 import com.illposed.osc.transport.OSCPortIn
 import com.illposed.osc.transport.OSCPortOut
+import dev.kuro9.oscsync.common.debugLog
 import dev.kuro9.oscsync.common.errorLog
+import dev.kuro9.oscsync.osc.model.VrcOscReceiveEvent
+import dev.kuro9.oscsync.osc.model.VrcOscSendEvent
 import jakarta.annotation.PostConstruct
+import org.apache.tomcat.jni.Buffer.address
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.net.*
 import kotlin.properties.Delegates
@@ -30,26 +36,35 @@ class OscService(
         oscRx.startListening()
     }
 
+    fun sendPacket(address: String, data: Any) {
+        oscTx.send(OSCMessage(address, listOf(data)))
+    }
+
+    @[Async EventListener]
+    fun sendPacket(sendEvent: VrcOscSendEvent<*>) {
+        sendPacket(sendEvent.address, sendEvent.payload)
+    }
+
     override fun handlePacket(event: OSCPacketEvent) {
         val vrcEvent = with(event.packet as OSCMessage) {
             when (info.argumentTypeTags) {
-                "T" -> VrcOscEvent.BoolType(
+                "T" -> VrcOscReceiveEvent.BoolType(
                     address = address,
                     value = true,
                 )
-                "F" -> VrcOscEvent.BoolType(
+                "F" -> VrcOscReceiveEvent.BoolType(
                     address = address,
                     value = false,
                 )
-                "i" -> VrcOscEvent.IntType(
+                "i" -> VrcOscReceiveEvent.IntType(
                     address = address,
                     value = arguments.first() as Int
                 )
-                "f" -> VrcOscEvent.FloatType(
+                "f" -> VrcOscReceiveEvent.FloatType(
                     address = address,
                     value = arguments.first() as Float,
                 )
-                else -> VrcOscEvent.UnknownType(
+                else -> VrcOscReceiveEvent.UnknownType(
                     address = address,
                     value = arguments.toString()
                 )
