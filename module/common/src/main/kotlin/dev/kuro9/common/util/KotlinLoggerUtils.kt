@@ -1,6 +1,6 @@
 @file:Suppress("UNUSED")
 
-package dev.kuro9.oscsync.common
+package dev.kuro9.common.util
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

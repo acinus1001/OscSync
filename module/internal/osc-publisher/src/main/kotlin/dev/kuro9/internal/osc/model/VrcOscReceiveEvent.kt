@@ -1,4 +1,4 @@
-package dev.kuro9.oscsync.osc.model
+package dev.kuro9.internal.osc.model
 
 sealed interface VrcOscReceiveEvent<T> {
     val address: String

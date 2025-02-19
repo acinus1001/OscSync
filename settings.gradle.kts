@@ -20,6 +20,8 @@ pluginManagement {
     }
 }
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 include("module")
 
 val moduleTypeList = listOf("application", "domain", "internal", "common")
@@ -35,8 +37,9 @@ fun includeModule(moduleType: String, moduleName: String) {
 }
 
 fun getSubModuleName(moduleType: String): List<String> {
-    println("${File("$rootDir/module/$moduleType")}")
-    return File("$rootDir/module/$moduleType").list { dir, _ ->
-        dir.isDirectory && dir.list()?.firstOrNull { it == "build.gradle.kts" } != null
-    }?.toList() ?: emptyList()
+    val moduleDir = File("$rootDir/module/$moduleType")
+
+    return moduleDir.listFiles()?.filter { subDir ->
+        subDir.isDirectory && File(subDir, "build.gradle.kts").exists()
+    }?.map { it.name } ?: emptyList()
 }
