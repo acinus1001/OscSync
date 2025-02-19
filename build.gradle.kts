@@ -17,14 +17,8 @@ repositories {
 }
 
 allprojects {
-
+    apply {
+        plugin("org.jetbrains.kotlin.jvm")
+    }
 }
 
-dependencies {
-    implementation(libs.spring.boot.starter.web)
-    implementation(libs.spring.webflux)
-
-    implementation(libs.kotlin.serialization)
-
-    implementation(libs.java.osc)
-}

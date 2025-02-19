@@ -1,6 +1,12 @@
+@file:Suppress("UnstableApiUsage")
+
 rootProject.name = "OscSync"
 
 dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+
     versionCatalogs {
         create("libs") {
             from(files("${rootDir}/gradle/libs.version.toml"))
@@ -8,24 +14,29 @@ dependencyResolutionManagement {
     }
 }
 
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
 include("module")
-include(
-    "module:application",
-    "module:domain",
-    "module:internal",
-    "module:common",
-)
 
-val applicationModuleName: List<String> = emptyList()
-val domainModuleName: List<String> = emptyList()
-val internalModuleName: List<String> = emptyList()
-val commonModuleName: List<String> = emptyList()
-
-applicationModuleName.forEach { includeModule("application", it) }
-domainModuleName.forEach { includeModule("domain", it) }
-internalModuleName.forEach { includeModule("internal", it) }
-commonModuleName.forEach { includeModule("common", it) }
+val moduleTypeList = listOf("application", "domain", "internal", "common")
+moduleTypeList.forEach { moduleType ->
+    include("module:$moduleType")
+    println("$moduleType : ${getSubModuleName(moduleType)}")
+    getSubModuleName(moduleType).forEach { subModuleName -> includeModule(moduleType, subModuleName) }
+}
 
 fun includeModule(moduleType: String, moduleName: String) {
+    println("module:$moduleType:$moduleName")
     include("module:$moduleType:$moduleName")
+}
+
+fun getSubModuleName(moduleType: String): List<String> {
+    println("${File("$rootDir/module/$moduleType")}")
+    return File("$rootDir/module/$moduleType").list { dir, _ ->
+        dir.isDirectory && dir.list()?.firstOrNull { it == "build.gradle.kts" } != null
+    }?.toList() ?: emptyList()
 }
