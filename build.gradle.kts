@@ -1,9 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.spring)
-    alias(libs.plugins.spring.boot)
-    alias(libs.plugins.spring.dependency.management)
-    alias(libs.plugins.kotlin.serialization)
 }
 
 group = "dev.kuro9"
@@ -17,6 +14,10 @@ java {
 
 repositories {
     mavenCentral()
+}
+
+allprojects {
+
 }
 
 dependencies {
