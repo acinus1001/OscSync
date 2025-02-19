@@ -7,5 +7,5 @@ dependencies {
     implementation(projects.module.internal.oscPublisher)
 
     implementation(libs.spring.boot.starter.web)
-    implementation("org.springframework.boot:spring-boot-starter-actuator:3.4.2")
+    implementation(libs.spring.boot.starter.actuator)
 }
