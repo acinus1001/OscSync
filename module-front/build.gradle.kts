@@ -1,4 +1,3 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
@@ -15,6 +14,10 @@ kotlin {
         browser {
             val rootDirPath = project.rootDir.path
             val projectDirPath = project.projectDir.path
+            val backendPath = "$rootDirPath/module/application/test-smartapp-client/src/main/resources/static"
+            println("rootDirPath: $rootDirPath")
+            println("projectDirPath: $projectDirPath")
+            println("backendPath: $backendPath")
             commonWebpackConfig {
                 outputFileName = "composeApp.js"
                 devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {

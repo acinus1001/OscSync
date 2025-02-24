@@ -15,3 +15,34 @@ dependencies {
     implementation(projects.module.common.network)
     implementation(projects.module.internal.smartappClient)
 }
+
+tasks.named("build") {
+    println("=======build start ======")
+    dependsOn("${projects.moduleFront.identityPath}:wasmJsBrowserProductionWebpack")
+}
+
+tasks.named("bootRun") {
+    println("=======run start ======")
+    dependsOn("${projects.moduleFront.identityPath}:wasmJsBrowserProductionWebpack")
+}
+
+tasks.named("processResources") {
+    dependsOn(copyFrontendToBackend)
+}
+
+val copyFrontendToBackend by tasks.registering(Copy::class) {
+    dependsOn("${projects.moduleFront.identityPath}:wasmJsBrowserProductionWebpack")
+    val frontEndBuildDir = "${rootProject.projectDir.path}/module-front/build"
+    println("======= Checking Frontend Build Directory: $frontEndBuildDir =======")
+    from("$frontEndBuildDir/kotlin-webpack/wasmJs/productionExecutable/") {
+        include("**/*")
+    }
+    from("$frontEndBuildDir/processedResources/wasmJs/main/") {
+        include("**/*")
+    }
+
+    println("=======cp start $projectDir ======")
+
+    into("$projectDir/src/main/resources/static")
+    // into("$projectDir/build/resources/main/static/.")
+}
