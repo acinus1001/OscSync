@@ -1,25 +1,11 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.spring)
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.spring) apply false
+
+    alias(libs.plugins.composeMultiplatform) apply false
+    alias(libs.plugins.composeCompiler) apply false
+    alias(libs.plugins.kotlinMultiplatform) apply false
 }
 
 group = "dev.kuro9"
 version = "0.0.1-SNAPSHOT"
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-repositories {
-    mavenCentral()
-}
-
-allprojects {
-    apply {
-        plugin("org.jetbrains.kotlin.jvm")
-        plugin("org.jetbrains.kotlin.plugin.spring")
-    }
-}
-

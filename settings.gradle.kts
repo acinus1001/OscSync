@@ -2,8 +2,17 @@
 
 rootProject.name = "OscSync"
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 dependencyResolutionManagement {
     repositories {
+        google {
+            mavenContent {
+                includeGroupAndSubgroups("androidx")
+                includeGroupAndSubgroups("com.android")
+                includeGroupAndSubgroups("com.google")
+            }
+        }
         mavenCentral()
     }
 
@@ -16,13 +25,21 @@ dependencyResolutionManagement {
 
 pluginManagement {
     repositories {
+        google {
+            mavenContent {
+                includeGroupAndSubgroups("androidx")
+                includeGroupAndSubgroups("com.android")
+                includeGroupAndSubgroups("com.google")
+            }
+        }
+        mavenCentral()
         gradlePluginPortal()
     }
 }
 
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include("module")
+include("module-front")
 
 val moduleTypeList = listOf("application", "domain", "internal", "common")
 moduleTypeList.forEach { moduleType ->
