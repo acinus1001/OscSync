@@ -1,4 +1,4 @@
-package dev.kuro9.multiplatform.common.types
+package dev.kuro9.multiplatform.common.types.testapp
 
 import kotlinx.serialization.Serializable
 

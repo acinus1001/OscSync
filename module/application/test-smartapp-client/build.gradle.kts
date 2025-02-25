@@ -49,5 +49,4 @@ val copyFrontendToBackend by tasks.registering(Copy::class) {
     println("=======cp start $projectDir ======")
 
     into("$projectDir/src/main/resources/static")
-    // into("$projectDir/build/resources/main/static/.")
 }

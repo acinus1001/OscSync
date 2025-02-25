@@ -8,11 +8,8 @@ subprojects {
     plugins.withId("org.jetbrains.kotlin.multiplatform") {
         configure<KotlinMultiplatformExtension> {
             jvm()
-            js {
-                browser()
-                nodejs()
-            }
             wasmJs {
+                browser()
                 binaries.executable()
             }
         }
