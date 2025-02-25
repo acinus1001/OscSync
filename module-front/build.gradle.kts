@@ -1,54 +1,36 @@
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
-plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.compose.multiplatform)
-    alias(libs.plugins.compose.compiler)
-
-    alias(libs.plugins.kotlin.serialization)
-}
-
-kotlin {
-    @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
-        moduleName = "module-front"
-        browser {
-            val rootDirPath = project.rootDir.path
-            val projectDirPath = project.projectDir.path
-            val backendPath = "$rootDirPath/module/application/test-smartapp-client/src/main/resources/static"
-            println("rootDirPath: $rootDirPath")
-            println("projectDirPath: $projectDirPath")
-            println("backendPath: $backendPath")
-            commonWebpackConfig {
-                outputFileName = "composeApp.js"
-                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(rootDirPath)
-                        add(projectDirPath)
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.multiplatform") {
+        configure<KotlinMultiplatformExtension> {
+            @OptIn(ExperimentalWasmDsl::class)
+            wasmJs {
+                moduleName = project.name
+                browser {
+                    println("moduleName = ${project.name}")
+                    val moduleName = project.name
+                    val rootDirPath = project.rootDir.path
+                    val projectDirPath = project.projectDir.path
+                    val backendPath = "$rootDirPath/module/application/$moduleName/src/main/resources/static"
+                    println("rootDirPath: $rootDirPath")
+                    println("projectDirPath: $projectDirPath")
+                    println("backendPath: $backendPath")
+                    commonWebpackConfig {
+                        outputFileName = "composeApp.js"
+                        devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
+                            static = (static ?: mutableListOf()).apply {
+                                // Serve sources to debug inside browser
+                                add(rootDirPath)
+                                add(projectDirPath)
+                            }
+                        }
                     }
                 }
+                binaries.executable()
             }
-        }
-        binaries.executable()
-    }
-
-    sourceSets {
-        commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodel)
-            implementation(libs.androidx.lifecycle.runtime.compose)
-
-            implementation(projects.module.common.dataType)
-            implementation(projects.module.common.serialization)
         }
     }
 }
-
 

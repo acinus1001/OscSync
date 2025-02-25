@@ -18,14 +18,18 @@ dependencies {
     implementation(projects.module.internal.smartappClient)
 }
 
+val frontModule = projects.moduleFront.testSmartappClient
+val frontIdentityPath = frontModule.identityPath
+val frontModuleBuildPath = "${rootProject.projectDir.path}/module-front/${frontModule.name}/build"
+
 tasks.named("build") {
-    println("=======build start ======")
-    dependsOn("${projects.moduleFront.identityPath}:wasmJsBrowserProductionWebpack")
+    println("=======build start $frontIdentityPath======")
+    dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
 }
 
 tasks.named("bootRun") {
     println("=======run start ======")
-    dependsOn("${projects.moduleFront.identityPath}:wasmJsBrowserProductionWebpack")
+    dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
 }
 
 tasks.named("processResources") {
@@ -33,13 +37,12 @@ tasks.named("processResources") {
 }
 
 val copyFrontendToBackend by tasks.registering(Copy::class) {
-    dependsOn("${projects.moduleFront.identityPath}:wasmJsBrowserProductionWebpack")
-    val frontEndBuildDir = "${rootProject.projectDir.path}/module-front/build"
-    println("======= Checking Frontend Build Directory: $frontEndBuildDir =======")
-    from("$frontEndBuildDir/kotlin-webpack/wasmJs/productionExecutable/") {
+    dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
+    println("======= Checking Frontend Build Directory: $frontModuleBuildPath =======")
+    from("$frontModuleBuildPath/kotlin-webpack/wasmJs/productionExecutable/") {
         include("**/*")
     }
-    from("$frontEndBuildDir/processedResources/wasmJs/main/") {
+    from("$frontModuleBuildPath/processedResources/wasmJs/main/") {
         include("**/*")
     }
 

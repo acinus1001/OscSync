@@ -40,12 +40,26 @@ pluginManagement {
 
 include("module")
 include("module-front")
+include("multiplatform-common")
 
+// module 서브모듈 전체적용
 val moduleTypeList = listOf("application", "domain", "internal", "common")
 moduleTypeList.forEach { moduleType ->
     include("module:$moduleType")
     println("$moduleType : ${getSubModuleName(moduleType)}")
     getSubModuleName(moduleType).forEach { subModuleName -> includeModule(moduleType, subModuleName) }
+}
+
+// module front 서브모듈 전체적용
+getSubModuleNameOfPrimaryModule("module-front").forEach { subModuleName ->
+    println("front: $subModuleName")
+    include("module-front:$subModuleName")
+}
+
+// multiplatform common 서브모듈 전체적용
+getSubModuleNameOfPrimaryModule("multiplatform-common").forEach { subModuleName ->
+    println("multi-comon: $subModuleName")
+    include("multiplatform-common:$subModuleName")
 }
 
 fun includeModule(moduleType: String, moduleName: String) {
@@ -55,6 +69,14 @@ fun includeModule(moduleType: String, moduleName: String) {
 
 fun getSubModuleName(moduleType: String): List<String> {
     val moduleDir = File("$rootDir/module/$moduleType")
+
+    return moduleDir.listFiles()?.filter { subDir ->
+        subDir.isDirectory && File(subDir, "build.gradle.kts").exists()
+    }?.map { it.name } ?: emptyList()
+}
+
+fun getSubModuleNameOfPrimaryModule(primaryModuleName: String): List<String> {
+    val moduleDir = File("$rootDir/$primaryModuleName")
 
     return moduleDir.listFiles()?.filter { subDir ->
         subDir.isDirectory && File(subDir, "build.gradle.kts").exists()
