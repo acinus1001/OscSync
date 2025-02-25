@@ -1,4 +1,7 @@
 plugins {
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.kotlin.spring)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -8,5 +11,5 @@ dependencies {
     api(projects.module.common.serialization)
 
     implementation(libs.retrofit2.kotlin.serialization.converter)
-    implementation(projects.module.common)
+    implementation(projects.module.common.logger)
 }

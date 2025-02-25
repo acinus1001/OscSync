@@ -5,8 +5,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.module.common.logger)
-
-    implementation(libs.spring.boot.starter.web)
-    implementation(libs.java.osc)
+    implementation(libs.spring.boot.starter.logging)
 }

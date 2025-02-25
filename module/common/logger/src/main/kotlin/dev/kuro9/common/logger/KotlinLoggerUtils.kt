@@ -1,6 +1,6 @@
 @file:Suppress("UNUSED")
 
-package dev.kuro9.common.util
+package dev.kuro9.common.logger
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
