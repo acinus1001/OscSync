@@ -8,6 +8,17 @@ import kotlinx.serialization.Serializable
 sealed interface SmartAppResponse {
 
     @Serializable
+    data class SimpleResult(
+        val results: List<ResultInfo>,
+    ) : SmartAppResponse {
+        @Serializable
+        data class ResultInfo(
+            val id: String,
+            val status: String,
+        )
+    }
+
+    @Serializable
     sealed interface Paged : SmartAppResponse {
         @SerialName("_links")
         val links: LinkInfo
