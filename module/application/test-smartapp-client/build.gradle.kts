@@ -16,6 +16,7 @@ dependencies {
 
     implementation(projects.module.common.network)
     implementation(projects.module.internal.smartappClient)
+    implementation(projects.multiplatformCommon.types.testSmartappClient)
 }
 
 val frontModule = projects.moduleFront.testSmartappClient
@@ -38,6 +39,7 @@ tasks.named("processResources") {
 
 val copyFrontendToBackend by tasks.registering(Copy::class) {
     dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
+    delete("$projectDir/src/main/resources/static")
     println("======= Checking Frontend Build Directory: $frontModuleBuildPath =======")
     from("$frontModuleBuildPath/kotlin-webpack/wasmJs/productionExecutable/") {
         include("**/*")

@@ -5,15 +5,17 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.ktor.core)
+            api(libs.ktor.core)
+            api(libs.ktor.client.content.negotiation)
+            api(libs.ktor.serialization.kotlinx.json)
         }
 
         jvmMain.dependencies {
-            implementation(libs.ktor.client.cio)
+            api(libs.ktor.client.cio)
         }
 
         wasmJsMain.dependencies {
-            implementation(libs.ktor.client.js)
+            api(libs.ktor.client.js)
         }
     }
 }

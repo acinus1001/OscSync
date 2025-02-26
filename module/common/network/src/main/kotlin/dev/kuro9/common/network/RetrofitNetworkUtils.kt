@@ -1,14 +1,13 @@
 package dev.kuro9.common.network
 
-import dev.kuro9.multiplatform.common.serialization.prettyJson
+import dev.kuro9.common.logger.errorLog
 import dev.kuro9.common.logger.infoLog
-import okhttp3.Interceptor
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Response
+import dev.kuro9.multiplatform.common.serialization.prettyJson
+import okhttp3.*
 import okio.Buffer
 import okio.GzipSource
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlin.time.measureTimedValue
 
 val JsonConverterFactory = prettyJson.asConverterFactory(MediaType.get("application/json"))
 
@@ -31,8 +30,7 @@ object NetworkLogger : Interceptor {
         val request = chain.request()
 
         val requestLog = """
------------------------------>
-${request.method()} ${request.url()}
+---> ${request.method()} ${request.url()}
 
 Headers : 
 ${
@@ -46,12 +44,12 @@ ${
 Body : 
     Content-Type : ${request.body()?.contentType() ?: "<body-is-null>"}
     Content-Length: ${request.body()?.contentLength() ?: "<body-is-null>"}
-${request.body() ?: "<body-is-null>"}
+${request.body()?.toStringBody() ?: "<body-is-null>"}
 """
 
         infoLog(requestLog)
 
-        val response = chain.proceed(request)
+        val (response, timeValue) = measureTimedValue { chain.proceed(request) }
 
         val source = response.body()?.source()
         source?.request(Long.MAX_VALUE)
@@ -73,7 +71,7 @@ ${request.body() ?: "<body-is-null>"}
         }
 
         val responseLog = """
-<-------------------- ${response.code()} ${response.message()}
+<--- ${response.code()} ${response.message()} (${timeValue})
 
 Headers : 
 ${
@@ -93,5 +91,16 @@ ${responseBody ?: "<body-is-null>"}
         infoLog(responseLog)
 
         return response
+    }
+}
+
+fun RequestBody.toStringBody(): String {
+    return runCatching {
+        Buffer().apply {
+            this@toStringBody.writeTo(this)
+        }.readUtf8()
+    }.getOrElse {
+        errorLog("error while read requestBody", it)
+        "<body-read-err>"
     }
 }
