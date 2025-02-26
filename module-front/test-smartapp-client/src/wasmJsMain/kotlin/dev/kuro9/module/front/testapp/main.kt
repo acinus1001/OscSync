@@ -1,4 +1,4 @@
-package dev.kuro9.kotlin.wasm
+package dev.kuro9.module.front.testapp
 
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport

@@ -1,4 +1,4 @@
-package dev.kuro9.kotlin.wasm
+package dev.kuro9.module.front.testapp
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
