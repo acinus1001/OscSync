@@ -2,6 +2,8 @@ package dev.kuro9.internal.discord
 
 import dev.kuro9.internal.discord.model.DiscordClientProperty
 import dev.kuro9.internal.discord.model.DiscordEventHandler
+import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
+import dev.minn.jda.ktx.interactions.commands.updateCommands
 import dev.minn.jda.ktx.jdabuilder.light
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -38,10 +40,14 @@ class DiscordClientConfig {
     @Bean
     fun getDiscordClient(
         discordProperty: DiscordClientProperty,
-        eventListener: EventListener
+        eventListener: EventListener,
+        slashCommands: List<SlashCommandComponent>
     ): JDA {
         return light(discordProperty.token, enableCoroutines = true).apply {
             addEventListener(eventListener)
+            updateCommands {
+                addCommands(*slashCommands.map(SlashCommandComponent::commandData).toTypedArray())
+            }
         }
     }
 }
