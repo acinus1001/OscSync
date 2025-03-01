@@ -4,12 +4,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 
 interface SlashCommandComponent {
-    val commandId: String
-    val commandType: String
-    val commandDescription: String
-
-    val isEphemeral: Boolean
-
     val commandData: SlashCommandData
 
     fun handleEvent(event: SlashCommandInteractionEvent)

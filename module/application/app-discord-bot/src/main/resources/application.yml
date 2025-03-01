@@ -1,0 +1,6 @@
+dev:
+  kuro9:
+    discord:
+      token: ${DISCORD_TOKEN}
+    smartapp:
+      token: ${SMARTAPP_TOKEN}

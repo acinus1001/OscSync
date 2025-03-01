@@ -2,15 +2,13 @@ package dev.kuro9.internal.discord
 
 import dev.kuro9.internal.discord.model.DiscordClientProperty
 import dev.kuro9.internal.discord.model.DiscordEventHandler
-import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
-import dev.minn.jda.ktx.interactions.commands.updateCommands
+import dev.minn.jda.ktx.events.CoroutineEventListener
 import dev.minn.jda.ktx.jdabuilder.light
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.events.session.ShutdownEvent
-import net.dv8tion.jda.api.hooks.EventListener
-import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -18,35 +16,31 @@ import org.springframework.context.annotation.Configuration
 class DiscordClientConfig {
 
     @Bean
-    @Suppress("UNCHECKED_CAST")
-    fun getDiscordListener(
-        eventHandler: List<DiscordEventHandler<*>>
-    ): ListenerAdapter = object : ListenerAdapter() {
-        val handlerMap = eventHandler.associateBy { it.kClass }
-
-        override fun onReady(event: ReadyEvent) {
-            (handlerMap[event::class] as? DiscordEventHandler<ReadyEvent>)?.handle(event)
-        }
-
-        override fun onShutdown(event: ShutdownEvent) {
-            (handlerMap[event::class] as? DiscordEventHandler<ShutdownEvent>)?.handle(event)
-        }
-
-        override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-            (handlerMap[event::class] as? DiscordEventHandler<SlashCommandInteractionEvent>)?.handle(event)
+    fun getCoroutineDiscordListener(
+        readyHandler: DiscordEventHandler<ReadyEvent>?,
+        shutdownHandler: DiscordEventHandler<ShutdownEvent>?,
+        slashCommandHandler: DiscordEventHandler<SlashCommandInteractionEvent>?,
+    ): CoroutineEventListener = object : CoroutineEventListener {
+        override suspend fun onEvent(event: GenericEvent) {
+            when (event) {
+                is ReadyEvent -> readyHandler?.handle(event)
+                is ShutdownEvent -> shutdownHandler?.handle(event)
+                is SlashCommandInteractionEvent -> slashCommandHandler?.handle(event)
+            }
         }
     }
 
     @Bean
     fun getDiscordClient(
         discordProperty: DiscordClientProperty,
-        eventListener: EventListener,
-        slashCommands: List<SlashCommandComponent>
+        eventListener: CoroutineEventListener,
+        eventHandler: List<DiscordEventHandler<*>>,
     ): JDA {
         return light(discordProperty.token, enableCoroutines = true).apply {
             addEventListener(eventListener)
-            updateCommands {
-                addCommands(*slashCommands.map(SlashCommandComponent::commandData).toTypedArray())
+            awaitReady()
+            eventHandler.forEach {
+                it.initialize(this)
             }
         }
     }
