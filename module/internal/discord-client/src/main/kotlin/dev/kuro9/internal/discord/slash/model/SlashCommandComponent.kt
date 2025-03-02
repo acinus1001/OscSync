@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 interface SlashCommandComponent {
     val commandData: SlashCommandData
 
-    fun handleEvent(event: SlashCommandInteractionEvent)
+    suspend fun handleEvent(event: SlashCommandInteractionEvent)
 }
 
 

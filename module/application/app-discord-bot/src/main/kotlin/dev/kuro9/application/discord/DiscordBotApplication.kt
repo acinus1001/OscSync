@@ -6,8 +6,8 @@ import org.springframework.scheduling.annotation.EnableAsync
 
 @EnableAsync
 @SpringBootApplication(scanBasePackages = ["dev.kuro9"])
-class SlashCommandApplication
+class DiscordBotApplication
 
 fun main() {
-    runApplication<SlashCommandApplication>()
+    runApplication<DiscordBotApplication>()
 }

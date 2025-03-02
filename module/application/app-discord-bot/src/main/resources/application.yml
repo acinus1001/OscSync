@@ -1,3 +1,22 @@
+spring:
+  datasource:
+    url: ${PGSQL_URL}
+    username: ${PGSQL_USER}
+    password: ${PGSQL_PW}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 4
+      maximum-pool-size: 24
+  exposed:
+    generate-ddl: false
+    show-sql: true
+
+logging:
+  level:
+    root: info
+    com.zaxxer.hikari.pool.HikariPool: info
+    exposed: debug
+
 dev:
   kuro9:
     discord:
