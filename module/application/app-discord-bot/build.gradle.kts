@@ -18,4 +18,5 @@ dependencies {
     implementation(projects.module.internal.smartappClient)
     implementation(projects.module.internal.discordClient)
     implementation(projects.module.domain.database)
+    implementation(projects.module.domain.smartappUserinfo)
 }

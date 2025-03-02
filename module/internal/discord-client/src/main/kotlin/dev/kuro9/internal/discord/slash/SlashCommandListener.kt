@@ -13,12 +13,12 @@ import org.springframework.stereotype.Component
 class SlashCommandListener(
     private val slashCommands: List<SlashCommandComponent>
 ) : DiscordEventHandler<SlashCommandInteractionEvent> {
-    private val commandMap: Map<String, SlashCommandComponent> = slashCommands.associateBy { "/${it.commandData.name}" }
+    private val commandMap: Map<String, SlashCommandComponent> = slashCommands.associateBy { it.commandData.name }
 
     override val kClass = SlashCommandInteractionEvent::class
 
     override suspend fun handle(event: SlashCommandInteractionEvent) {
-        commandMap[event.commandString]?.handleEvent(event) ?: errorLog("No such command: ${event.commandString}")
+        commandMap[event.name]?.handleEvent(event) ?: errorLog("No such command: ${event.fullCommandName}")
     }
 
     override fun initialize(jda: JDA) = jda.run {
