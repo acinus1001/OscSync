@@ -2,7 +2,6 @@
 
 package dev.kuro9.internal.smartapp.webhook.model
 
-import dev.kuro9.internal.smartapp.webhook.serializer.SmartAppWebhookBodySerializer.ConfirmationDataSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -17,7 +16,7 @@ sealed interface SmartAppWebhookBody {
     val version: String
 
     @[SerialName("CONFIRMATION") Serializable]
-    data class ConfirmationCycle(
+    data class ConfirmationData(
         override val executionId: String,
         override val locale: String,
         override val version: String,
@@ -26,25 +25,33 @@ sealed interface SmartAppWebhookBody {
     ) : SmartAppWebhookBody {
         override val lifecycle = LifeCycle.CONFIRMATION
 
-        @Serializable(with = ConfirmationDataSerializer::class)
-        @JsonClassDiscriminator("phase")
-        sealed interface ConfirmationData {
-            val phase: Phase
+        @Serializable
+        data class ConfirmationData(
+            val appId: String,
+            val confirmationUrl: String,
+        )
+    }
 
-            @Serializable
-            data class TestPhase(
-                val appId: String,
-                val confirmationUrl: String,
-            ) : ConfirmationData {
-                override val phase = Phase.TEST
-            }
+    @[SerialName("CONFIGURATION") Serializable]
+    data class ConfigurationCycle(
+        override val executionId: String,
+        override val locale: String,
+        override val version: String,
+        val configurationData: ConfigurationData,
+    ) : SmartAppWebhookBody {
+        override val lifecycle = LifeCycle.CONFIGURATION
+
+        @Serializable
+        @JsonClassDiscriminator("phase")
+        sealed interface ConfigurationData {
+            val phase: Phase
 
             @[SerialName("INITIALIZE") Serializable]
             data class InitPhase(
                 val installedAppId: String,
                 val pageId: String,
                 val previousPageId: String,
-            ) : ConfirmationData {
+            ) : ConfigurationData {
                 override val phase: Phase = Phase.INITIALIZE
             }
 
@@ -53,8 +60,8 @@ sealed interface SmartAppWebhookBody {
                 val installedAppId: String,
                 val pageId: String,
                 val previousPageId: String,
-                val config: Map<String, ConfigData>
-            ) : ConfirmationData {
+                val config: Map<String, List<ConfigData>>
+            ) : ConfigurationData {
                 override val phase: Phase = Phase.PAGE
 
                 @Serializable
@@ -85,5 +92,6 @@ sealed interface SmartAppWebhookBody {
 
     enum class LifeCycle {
         CONFIRMATION,
+        CONFIGURATION,
     }
 }
