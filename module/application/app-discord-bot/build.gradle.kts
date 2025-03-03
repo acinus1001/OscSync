@@ -21,4 +21,6 @@ dependencies {
     implementation(projects.module.internal.discordClient)
     implementation(projects.module.domain.database)
     implementation(projects.module.domain.smartappUserinfo)
+
+    implementation(projects.module.domain.memberAuthentication)
 }

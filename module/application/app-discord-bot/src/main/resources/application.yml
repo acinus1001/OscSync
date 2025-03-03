@@ -10,6 +10,23 @@ spring:
   exposed:
     generate-ddl: false
     show-sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          discord:
+            client-id: ${OAUTH2_DISCORD_CLIENT_ID}
+            client-secret: ${OAUTH2_DISCORD_CLIENT_SECRET}
+            client-authentication-method: client_secret_post
+            client-name: discord
+            redirect-uri: ${BASE_URL}/login/oauth2/discord
+            scope:
+              - identify
+            authorization-grant-type: authorization_code
+        provider:
+          discord:
+            authorization-uri: https://discord.com/oauth2/authorize
+            token-uri: https://discord.com/api/oauth2/token
 
 logging:
   level:
