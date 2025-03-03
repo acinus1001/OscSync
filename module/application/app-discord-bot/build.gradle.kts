@@ -14,6 +14,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.reactor.kotlin.extensions)
 
+    implementation(projects.multiplatformCommon.network)
+
     implementation(projects.module.common.network)
     implementation(projects.module.internal.smartappClient)
     implementation(projects.module.internal.discordClient)

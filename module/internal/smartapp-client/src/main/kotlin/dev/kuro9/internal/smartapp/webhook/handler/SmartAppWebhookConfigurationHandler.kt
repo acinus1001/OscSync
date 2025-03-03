@@ -7,14 +7,14 @@ import dev.kuro9.internal.smartapp.webhook.model.SmartAppWebhookResponse
  */
 interface SmartAppWebhookHandler {
 
-    fun onVerifyApp(appId: String, verificationUrl: String)
-    fun onInitializePhase(
+    suspend fun onVerifyApp(appId: String, verificationUrl: String)
+    suspend fun onInitializePhase(
         appId: String,
         pageId: String,
         prevPageId: String?,
     ): SmartAppWebhookResponse.ConfigurationData.InitData
 
-    fun onPagePhase(
+    suspend fun onPagePhase(
         appId: String,
         pageId: String,
         prevPageId: String?,
