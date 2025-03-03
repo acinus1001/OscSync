@@ -7,7 +7,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 
 @Configuration
 @EnableWebSecurity
@@ -17,14 +16,15 @@ class OAuth2LoginSecurityConfig {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http {
-            authorizeHttpRequests {
-                authorize(
-                    AntPathRequestMatcher(
-                        "/error",
-                        "/favicon.ico"
-                    ),
-                    permitAll
+            csrf {
+                ignoringRequestMatchers(
+                    "/smartapp/webhook"
                 )
+            }
+            authorizeHttpRequests {
+                authorize("/error", permitAll)
+                authorize("/favicon.ico", permitAll)
+                authorize("/smartapp/webhook", permitAll)
                 authorize(anyRequest, authenticated)
             }
             oauth2Login { }
