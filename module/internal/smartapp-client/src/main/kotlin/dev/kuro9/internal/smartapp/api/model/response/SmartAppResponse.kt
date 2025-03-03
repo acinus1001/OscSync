@@ -1,6 +1,6 @@
-package dev.kuro9.internal.smartapp.model.response
+package dev.kuro9.internal.smartapp.api.model.response
 
-import dev.kuro9.internal.smartapp.serializer.response.SmartAppPagedLinkInfoSerializer
+import dev.kuro9.internal.smartapp.api.response.SmartAppPagedLinkInfoSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

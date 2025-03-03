@@ -3,9 +3,9 @@ package dev.kuro9.application.discord.slash
 import dev.kuro9.common.logger.infoLog
 import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
-import dev.kuro9.internal.smartapp.client.SmartAppApiClient
-import dev.kuro9.internal.smartapp.model.request.SmartAppToken
-import dev.kuro9.internal.smartapp.model.response.SmartAppDeviceListResponse
+import dev.kuro9.internal.smartapp.api.client.SmartAppApiClient
+import dev.kuro9.internal.smartapp.api.model.request.SmartAppToken
+import dev.kuro9.internal.smartapp.api.model.response.SmartAppDeviceListResponse
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.subcommand
 import dev.minn.jda.ktx.messages.Embed

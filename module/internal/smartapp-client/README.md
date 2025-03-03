@@ -1,8 +1,8 @@
 ### Smartthings API Client
 
-[api docs](https://developer.smartthings.com/docs/api/public)
-[capabilities](https://developer.smartthings.com/docs/devices/capabilities/capabilities-reference#switch)
-[webhook](https://developer.smartthings.com/docs/connected-services/hosting/webhook-smartapp)
+- [api docs](https://developer.smartthings.com/docs/api/public)
+- [capabilities](https://developer.smartthings.com/docs/devices/capabilities/capabilities-reference#switch)
+- [webhook](https://developer.smartthings.com/docs/connected-services/hosting/webhook-smartapp)
 
 #### TODO
 

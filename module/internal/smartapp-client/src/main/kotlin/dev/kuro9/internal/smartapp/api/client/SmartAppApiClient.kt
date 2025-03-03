@@ -1,9 +1,9 @@
-package dev.kuro9.internal.smartapp.client
+package dev.kuro9.internal.smartapp.api.client
 
-import dev.kuro9.internal.smartapp.model.request.SmartAppDeviceCommandRequest
-import dev.kuro9.internal.smartapp.model.request.SmartAppToken
-import dev.kuro9.internal.smartapp.model.response.SmartAppDeviceListResponse
-import dev.kuro9.internal.smartapp.model.response.SmartAppResponse
+import dev.kuro9.internal.smartapp.api.model.request.SmartAppDeviceCommandRequest
+import dev.kuro9.internal.smartapp.api.model.request.SmartAppToken
+import dev.kuro9.internal.smartapp.api.model.response.SmartAppDeviceListResponse
+import dev.kuro9.internal.smartapp.api.model.response.SmartAppResponse
 import org.springframework.http.HttpHeaders
 import retrofit2.http.*
 

@@ -1,4 +1,4 @@
-package dev.kuro9.internal.smartapp.model.response
+package dev.kuro9.internal.smartapp.api.model.response
 
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName

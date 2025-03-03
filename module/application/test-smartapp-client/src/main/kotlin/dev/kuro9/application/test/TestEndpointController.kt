@@ -1,8 +1,9 @@
 package dev.kuro9.application.test
 
-import dev.kuro9.internal.smartapp.client.SmartAppApiClient
-import dev.kuro9.internal.smartapp.model.request.SmartAppDeviceCommandRequest
-import dev.kuro9.internal.smartapp.model.response.SmartAppDeviceListResponse
+import dev.kuro9.internal.smartapp.api.client.SmartAppApiClient
+import dev.kuro9.internal.smartapp.api.model.request.SmartAppDeviceCommandRequest
+import dev.kuro9.internal.smartapp.api.model.request.SmartAppToken
+import dev.kuro9.internal.smartapp.api.model.response.SmartAppDeviceListResponse
 import dev.kuro9.multiplatform.common.types.testapp.request.SmartAppSwitchControlRequest
 import org.springframework.web.bind.annotation.*
 
@@ -21,7 +22,8 @@ class TestEndpointController(private val smartAppApiClient: SmartAppApiClient) {
     ) {
         smartAppApiClient.executeDeviceCommand(
             deviceId = body.deviceId,
-            request = SmartAppDeviceCommandRequest.switch(statusTo = body.value)
+            request = SmartAppDeviceCommandRequest.switch(statusTo = body.value),
+            smartAppToken = SmartAppToken.of("")
         )
     }
 }
