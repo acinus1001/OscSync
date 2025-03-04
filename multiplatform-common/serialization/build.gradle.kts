@@ -7,6 +7,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(libs.kotlin.serialization)
+            api(libs.kotlinx.datetime)
         }
     }
 

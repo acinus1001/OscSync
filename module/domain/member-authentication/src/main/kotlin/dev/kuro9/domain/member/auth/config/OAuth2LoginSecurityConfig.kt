@@ -6,12 +6,14 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.invoke
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-class OAuth2LoginSecurityConfig {
+class OAuth2LoginSecurityConfig(
+) {
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
@@ -21,6 +23,10 @@ class OAuth2LoginSecurityConfig {
                     "/smartapp/webhook"
                 )
             }
+            httpBasic { disable() }
+            formLogin { disable() }
+            logout { disable() }
+            sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
             authorizeHttpRequests {
                 authorize("/error", permitAll)
                 authorize("/favicon.ico", permitAll)
