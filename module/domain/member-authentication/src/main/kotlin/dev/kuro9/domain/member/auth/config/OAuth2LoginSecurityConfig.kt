@@ -1,5 +1,7 @@
 package dev.kuro9.domain.member.auth.config
 
+import dev.kuro9.domain.member.auth.handler.OAuth2SuccessHandler
+import dev.kuro9.domain.member.auth.service.DiscordOAuth2UserService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
@@ -16,7 +18,11 @@ class OAuth2LoginSecurityConfig(
 ) {
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun securityFilterChain(
+        http: HttpSecurity,
+        oAuth2UserService: DiscordOAuth2UserService,
+        oAuth2SuccessHandler: OAuth2SuccessHandler,
+    ): SecurityFilterChain {
         http {
             csrf {
                 ignoringRequestMatchers(
@@ -33,7 +39,12 @@ class OAuth2LoginSecurityConfig(
                 authorize("/smartapp/webhook", permitAll)
                 authorize(anyRequest, authenticated)
             }
-            oauth2Login { }
+            oauth2Login {
+                userInfoEndpoint {
+                    userService = oAuth2UserService
+                    authenticationSuccessHandler = oAuth2SuccessHandler
+                }
+            }
         }
 
         return http.build()

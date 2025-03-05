@@ -10,12 +10,14 @@ import org.springframework.stereotype.Component
 @Component
 class OAuth2SuccessHandler(
     private val tokenService: JwtTokenService,
-) : AuthenticationSuccessHandler {
+
+    ) : AuthenticationSuccessHandler {
+
     override fun onAuthenticationSuccess(
         request: HttpServletRequest,
         response: HttpServletResponse,
         authentication: Authentication
     ) {
-
+//        val accessToken = tokenService.makeToken(authentication)
     }
 }

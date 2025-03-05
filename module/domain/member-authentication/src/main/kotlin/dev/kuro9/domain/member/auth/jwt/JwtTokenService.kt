@@ -3,6 +3,7 @@
 package dev.kuro9.domain.member.auth.jwt
 
 import dev.kuro9.multiplatform.common.serialization.minifyJson
+import kotlinx.serialization.SerializationException
 import org.springframework.security.oauth2.core.OAuth2Error
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes
 import org.springframework.security.oauth2.jwt.JwtValidationException
@@ -16,7 +17,7 @@ import kotlin.random.Random
 class JwtTokenService {
 
     inline fun <reified T : JwtBasicPayload> makeToken(jwtPayload: T, secretKey: String): JwtToken {
-        val header = """{"alg":"HS512","typ":"JWT"}"""
+        val encodedHeader = """{"alg":"HS512","typ":"JWT"}"""
             .toByteArray(Charsets.UTF_8)
             .encodeWithNoPadding()
 
@@ -25,15 +26,16 @@ class JwtTokenService {
             .encodeWithNoPadding()
 
         val signature = getSignature(
-            encodedHeader = header,
+            encodedHeader = encodedHeader,
             encodedPayload = payload,
             jwtPayload = jwtPayload,
             secretKey = secretKey,
         )
 
-        return JwtToken("$header.$payload.$signature")
+        return JwtToken("$encodedHeader.$payload.$signature")
     }
 
+    @Throws(JwtValidationException::class, SerializationException::class)
     inline fun <reified T : JwtBasicPayload> JwtToken.validateAndGetPayload(secretKey: String): T {
         val (encodedHeader, encodedPayload, signature) = this.token.split('.')
 
