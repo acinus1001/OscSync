@@ -20,13 +20,11 @@ class DiscordClientConfig {
         readyHandler: DiscordEventHandler<ReadyEvent>?,
         shutdownHandler: DiscordEventHandler<ShutdownEvent>?,
         slashCommandHandler: DiscordEventHandler<SlashCommandInteractionEvent>?,
-    ): CoroutineEventListener = object : CoroutineEventListener {
-        override suspend fun onEvent(event: GenericEvent) {
-            when (event) {
-                is ReadyEvent -> readyHandler?.handle(event)
-                is ShutdownEvent -> shutdownHandler?.handle(event)
-                is SlashCommandInteractionEvent -> slashCommandHandler?.handle(event)
-            }
+    ): CoroutineEventListener = CoroutineEventListener { event: GenericEvent ->
+        when (event) {
+            is ReadyEvent -> readyHandler?.handle(event)
+            is ShutdownEvent -> shutdownHandler?.handle(event)
+            is SlashCommandInteractionEvent -> slashCommandHandler?.handle(event)
         }
     }
 
