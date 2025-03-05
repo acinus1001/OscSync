@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class OAuth2SuccessHandler(
-    private val tokenProvider: JwtTokenService,
+    private val tokenService: JwtTokenService,
 ) : AuthenticationSuccessHandler {
     override fun onAuthenticationSuccess(
         request: HttpServletRequest,
