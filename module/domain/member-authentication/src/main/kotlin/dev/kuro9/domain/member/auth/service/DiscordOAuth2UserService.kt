@@ -32,7 +32,7 @@ class DiscordOAuth2UserService : DefaultOAuth2UserService() {
         ) {
             it[Members.id] = (userAttr[userAttrName]!! as String).toLong()
             it[Members.name] = userAttr["name"]!! as String
-            it[Members.role] = MemberRole.BASIC
+            it[Members.role] = MemberRole.ROLE_BASIC
             it[Members.createdAt] = LocalDateTime.now()
             it[Members.updatedAt] = LocalDateTime.now()
         }.single()
@@ -41,7 +41,7 @@ class DiscordOAuth2UserService : DefaultOAuth2UserService() {
             override fun getAttributes(): Map<String, Any> = userAttr
 
             override fun getAuthorities(): Collection<GrantedAuthority> {
-                return listOf(SimpleGrantedAuthority(MemberRole.BASIC.toString()))
+                return listOf(SimpleGrantedAuthority(MemberRole.ROLE_BASIC.toString()))
             }
 
             override fun getName(): String = memberResultRow[Members.id].toString()

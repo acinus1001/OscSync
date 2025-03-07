@@ -3,20 +3,45 @@
 package dev.kuro9.domain.member.auth.jwt
 
 import dev.kuro9.multiplatform.common.serialization.minifyJson
+import kotlinx.datetime.Clock
 import kotlinx.serialization.SerializationException
+import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.core.OAuth2Error
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes
 import org.springframework.security.oauth2.jwt.JwtValidationException
+import org.springframework.stereotype.Service
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import kotlin.experimental.xor
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.minutes
 
-class JwtTokenService {
+@Service
+class JwtTokenService(
+    private val secretKey: JwtSecretKey,
+) {
+    private val accessTokenExpireDuration = 30.minutes
 
-    inline fun <reified T : JwtBasicPayload> makeToken(jwtPayload: T, secretKey: String): JwtToken {
+    fun makeToken(authentication: Authentication): JwtToken {
+        val payload = JwtPayloadV1(
+            sub = authentication.name,
+            iat = Clock.System.now(),
+            exp = Clock.System.now() + accessTokenExpireDuration,
+            scp = authentication.authorities.map { it.authority }
+        )
+
+        return makeToken(payload, secretKey.value)
+    }
+
+    @Throws(JwtValidationException::class, SerializationException::class)
+    fun JwtToken.validateAndGetPayload(): JwtPayloadV1 {
+        return this.validateAndGetPayload(secretKey.value)
+    }
+
+
+    private inline fun <reified T : JwtBasicPayload> makeToken(jwtPayload: T, secretKey: String): JwtToken {
         val encodedHeader = """{"alg":"HS512","typ":"JWT"}"""
             .toByteArray(Charsets.UTF_8)
             .encodeWithNoPadding()
@@ -36,7 +61,7 @@ class JwtTokenService {
     }
 
     @Throws(JwtValidationException::class, SerializationException::class)
-    inline fun <reified T : JwtBasicPayload> JwtToken.validateAndGetPayload(secretKey: String): T {
+    private inline fun <reified T : JwtBasicPayload> JwtToken.validateAndGetPayload(secretKey: String): T {
         val (encodedHeader, encodedPayload, signature) = this.token.split('.')
 
         val payload = Base64.decode(encodedPayload)
@@ -63,11 +88,7 @@ class JwtTokenService {
         return payload
     }
 
-    fun ByteArray.encodeWithNoPadding(): String {
-        return Base64.encode(this).dropLastWhile { it == '=' }
-    }
-
-    inline fun <reified T : JwtBasicPayload> getSecretKeyWithSalt(jwtPayload: T, secretKey: String): ByteArray {
+    private inline fun <reified T : JwtBasicPayload> getSecretKeyWithSalt(jwtPayload: T, secretKey: String): ByteArray {
         return (jwtPayload.sub.toLongOrNull() ?: jwtPayload.sub.hashCode().toLong())
             .shr(jwtPayload.iat.epochSeconds.toInt() % 5)
             .times(jwtPayload.exp.epochSeconds.toInt())
@@ -80,7 +101,7 @@ class JwtTokenService {
             }
     }
 
-    inline fun <reified T : JwtBasicPayload> getSignature(
+    private inline fun <reified T : JwtBasicPayload> getSignature(
         encodedHeader: String,
         encodedPayload: String,
         jwtPayload: T,
@@ -91,5 +112,9 @@ class JwtTokenService {
             doFinal("$encodedHeader.$encodedPayload".toByteArray(Charsets.UTF_8))
         }
             .encodeWithNoPadding()
+    }
+
+    fun ByteArray.encodeWithNoPadding(): String {
+        return Base64.encode(this).dropLastWhile { it == '=' }
     }
 }

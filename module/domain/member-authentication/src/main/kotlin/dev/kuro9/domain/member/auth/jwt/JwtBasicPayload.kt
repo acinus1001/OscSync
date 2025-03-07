@@ -11,4 +11,7 @@ interface JwtBasicPayload {
 
     /** 만료일 (expired at) */
     val exp: UnixTimestamp
+
+    /** 권한 (authority) */
+    val scp: List<String>
 }
