@@ -10,6 +10,7 @@ dependencies {
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.oauth2.client)
 
+    implementation(projects.module.common.logger)
     implementation(projects.module.domain.database)
     implementation(projects.multiplatformCommon.serialization)
     implementation(projects.multiplatformCommon.date)

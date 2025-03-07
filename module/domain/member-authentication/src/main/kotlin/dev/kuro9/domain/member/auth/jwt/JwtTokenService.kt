@@ -36,9 +36,11 @@ class JwtTokenService(
     }
 
     @Throws(JwtValidationException::class, SerializationException::class)
-    fun JwtToken.validateAndGetPayload(): JwtPayloadV1 {
-        return this.validateAndGetPayload(secretKey.value)
+    fun validateAndGetPayload(token: JwtToken): JwtPayloadV1 {
+        return token.validateAndGetPayload(secretKey.value)
     }
+
+    fun isValid(token: JwtToken): Boolean = token.isValid<JwtPayloadV1>(secretKey.value)
 
 
     private inline fun <reified T : JwtBasicPayload> makeToken(jwtPayload: T, secretKey: String): JwtToken {
@@ -86,6 +88,23 @@ class JwtTokenService(
         )
 
         return payload
+    }
+
+    private inline fun <reified T : JwtBasicPayload> JwtToken.isValid(secretKey: String): Boolean {
+        val (encodedHeader, encodedPayload, signature) = this.token.split('.')
+
+        val payload = Base64.decode(encodedPayload)
+            .toString(Charsets.UTF_8)
+            .let<String, T>(minifyJson::decodeFromString)
+
+        val expectSignature = getSignature(
+            encodedHeader = encodedHeader,
+            encodedPayload = encodedPayload,
+            jwtPayload = payload,
+            secretKey = secretKey,
+        )
+
+        return expectSignature == signature
     }
 
     private inline fun <reified T : JwtBasicPayload> getSecretKeyWithSalt(jwtPayload: T, secretKey: String): ByteArray {

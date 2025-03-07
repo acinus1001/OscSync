@@ -44,3 +44,4 @@ dev:
       token: ${SMARTAPP_TOKEN}
     jwt:
       key: test123
+      redirect-url: ${BASE_URL}/login/success
