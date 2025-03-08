@@ -1,5 +1,6 @@
 package dev.kuro9.domain.member.auth.filter
 
+import dev.kuro9.common.logger.infoLog
 import dev.kuro9.domain.member.auth.jwt.JwtToken
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
 import jakarta.servlet.FilterChain
@@ -26,7 +27,14 @@ class TokenAuthFilter(
         val accessToken = parseToken(request)
 
         when (accessToken) {
-            null -> TODO("토큰 만료 상황")
+            null -> {
+                infoLog("accessToken is null")
+                // refreshToken 사용가능한 경우 토큰 재발급 로직을 여기에 작성
+
+                // 토큰 발급 실패한 경우
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is not valid.")
+            }
+
             else -> {
                 // set authentication
                 val payload = tokenService.validateAndGetPayload(accessToken)
@@ -40,7 +48,7 @@ class TokenAuthFilter(
 
     private fun parseToken(request: HttpServletRequest): JwtToken? {
         val accessToken = request.cookies
-            .firstOrNull { it.name == "accessToken" }
+            ?.firstOrNull { it.name == "accessToken" }
             ?.value
             ?: request
                 .getHeader(HttpHeaders.AUTHORIZATION)

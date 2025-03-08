@@ -19,7 +19,7 @@ spring:
             client-secret: ${OAUTH2_DISCORD_CLIENT_SECRET}
             client-authentication-method: client_secret_post
             client-name: discord
-            redirect-uri: ${BASE_URL}/login/oauth2/code/discord
+            redirect-uri: ${BASE_URL}/login/success
             scope:
               - identify
             authorization-grant-type: authorization_code
