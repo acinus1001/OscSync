@@ -5,6 +5,7 @@ spring = "3.4.2"
 retrofit2 = "2.11.0"
 exposed = "0.59.0"
 ktor = "3.1.0"
+koin = "4.0.2"
 
 androidx-lifecycle = "2.8.4"
 compose-multiplatform = "1.7.0"
@@ -65,8 +66,16 @@ reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-
 jda-core = { module = "net.dv8tion:JDA", version = "5.3.0" }
 jda-kotlin-extension = { module = "club.minnced:jda-ktx", version = "0.12.0" }
 
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
+koin-compose-navigation = { module = "io.insert-koin:koin-compose-viewmodel-navigation", version.ref = "koin" }
+
+
 
 
 [bundles]
 exposed = ["exposed-core", "exposed-dao", "exposed-kotlin-datetime", "exposed-json", "exposed-spring-boot-starter", "kotlinx-datetime"]
 jda = ["jda-core", "jda-kotlin-extension"]
+koin = ["koin-core", "koin-compose", "koin-compose-viewmodel", "koin-compose-navigation"]
