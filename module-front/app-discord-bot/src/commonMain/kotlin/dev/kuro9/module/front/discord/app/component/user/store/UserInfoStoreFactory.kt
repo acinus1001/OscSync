@@ -1,21 +1,21 @@
-package dev.kuro9.module.front.discord.app.main.store
+package dev.kuro9.module.front.discord.app.component.user.store
 
 import com.arkivanov.mvikotlin.core.store.SimpleBootstrapper
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
-import dev.kuro9.module.front.discord.app.main.database.UserInfoDatabase
-import dev.kuro9.module.front.discord.app.main.store.PageComponentStore.*
+import dev.kuro9.module.front.discord.app.component.user.database.UserInfoDatabase
+import dev.kuro9.module.front.discord.app.component.user.store.UserInfoStore.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
-internal fun StoreFactory.pageComponentStore(
+internal fun StoreFactory.userInfoStore(
     database: UserInfoDatabase,
     mainContext: CoroutineContext,
     ioContext: CoroutineContext,
-): PageComponentStore = object : PageComponentStore, Store<Intent, State, Label> by create(
-    name = "PageComponentStore",
+): UserInfoStore = object : UserInfoStore, Store<Intent, State, Label> by create(
+    name = UserInfoStore::class.simpleName!!,
     initialState = State(userInfo = null),
     bootstrapper = SimpleBootstrapper(Action.Init),
     executorFactory = {

@@ -1,9 +1,9 @@
-package dev.kuro9.module.front.discord.app.main.store
+package dev.kuro9.module.front.discord.app.component.user.store
 
 import com.arkivanov.mvikotlin.core.store.Store
-import dev.kuro9.module.front.discord.app.main.store.PageComponentStore.*
+import dev.kuro9.module.front.discord.app.component.user.store.UserInfoStore.*
 
-internal interface PageComponentStore : Store<Intent, State, Label> {
+internal interface UserInfoStore : Store<Intent, State, Label> {
 
     sealed class Intent {
         data class SetUserInfo(val user: State.UserInfo) : Intent()
