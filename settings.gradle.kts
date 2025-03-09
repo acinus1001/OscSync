@@ -68,6 +68,12 @@ getSubModuleNameOfPrimaryModule("multiplatform-common/types").forEach { subModul
     include("multiplatform-common:types:$subModuleName")
 }
 
+// multiplatform common network 서브모듈 전체적용
+getSubModuleNameOfPrimaryModule("multiplatform-common/network").forEach { subModuleName ->
+    println("multi-comon:network: $subModuleName")
+    include("multiplatform-common:network:$subModuleName")
+}
+
 fun includeModule(moduleType: String, moduleName: String) {
     println("module:$moduleType:$moduleName")
     include("module:$moduleType:$moduleName")
