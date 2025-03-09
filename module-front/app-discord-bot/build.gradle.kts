@@ -42,12 +42,13 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.bundles.mvi.kotlin.decomposed)
 
             implementation(projects.multiplatformCommon.serialization)
             implementation(projects.multiplatformCommon.network)
-
-            implementation(project.dependencies.platform(libs.koin.bom))
-            implementation(libs.bundles.koin)
+            implementation(projects.multiplatformCommon.network.appDiscordBot)
+            implementation(projects.multiplatformCommon.types.appDiscordBot)
         }
+
     }
 }
