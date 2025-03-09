@@ -12,7 +12,7 @@ class RootComponent(
     private val globalStores: GlobalStores,
 ) : ComponentContext by componentContext {
     private val navigation = StackNavigation<FragmentConfig>()
-
+    
     val childStack = childStack(
         source = navigation,
         serializer = FragmentConfig.serializer(),
