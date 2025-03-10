@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 
 @Composable
 @Suppress("FunctionName")
-fun UserInfoButtonComponent(
+fun UserInfoButtonView(
     userInfoText: String,
     onLogoutClick: () -> Unit,
 ) {

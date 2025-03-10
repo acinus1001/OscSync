@@ -6,6 +6,8 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import dev.kuro9.module.front.discord.app.component.user.database.UserInfoDatabase
 import dev.kuro9.module.front.discord.app.component.user.store.UserInfoStore.*
+import dev.kuro9.module.front.discord.app.coroutines.IoCoroutineContext
+import dev.kuro9.module.front.discord.app.coroutines.MainCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
@@ -21,8 +23,8 @@ internal fun StoreFactory.userInfoStore(
     executorFactory = {
         ExecutorImpl(
             database = database,
-            mainContext = mainContext,
-            ioContext = ioContext,
+            mainContext = MainCoroutineContext,
+            ioContext = IoCoroutineContext,
         )
     },
     reducer = { reduce(it) }

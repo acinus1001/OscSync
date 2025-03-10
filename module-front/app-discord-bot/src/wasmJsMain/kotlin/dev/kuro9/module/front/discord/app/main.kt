@@ -11,9 +11,12 @@ import dev.kuro9.module.front.discord.app.global.GlobalStores
 import dev.kuro9.module.front.discord.app.page.RootComponent
 import kotlinx.browser.document
 import kotlinx.coroutines.Dispatchers
+import org.koin.core.context.startKoin
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
+    startKoin { modules(appModule) }
+
     val lifecycle = LifecycleRegistry()
     val globalStores = GlobalStores(
         userInfoStore = DefaultStoreFactory().userInfoStore(
