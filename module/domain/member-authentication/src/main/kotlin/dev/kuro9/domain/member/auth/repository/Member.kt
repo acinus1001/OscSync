@@ -12,6 +12,7 @@ import org.jetbrains.exposed.sql.kotlin.datetime.datetime
 object Members : LongIdTable("member") {
     val name = varchar("name", 255)
     val role = enumeration<MemberRole>("role")
+    val avatarUrl = varchar("avatar_url", 4000).nullable()
 
     val createdAt = datetime("created_at")
     val updatedAt = datetime("updated_at")

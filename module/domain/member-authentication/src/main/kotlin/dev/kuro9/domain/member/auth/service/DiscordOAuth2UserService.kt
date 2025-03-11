@@ -32,12 +32,13 @@ class DiscordOAuth2UserService : DefaultOAuth2UserService() {
         val memberResultRow = Members.upsertReturning(
             onUpdateExclude = listOf(Members.role, Members.createdAt)
         ) {
-            it[Members.id] = (userAttr["id"]!! as String).toLong()
-            it[Members.name] = userAttr["username"]!! as String
-            // avatarUrl = userAttr["avatar"]!! as String?
-            it[Members.role] = MemberRole.ROLE_BASIC
-            it[Members.createdAt] = LocalDateTime.now()
-            it[Members.updatedAt] = LocalDateTime.now()
+            it[id] = (userAttr["id"]!! as String).toLong()
+            it[name] = userAttr["username"]!! as String
+            it[avatarUrl] = (userAttr["avatar"]!! as String?)
+                ?.let { hash -> "https://cdn.discordapp.com/avatars/${userAttr["id"]!! as String}/$hash.png}" }
+            it[role] = MemberRole.ROLE_BASIC
+            it[createdAt] = LocalDateTime.now()
+            it[updatedAt] = LocalDateTime.now()
         }.single()
 
         return object : OAuth2User {
