@@ -18,7 +18,6 @@ class DiscordOAuth2UserService : DefaultOAuth2UserService() {
 
     @Transactional
     override fun loadUser(userRequest: OAuth2UserRequest): OAuth2User {
-        val userAttr = super.loadUser(userRequest).attributes
 
         val registrationId = userRequest.clientRegistration.registrationId  // discord
         check(registrationId == "discord") {
@@ -27,11 +26,15 @@ class DiscordOAuth2UserService : DefaultOAuth2UserService() {
 
         val userAttrName = userRequest.clientRegistration.providerDetails.userInfoEndpoint.userNameAttributeName
 
+        @Suppress("UNCHECKED_CAST")
+        val userAttr = super.loadUser(userRequest).attributes[userAttrName] as Map<String, Any>
+
         val memberResultRow = Members.upsertReturning(
             onUpdateExclude = listOf(Members.role, Members.createdAt)
         ) {
-            it[Members.id] = (userAttr[userAttrName]!! as String).toLong()
-            it[Members.name] = userAttr["name"]!! as String
+            it[Members.id] = (userAttr["id"]!! as String).toLong()
+            it[Members.name] = userAttr["username"]!! as String
+            // avatarUrl = userAttr["avatar"]!! as String?
             it[Members.role] = MemberRole.ROLE_BASIC
             it[Members.createdAt] = LocalDateTime.now()
             it[Members.updatedAt] = LocalDateTime.now()

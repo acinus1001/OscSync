@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 class JwtPayloadV1(
     override val sub: String,
+    override val name: String,
     override val iat: UnixTimestamp,
     override val exp: UnixTimestamp,
     override val scp: List<String>,

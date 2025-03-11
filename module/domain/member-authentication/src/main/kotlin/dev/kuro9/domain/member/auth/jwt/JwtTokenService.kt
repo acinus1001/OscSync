@@ -25,8 +25,10 @@ class JwtTokenService(
     private val accessTokenExpireDuration = 30.minutes
 
     fun makeToken(authentication: Authentication): JwtToken {
+        val jwtPayload = authentication.details as JwtBasicPayload
         val payload = JwtPayloadV1(
             sub = authentication.name,
+            name = jwtPayload.name,
             iat = Clock.System.now(),
             exp = Clock.System.now() + accessTokenExpireDuration,
             scp = authentication.authorities.map { it.authority }

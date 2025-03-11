@@ -6,6 +6,9 @@ interface JwtBasicPayload {
     /** 유저 구별자 */
     val sub: String
 
+    /** 유저 닉네임 */
+    val name: String
+
     /** 발급일 (issued at) */
     val iat: UnixTimestamp
 

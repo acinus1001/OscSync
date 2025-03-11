@@ -1,5 +1,6 @@
 package dev.kuro9.domain.member.auth.config
 
+import dev.kuro9.domain.member.auth.converter.JwtUserInfoConverter
 import dev.kuro9.domain.member.auth.filter.TokenAuthFilter
 import dev.kuro9.domain.member.auth.filter.TokenExceptionFilter
 import dev.kuro9.domain.member.auth.handler.OAuth2SuccessHandler
@@ -30,11 +31,13 @@ class OAuth2LoginSecurityConfig(
         tokenAuthFilter: TokenAuthFilter,
 
         jwtTokenProperty: JwtTokenConfig.JwtProperty,
+
+        jwtAuthConverter: JwtUserInfoConverter,
     ): SecurityFilterChain {
         http {
             csrf {
                 ignoringRequestMatchers(
-                    "/smartapp/webhook"
+                    "/smartapp/webhook",
                 )
             }
             httpBasic { disable() }
@@ -45,7 +48,8 @@ class OAuth2LoginSecurityConfig(
                 authorize("/error", permitAll)
                 authorize("/favicon.ico", permitAll)
                 authorize("/smartapp/webhook", permitAll)
-                authorize(jwtTokenProperty.redirectUrl, permitAll)
+                authorize("/login/success", permitAll)
+                authorize("/login/success", permitAll)
 
                 authorize(anyRequest, authenticated)
             }
@@ -56,7 +60,11 @@ class OAuth2LoginSecurityConfig(
                 }
 
             }
-
+//            oauth2ResourceServer {
+//                jwt {
+//                    jwtAuthenticationConverter = jwtAuthConverter
+//                }
+//            }
             addFilterBefore<UsernamePasswordAuthenticationFilter>(tokenAuthFilter)
             addFilterBefore<TokenAuthFilter>(tokenExceptionFilter)
         }
