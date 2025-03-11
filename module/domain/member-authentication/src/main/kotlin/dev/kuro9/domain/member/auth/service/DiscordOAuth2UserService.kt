@@ -1,15 +1,13 @@
 package dev.kuro9.domain.member.auth.service
 
 import dev.kuro9.domain.member.auth.enumurate.MemberRole
+import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.domain.member.auth.repository.Members
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.sql.upsertReturning
-import org.springframework.security.core.GrantedAuthority
-import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
-import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -17,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 class DiscordOAuth2UserService : DefaultOAuth2UserService() {
 
     @Transactional
-    override fun loadUser(userRequest: OAuth2UserRequest): OAuth2User {
+    override fun loadUser(userRequest: OAuth2UserRequest): DiscordUserDetail {
 
         val registrationId = userRequest.clientRegistration.registrationId  // discord
         check(registrationId == "discord") {
@@ -41,15 +39,12 @@ class DiscordOAuth2UserService : DefaultOAuth2UserService() {
             it[updatedAt] = LocalDateTime.now()
         }.single()
 
-        return object : OAuth2User {
-            override fun getAttributes(): Map<String, Any> = userAttr
-
-            override fun getAuthorities(): Collection<GrantedAuthority> {
-                return listOf(SimpleGrantedAuthority(MemberRole.ROLE_BASIC.toString()))
-            }
-
-            override fun getName(): String = memberResultRow[Members.id].toString()
-
-        }
+        return DiscordUserDetail(
+            id = memberResultRow[Members.id].value,
+            userName = memberResultRow[Members.name],
+            role = memberResultRow[Members.role],
+            avatarUrl = memberResultRow[Members.avatarUrl],
+            userAttr = userAttr,
+        )
     }
 }

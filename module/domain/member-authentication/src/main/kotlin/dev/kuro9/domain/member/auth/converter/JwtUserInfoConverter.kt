@@ -17,11 +17,14 @@ class JwtUserInfoConverter : Converter<Jwt, AbstractAuthenticationToken> {
         val userId = source.subject.toLong()
         val userName = source.getClaim<String>("name")
         val role = source.getClaim<List<MemberRole>>("scp").single()
+        val avatarUrl = source.getClaim<String?>("avatar_url")
 
         val discordUserDetails = DiscordUserDetail(
             id = userId,
             userName = userName,
             role = role,
+            avatarUrl = avatarUrl,
+            userAttr = source.claims
         )
 
         return UsernamePasswordAuthenticationToken(

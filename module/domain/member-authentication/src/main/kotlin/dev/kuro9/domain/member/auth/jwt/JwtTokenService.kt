@@ -2,6 +2,7 @@
 
 package dev.kuro9.domain.member.auth.jwt
 
+import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import kotlinx.datetime.Clock
 import kotlinx.serialization.SerializationException
@@ -22,16 +23,18 @@ import kotlin.time.Duration.Companion.minutes
 class JwtTokenService(
     private val secretKey: JwtSecretKey,
 ) {
+    private val noPaddingBase64 = Base64.withPadding(Base64.PaddingOption.ABSENT)
     private val accessTokenExpireDuration = 30.minutes
 
     fun makeToken(authentication: Authentication): JwtToken {
-        val jwtPayload = authentication.details as JwtBasicPayload
+        val userDetail = authentication.principal as DiscordUserDetail
         val payload = JwtPayloadV1(
-            sub = authentication.name,
-            name = jwtPayload.name,
+            sub = userDetail.id.toString(),
+            name = userDetail.name,
             iat = Clock.System.now(),
             exp = Clock.System.now() + accessTokenExpireDuration,
-            scp = authentication.authorities.map { it.authority }
+            scp = authentication.authorities.map { it.authority },
+            avatarUrl = userDetail.avatarUrl,
         )
 
         return makeToken(payload, secretKey.value)
@@ -68,7 +71,7 @@ class JwtTokenService(
     private inline fun <reified T : JwtBasicPayload> JwtToken.validateAndGetPayload(secretKey: String): T {
         val (encodedHeader, encodedPayload, signature) = this.token.split('.')
 
-        val payload = Base64.decode(encodedPayload)
+        val payload = noPaddingBase64.decode(encodedPayload)
             .toString(Charsets.UTF_8)
             .let<String, T>(minifyJson::decodeFromString)
 
@@ -95,7 +98,7 @@ class JwtTokenService(
     private inline fun <reified T : JwtBasicPayload> JwtToken.isValid(secretKey: String): Boolean {
         val (encodedHeader, encodedPayload, signature) = this.token.split('.')
 
-        val payload = Base64.decode(encodedPayload)
+        val payload = noPaddingBase64.decode(encodedPayload)
             .toString(Charsets.UTF_8)
             .let<String, T>(minifyJson::decodeFromString)
 
@@ -136,6 +139,6 @@ class JwtTokenService(
     }
 
     fun ByteArray.encodeWithNoPadding(): String {
-        return Base64.encode(this).dropLastWhile { it == '=' }
+        return noPaddingBase64.encode(this)
     }
 }
