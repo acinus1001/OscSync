@@ -1,8 +1,10 @@
 package dev.kuro9.domain.member.auth.filter
 
 import dev.kuro9.common.logger.infoLog
+import dev.kuro9.domain.member.auth.enumurate.MemberRole
 import dev.kuro9.domain.member.auth.jwt.JwtToken
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
+import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -10,7 +12,6 @@ import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.core.userdetails.User
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
@@ -41,11 +42,15 @@ class TokenAuthFilter(
                 // set authentication
                 val payload = tokenService.validateAndGetPayload(accessToken)
                 val authorities = payload.scp.map(::SimpleGrantedAuthority)
-                val user = User(payload.sub, "", authorities)
+                val user = DiscordUserDetail(
+                    id = payload.sub.toLong(),
+                    userName = payload.name,
+                    avatarUrl = payload.avatarUrl,
+                    role = payload.scp.map(MemberRole::valueOf).single(),
+                    userAttr = emptyMap(),
+                )
                 SecurityContextHolder.getContext().authentication =
-                    UsernamePasswordAuthenticationToken(user, accessToken.token, authorities).apply {
-                        details = payload
-                    }
+                    UsernamePasswordAuthenticationToken(user, accessToken.token, authorities)
             }
         }
     }

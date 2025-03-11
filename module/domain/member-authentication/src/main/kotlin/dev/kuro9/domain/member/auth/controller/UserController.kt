@@ -18,7 +18,7 @@ class UserController {
         return UserInfoApiResponse(
             userId = userInfo.id,
             userName = userInfo.username,
-            userAvatarUrl = null, // todo?
+            userAvatarUrl = userInfo.avatarUrl,
         )
     }
 }

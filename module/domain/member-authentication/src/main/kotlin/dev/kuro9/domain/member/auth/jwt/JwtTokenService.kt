@@ -30,7 +30,7 @@ class JwtTokenService(
         val userDetail = authentication.principal as DiscordUserDetail
         val payload = JwtPayloadV1(
             sub = userDetail.id.toString(),
-            name = userDetail.name,
+            name = userDetail.userName,
             iat = Clock.System.now(),
             exp = Clock.System.now() + accessTokenExpireDuration,
             scp = authentication.authorities.map { it.authority },
@@ -113,10 +113,9 @@ class JwtTokenService(
     }
 
     private inline fun <reified T : JwtBasicPayload> getSecretKeyWithSalt(jwtPayload: T, secretKey: String): ByteArray {
-        return (jwtPayload.sub.toLongOrNull() ?: jwtPayload.sub.hashCode().toLong())
+        return (jwtPayload.sub.toLong())
             .shr(jwtPayload.iat.epochSeconds.toInt() % 5)
             .times(jwtPayload.exp.epochSeconds.toInt())
-            .plus(jwtPayload.hashCode())
             .let {
                 val secretKeyBytes = secretKey.toByteArray(Charsets.UTF_8)
                 Random(it).nextBytes(secretKeyBytes.size).zip(secretKeyBytes)
