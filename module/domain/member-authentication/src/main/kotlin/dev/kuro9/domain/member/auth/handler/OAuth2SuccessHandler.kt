@@ -35,7 +35,7 @@ class OAuth2SuccessHandler(
 
         response.run {
             addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
-            sendRedirect(jwtProperty.redirectUrl)
+            sendRedirect("/")
         }
     }
 }

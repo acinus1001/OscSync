@@ -13,6 +13,7 @@ kotlin {
             api(libs.ktor.client.content.negotiation)
             api(libs.ktor.serialization.kotlinx.json)
             api(libs.ktor.client.resources)
+            api(libs.ktor.client.logging)
             implementation(projects.multiplatformCommon)
         }
 
@@ -33,7 +34,7 @@ buildConfig {
         Profile.PRODUCTION -> TODO()
 
         Profile.DEVELOPMENT -> {
-            buildConfigField("API_SERVER_HOST", "127.0.0.1")
+            buildConfigField("API_SERVER_HOST", "localhost")
             buildConfigField("API_SERVER_PORT", 8080)
             buildConfigField("API_SERVER_METHOD", "HTTP")
         }

@@ -33,7 +33,7 @@ class DiscordOAuth2UserService : DefaultOAuth2UserService() {
             it[id] = (userAttr["id"]!! as String).toLong()
             it[name] = userAttr["username"]!! as String
             it[avatarUrl] = (userAttr["avatar"]!! as String?)
-                ?.let { hash -> "https://cdn.discordapp.com/avatars/${userAttr["id"]!! as String}/$hash.png}" }
+                ?.let { hash -> "https://cdn.discordapp.com/avatars/${userAttr["id"]!! as String}/$hash.png" }
             it[role] = MemberRole.ROLE_BASIC
             it[createdAt] = LocalDateTime.now()
             it[updatedAt] = LocalDateTime.now()

@@ -53,6 +53,7 @@ class TokenAuthFilter(
                     UsernamePasswordAuthenticationToken(user, accessToken.token, authorities)
             }
         }
+        filterChain.doFilter(request, response)
     }
 
     private fun parseToken(request: HttpServletRequest): JwtToken? {

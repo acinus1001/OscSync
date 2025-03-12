@@ -40,6 +40,7 @@ class OAuth2LoginSecurityConfig(
                     "/smartapp/webhook",
                 )
             }
+            cors {}
             httpBasic { disable() }
             formLogin { disable() }
             logout { disable() }
