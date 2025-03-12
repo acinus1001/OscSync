@@ -9,13 +9,15 @@ import androidx.compose.runtime.Composable
 @Suppress("FunctionName")
 fun UserInfoButtonView(
     userInfoText: String,
-    onLogoutClick: () -> Unit,
+    isLoggedIn: Boolean,
+    toLogInClick: () -> Unit,
+    toLogoutClick: () -> Unit,
 ) {
     Column {
         Text(userInfoText)
 
-        Button(onClick = onLogoutClick) {
-            Text("SAMPLE USAGE")
+        Button(onClick = if (isLoggedIn) toLogoutClick else toLogInClick) {
+            Text(if (isLoggedIn) "Logout" else "Login")
         }
     }
 }

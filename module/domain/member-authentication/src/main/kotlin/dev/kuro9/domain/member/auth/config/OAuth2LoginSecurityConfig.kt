@@ -5,6 +5,8 @@ import dev.kuro9.domain.member.auth.filter.TokenAuthFilter
 import dev.kuro9.domain.member.auth.filter.TokenExceptionFilter
 import dev.kuro9.domain.member.auth.handler.OAuth2SuccessHandler
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2UserService
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
@@ -12,8 +14,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.core.Authentication
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 
 @Configuration
 @EnableWebSecurity
@@ -35,22 +39,30 @@ class OAuth2LoginSecurityConfig(
         jwtAuthConverter: JwtUserInfoConverter,
     ): SecurityFilterChain {
         http {
-            csrf {
-                ignoringRequestMatchers(
-                    "/smartapp/webhook",
-                )
-            }
+            csrf { disable() }
             cors {}
             httpBasic { disable() }
             formLogin { disable() }
-            logout { disable() }
+            logout {
+                logoutSuccessUrl = "/logout"
+                logoutSuccessHandler = object : LogoutSuccessHandler {
+                    override fun onLogoutSuccess(
+                        request: HttpServletRequest,
+                        response: HttpServletResponse,
+                        authentication: Authentication?
+                    ) {
+                        response.status = HttpServletResponse.SC_OK
+                    }
+
+                }
+                deleteCookies("accessToken")
+            }
             sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
             authorizeHttpRequests {
+                authorize("/", permitAll)
                 authorize("/error", permitAll)
                 authorize("/favicon.ico", permitAll)
                 authorize("/smartapp/webhook", permitAll)
-                authorize("/login/success", permitAll)
-                authorize("/login/success", permitAll)
 
                 authorize(anyRequest, authenticated)
             }

@@ -16,9 +16,9 @@ fun MainPage(
     Column {
         UserInfoButtonView(
             userInfoText = userInfoState.toString(),
-            onLogoutClick = {
-                component.userInfoStore.accept(UserInfoStore.Intent.DeleteUserInfo)
-            }
+            isLoggedIn = userInfoState.userInfo != null,
+            toLogInClick = { component.userInfoStore.accept(UserInfoStore.Intent.GoLogin) },
+            toLogoutClick = { component.userInfoStore.accept(UserInfoStore.Intent.DeleteUserInfo) }
         )
 
     }

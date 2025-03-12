@@ -33,4 +33,12 @@ class NetworkUserInfoDatabase : UserInfoDatabase {
             }
         }
     }
+
+    override suspend fun deleteUserInfo() {
+        runCatching {
+            client.post(Users.Logout())
+        }.onFailure {
+            logger.error("Error on logout", it)
+        }.getOrThrow()
+    }
 }

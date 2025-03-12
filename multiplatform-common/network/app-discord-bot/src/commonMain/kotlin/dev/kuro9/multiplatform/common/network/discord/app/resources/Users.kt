@@ -9,4 +9,6 @@ import io.ktor.resources.*
 @Resource("/api/user")
 class Users() {
 
+    @Resource("logout")
+    class Logout()
 }

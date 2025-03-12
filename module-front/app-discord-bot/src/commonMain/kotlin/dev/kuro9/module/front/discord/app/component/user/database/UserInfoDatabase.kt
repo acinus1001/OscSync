@@ -4,4 +4,5 @@ import dev.kuro9.multiplatform.common.types.member.UserInfoApiResponse
 
 interface UserInfoDatabase {
     suspend fun getUserInfo(): UserInfoApiResponse?
+    suspend fun deleteUserInfo()
 }
