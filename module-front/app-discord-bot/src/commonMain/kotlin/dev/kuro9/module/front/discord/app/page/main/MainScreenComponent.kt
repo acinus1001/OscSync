@@ -1,7 +1,6 @@
 package dev.kuro9.module.front.discord.app.page.main
 
 import com.arkivanov.decompose.ComponentContext
-import com.arkivanov.essenty.lifecycle.subscribe
 import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import dev.kuro9.module.front.discord.app.component.user.store.UserInfoStore
@@ -22,15 +21,14 @@ class MainScreenComponent(
     val userInfoStates = userInfoStore.stateFlow
 
     init {
-        componentContext.lifecycle.subscribe(onResume = {
-            componentContext
-            userInfoStore.labels.collectInScope { label ->
+        CoroutineScope(UnconfinedCoroutineContext).launch {
+            userInfoStore.labels.collect { label ->
                 KtorSimpleLogger("test").info("label: $label")
                 when (label) {
                     is UserInfoStore.Label.Redirect -> goExternalPage(label.url)
                 }
             }
-        })
+        }
     }
 
     private fun <T> Flow<T>.collectInScope(onLabelReceived: (T) -> Unit) {
