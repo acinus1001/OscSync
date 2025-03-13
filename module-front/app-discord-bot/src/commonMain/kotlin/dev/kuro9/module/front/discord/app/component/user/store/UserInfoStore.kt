@@ -7,7 +7,8 @@ interface UserInfoStore : Store<Intent, State, Label> {
 
     sealed class Intent {
         data class SetUserInfo(val user: State.UserInfo) : Intent()
-        data object DeleteUserInfo : Intent()
+        data object Logout : Intent()
+        data object GoLogin : Intent()
     }
 
     // 로그인 버튼 상태 (로그인 필요 또는 유저네임, 프로필 등)
@@ -24,6 +25,5 @@ interface UserInfoStore : Store<Intent, State, Label> {
     // side effect
     sealed class Label {
         data class Redirect(val url: String) : Label()
-        data object ClearCookies : Label()
     }
 }

@@ -6,8 +6,7 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import dev.kuro9.module.front.discord.app.component.user.database.UserInfoDatabase
 import dev.kuro9.module.front.discord.app.component.user.store.UserInfoStore.*
-import dev.kuro9.module.front.discord.app.coroutines.IoCoroutineContext
-import dev.kuro9.module.front.discord.app.coroutines.MainCoroutineContext
+import io.ktor.util.logging.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
@@ -23,8 +22,8 @@ internal fun StoreFactory.userInfoStore(
     executorFactory = {
         ExecutorImpl(
             database = database,
-            mainContext = MainCoroutineContext,
-            ioContext = IoCoroutineContext,
+            mainContext = mainContext,
+            ioContext = ioContext,
         )
     },
     reducer = { reduce(it) }
@@ -33,7 +32,7 @@ internal fun StoreFactory.userInfoStore(
 private sealed interface Action {
     data object Init : Action
     data object Login : Action {
-        val url = "/login/todo"
+        val url = "/oauth2/authorization/discord"
     }
 
     data object Logout : Action
@@ -53,11 +52,15 @@ private class ExecutorImpl(
         when (action) {
             Action.Init -> init()
             Action.Login -> scope.launch {
+                KtorSimpleLogger("executor").info("login clicked")
                 publish(Label.Redirect(Action.Login.url))
             }
 
             Action.Logout -> {
-                scope.launch { dispatch(Msg.UserDeleted) }
+                scope.launch {
+                    withContext(ioContext) { database.deleteUserInfo() }
+                    dispatch(Msg.UserDeleted)
+                }
             }
         }
     }
@@ -65,11 +68,13 @@ private class ExecutorImpl(
     override fun executeIntent(intent: Intent) {
         when (intent) {
             is Intent.SetUserInfo -> dispatch(Msg.UserLoaded(intent.user))
-            Intent.DeleteUserInfo -> dispatch(Msg.UserDeleted)
+            Intent.Logout -> forward(Action.Logout)
+            Intent.GoLogin -> forward(Action.Login)
         }
     }
 
     private fun init() {
+        KtorSimpleLogger("executor").info("init")
         scope.launch {
             withContext(ioContext) { database.getUserInfo() }
                 ?.let {

@@ -18,7 +18,7 @@ fun MainPage(
             userInfoText = userInfoState.toString(),
             isLoggedIn = userInfoState.userInfo != null,
             toLogInClick = { component.userInfoStore.accept(UserInfoStore.Intent.GoLogin) },
-            toLogoutClick = { component.userInfoStore.accept(UserInfoStore.Intent.DeleteUserInfo) }
+            toLogoutClick = { component.userInfoStore.accept(UserInfoStore.Intent.Logout) }
         )
 
     }
