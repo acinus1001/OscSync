@@ -16,7 +16,7 @@ class TokenExceptionFilter : OncePerRequestFilter() {
     ) {
         try {
             filterChain.doFilter(request, response)
-        } catch (_: JwtValidationException) {
+        } catch (e: JwtValidationException) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token has expired or malformed.")
         }
     }

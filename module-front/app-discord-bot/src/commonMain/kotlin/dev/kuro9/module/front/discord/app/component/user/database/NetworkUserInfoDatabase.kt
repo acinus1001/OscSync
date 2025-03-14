@@ -1,6 +1,5 @@
 package dev.kuro9.module.front.discord.app.component.user.database
 
-import com.arkivanov.mvikotlin.logging.logger.DefaultLogger
 import dev.kuro9.multiplatform.common.network.discord.app.resources.Users
 import dev.kuro9.multiplatform.common.network.discord.app.typeSafeHttpClient
 import dev.kuro9.multiplatform.common.types.member.UserInfoApiResponse
@@ -21,14 +20,14 @@ class NetworkUserInfoDatabase : UserInfoDatabase {
         }.getOrThrow()
 
         return when (httpResponse.status) {
+            HttpStatusCode.OK -> httpResponse.body<UserInfoApiResponse>()
             HttpStatusCode.Unauthorized -> {
-                DefaultLogger.log("401")
-                throw NotImplementedError("401 not implemented")
+                logger.info("401")
+                null
             }
 
-            HttpStatusCode.OK -> httpResponse.body<UserInfoApiResponse>()
             else -> {
-                DefaultLogger.log(httpResponse.toString())
+                logger.info(httpResponse.toString())
                 throw NotImplementedError("${httpResponse.status}")
             }
         }
@@ -36,7 +35,7 @@ class NetworkUserInfoDatabase : UserInfoDatabase {
 
     override suspend fun deleteUserInfo() {
         runCatching {
-            client.post(Users.Logout())
+            check(client.post(Users.Logout()).status == HttpStatusCode.OK) { "Logout Failed" }
         }.onFailure {
             logger.error("Error on logout", it)
         }.getOrThrow()

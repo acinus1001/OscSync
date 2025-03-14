@@ -9,6 +9,9 @@ import io.ktor.resources.*
 @Resource("/api/user")
 class Users() {
 
-    @Resource("logout")
-    class Logout()
+    @Resource("/login")
+    class Login(val parent: Users = Users())
+
+    @Resource("/logout")
+    class Logout(val parent: Users = Users())
 }

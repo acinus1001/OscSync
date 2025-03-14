@@ -39,8 +39,7 @@ private sealed interface Action {
 }
 
 private sealed interface Msg {
-    data class UserLoaded(val userInfo: State.UserInfo) : Msg
-    data object UserDeleted : Msg
+    data class UserLoaded(val userInfo: State.UserInfo?) : Msg
 }
 
 private class ExecutorImpl(
@@ -59,7 +58,7 @@ private class ExecutorImpl(
             Action.Logout -> {
                 scope.launch {
                     withContext(ioContext) { database.deleteUserInfo() }
-                    dispatch(Msg.UserDeleted)
+                    dispatch(Msg.UserLoaded(null))
                 }
             }
         }
@@ -85,12 +84,11 @@ private class ExecutorImpl(
                     )
                 }
                 ?.let { dispatch(Msg.UserLoaded(it)) }
-                ?: dispatch(Msg.UserDeleted)
+                ?: dispatch(Msg.UserLoaded(null))
         }
     }
 }
 
 private fun State.reduce(msg: Msg): State = when (msg) {
     is Msg.UserLoaded -> copy(userInfo = msg.userInfo)
-    Msg.UserDeleted -> copy(userInfo = null)
 }

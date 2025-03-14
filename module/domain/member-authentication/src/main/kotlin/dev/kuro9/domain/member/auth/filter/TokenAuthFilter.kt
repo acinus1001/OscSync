@@ -8,13 +8,9 @@ import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.oauth2.core.OAuth2Error
-import org.springframework.security.oauth2.core.OAuth2ErrorCodes
-import org.springframework.security.oauth2.jwt.JwtValidationException
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
@@ -39,16 +35,6 @@ class TokenAuthFilter(
 
                 // 토큰 발급 실패한 경우
 //                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is not valid.")
-
-                throw throw JwtValidationException(
-                    "jwt is not valid.", listOf(
-                        OAuth2Error(
-                            OAuth2ErrorCodes.INVALID_TOKEN,
-                            "jwt is not valid.",
-                            null
-                        )
-                    )
-                )
             }
 
             else -> {
@@ -73,9 +59,6 @@ class TokenAuthFilter(
         val accessToken = request.cookies
             ?.firstOrNull { it.name == "accessToken" }
             ?.value
-            ?: request
-                .getHeader(HttpHeaders.AUTHORIZATION)
-                ?.removePrefix("Bearer ")
 
         return accessToken
             ?.let(::JwtToken)
