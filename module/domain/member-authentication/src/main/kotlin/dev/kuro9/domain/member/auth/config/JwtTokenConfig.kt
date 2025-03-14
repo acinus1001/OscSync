@@ -12,13 +12,4 @@ class JwtTokenConfig {
     fun jwtSecretKey(
         @Value("\${dev.kuro9.jwt.key}") secretKey: String
     ) = JwtSecretKey(secretKey)
-
-    @Bean
-    fun jwtProperty(
-        @Value("\${dev.kuro9.jwt.redirect-url}") redirectUrl: String
-    ) = JwtProperty(redirectUrl)
-
-    data class JwtProperty(
-        val redirectUrl: String,
-    )
 }

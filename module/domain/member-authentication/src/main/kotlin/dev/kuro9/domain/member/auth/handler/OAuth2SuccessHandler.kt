@@ -1,6 +1,5 @@
 package dev.kuro9.domain.member.auth.handler
 
-import dev.kuro9.domain.member.auth.config.JwtTokenConfig
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -15,7 +14,6 @@ import kotlin.time.toJavaDuration
 @Component
 class OAuth2SuccessHandler(
     private val tokenService: JwtTokenService,
-    private val jwtProperty: JwtTokenConfig.JwtProperty,
 ) : AuthenticationSuccessHandler {
 
     override fun onAuthenticationSuccess(

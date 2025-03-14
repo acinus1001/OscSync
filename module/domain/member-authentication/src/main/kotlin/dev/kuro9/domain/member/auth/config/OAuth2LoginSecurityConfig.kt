@@ -1,8 +1,6 @@
 package dev.kuro9.domain.member.auth.config
 
-import dev.kuro9.domain.member.auth.converter.JwtUserInfoConverter
 import dev.kuro9.domain.member.auth.filter.TokenAuthFilter
-import dev.kuro9.domain.member.auth.filter.TokenExceptionFilter
 import dev.kuro9.domain.member.auth.handler.OAuth2SuccessHandler
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2UserService
 import org.springframework.context.annotation.Bean
@@ -27,13 +25,7 @@ class OAuth2LoginSecurityConfig(
         http: HttpSecurity,
         oAuth2UserService: DiscordOAuth2UserService,
         oAuth2SuccessHandler: OAuth2SuccessHandler,
-
-        tokenExceptionFilter: TokenExceptionFilter,
         tokenAuthFilter: TokenAuthFilter,
-
-        jwtTokenProperty: JwtTokenConfig.JwtProperty,
-
-        jwtAuthConverter: JwtUserInfoConverter,
     ): SecurityFilterChain {
         http {
             csrf { disable() }
