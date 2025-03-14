@@ -49,6 +49,7 @@ class OAuth2LoginSecurityConfig(
                 authorize("/error", permitAll)
                 authorize("/favicon.ico", permitAll)
                 authorize("/smartapp/webhook", permitAll)
+                authorize("/ping", permitAll)
 
                 authorize(anyRequest, authenticated)
             }

@@ -1,17 +1,12 @@
-package dev.kuro9.internal.smartapp.api.model.response
+package dev.kuro9.internal.smartapp.api.dto.response
 
 import kotlinx.datetime.Instant
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-@Serializable
-data class SmartAppDeviceListResponse(
-    val items: List<DeviceInfo>,
-    @SerialName("_links") override val links: SmartAppResponse.Paged.LinkInfo
-) : SmartAppResponse.Paged {
+interface SmartAppResponseObject {
 
     @Serializable
-    data class DeviceInfo(
+    open class DeviceInfo(
         val deviceId: String,
         val name: String?,
         val label: String?,

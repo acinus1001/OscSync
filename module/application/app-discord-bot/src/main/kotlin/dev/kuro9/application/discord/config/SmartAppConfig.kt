@@ -1,7 +1,7 @@
 package dev.kuro9.application.discord.config
 
 import dev.kuro9.common.logger.infoLog
-import dev.kuro9.internal.smartapp.api.model.SmartAppProperty
+import dev.kuro9.internal.smartapp.api.dto.SmartAppProperty
 import dev.kuro9.internal.smartapp.webhook.handler.SmartAppWebhookHandler
 import dev.kuro9.internal.smartapp.webhook.model.SmartAppWebhookResponse
 import dev.kuro9.multiplatform.common.network.httpClient

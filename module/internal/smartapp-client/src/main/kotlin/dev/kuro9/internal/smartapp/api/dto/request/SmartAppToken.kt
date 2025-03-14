@@ -1,4 +1,4 @@
-package dev.kuro9.internal.smartapp.api.model.request
+package dev.kuro9.internal.smartapp.api.dto.request
 
 import kotlinx.serialization.Serializable
 

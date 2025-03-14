@@ -1,9 +1,9 @@
 package dev.kuro9.application.test
 
 import dev.kuro9.internal.smartapp.api.client.SmartAppApiClient
-import dev.kuro9.internal.smartapp.api.model.request.SmartAppDeviceCommandRequest
-import dev.kuro9.internal.smartapp.api.model.request.SmartAppToken
-import dev.kuro9.internal.smartapp.api.model.response.SmartAppDeviceListResponse
+import dev.kuro9.internal.smartapp.api.dto.request.SmartAppDeviceCommandRequest
+import dev.kuro9.internal.smartapp.api.dto.request.SmartAppToken
+import dev.kuro9.internal.smartapp.api.dto.response.SmartAppDeviceListResponse
 import dev.kuro9.multiplatform.common.types.testapp.request.SmartAppSwitchControlRequest
 import org.springframework.web.bind.annotation.*
 

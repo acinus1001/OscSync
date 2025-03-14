@@ -27,5 +27,4 @@ class ExposedConfig {
     @[Primary Bean]
     fun exposedRWDatabase(dataSource: DataSource): Database =
         Database.connect(dataSource, databaseConfig = exposedDatabaseConfig())
-
 }
