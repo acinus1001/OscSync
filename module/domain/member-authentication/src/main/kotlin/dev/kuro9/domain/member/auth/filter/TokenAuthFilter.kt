@@ -12,6 +12,9 @@ import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.core.OAuth2Error
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes
+import org.springframework.security.oauth2.jwt.JwtValidationException
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
@@ -35,7 +38,17 @@ class TokenAuthFilter(
 //                response.sendRedirect("https://discord.com/oauth2/authorize?client_id=1345369370171408444&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Flogin%2Foauth2%2Fcode%2Fdiscord&scope=identify")
 
                 // 토큰 발급 실패한 경우
-                // response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is not valid.")
+//                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is not valid.")
+
+                throw throw JwtValidationException(
+                    "jwt is not valid.", listOf(
+                        OAuth2Error(
+                            OAuth2ErrorCodes.INVALID_TOKEN,
+                            "jwt is not valid.",
+                            null
+                        )
+                    )
+                )
             }
 
             else -> {

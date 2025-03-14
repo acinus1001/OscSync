@@ -1,6 +1,5 @@
 package dev.kuro9.domain.member.auth.filter
 
-import dev.kuro9.common.logger.errorLog
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -17,8 +16,7 @@ class TokenExceptionFilter : OncePerRequestFilter() {
     ) {
         try {
             filterChain.doFilter(request, response)
-        } catch (e: JwtValidationException) {
-            errorLog("jwt validate failed", e)
+        } catch (_: JwtValidationException) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token has expired or malformed.")
         }
     }

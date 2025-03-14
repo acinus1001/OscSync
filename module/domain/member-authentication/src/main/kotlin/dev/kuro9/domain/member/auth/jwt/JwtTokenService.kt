@@ -5,6 +5,7 @@ package dev.kuro9.domain.member.auth.jwt
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Clock.System
 import kotlinx.serialization.SerializationException
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.core.OAuth2Error
@@ -109,7 +110,7 @@ class JwtTokenService(
             secretKey = secretKey,
         )
 
-        return expectSignature == signature
+        return expectSignature == signature && !payload.isExpired()
     }
 
     private inline fun <reified T : JwtBasicPayload> getSecretKeyWithSalt(jwtPayload: T, secretKey: String): ByteArray {
@@ -139,5 +140,9 @@ class JwtTokenService(
 
     fun ByteArray.encodeWithNoPadding(): String {
         return noPaddingBase64.encode(this)
+    }
+
+    private fun JwtBasicPayload.isExpired(): Boolean {
+        return System.now() >= exp
     }
 }

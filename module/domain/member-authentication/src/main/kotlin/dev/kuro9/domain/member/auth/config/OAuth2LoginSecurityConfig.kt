@@ -44,7 +44,7 @@ class OAuth2LoginSecurityConfig(
             httpBasic { disable() }
             formLogin { disable() }
             logout {
-                logoutSuccessUrl = "/logout"
+                logoutSuccessUrl = "/api/user/logout"
                 logoutSuccessHandler = object : LogoutSuccessHandler {
                     override fun onLogoutSuccess(
                         request: HttpServletRequest,
