@@ -5,6 +5,7 @@ import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.Duplicat
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.NotSupportException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppUserException.CredentialNotFoundException
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevices
+import dev.kuro9.internal.smartapp.api.dto.request.SmartAppDeviceCommandRequest
 import dev.kuro9.internal.smartapp.api.dto.response.SmartAppDeviceListResponse
 import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponseObject.DeviceInfo
 import dev.kuro9.internal.smartapp.api.exception.ApiNotSuccessException
@@ -91,5 +92,36 @@ class SmartAppUserService(
         )
 
         return deviceName
+    }
+
+    suspend fun executeDevice(
+        userId: Long,
+        deviceId: String,
+        deviceComponentId: String,
+        deviceCapabilityId: String,
+        desireState: Boolean,
+    ): Boolean {
+        check(deviceComponentId == "main") { "support only main component, but main not found." }
+        check(deviceCapabilityId == "switch") { "support only switch capability, but switch not found." }
+
+        val result = runCatching {
+            apiClient.executeDeviceCommand(
+                smartAppToken = userCredentialService.getUserCredential(userId),
+                deviceId = deviceId,
+                request = SmartAppDeviceCommandRequest(
+                    SmartAppDeviceCommandRequest.Command(
+                        component = deviceComponentId,
+                        capability = deviceCapabilityId,
+                        command = if (desireState) "on" else "off",
+                        arguments = emptyList()
+                    )
+                )
+            )
+        }.getOrElse { e ->
+            if (e !is ApiNotSuccessException) throw e
+            throw NotSupportException()
+        }
+
+        return result.results.singleOrNull()?.status == "ACCEPTED"
     }
 }
