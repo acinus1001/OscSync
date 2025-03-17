@@ -6,6 +6,7 @@ import dev.minn.jda.ktx.events.CoroutineEventListener
 import dev.minn.jda.ktx.jdabuilder.light
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.events.session.ShutdownEvent
@@ -20,11 +21,13 @@ class DiscordClientConfig {
         readyHandler: DiscordEventHandler<ReadyEvent>?,
         shutdownHandler: DiscordEventHandler<ShutdownEvent>?,
         slashCommandHandler: DiscordEventHandler<SlashCommandInteractionEvent>?,
+        autoCompleteHandler: DiscordEventHandler<CommandAutoCompleteInteractionEvent>?,
     ): CoroutineEventListener = CoroutineEventListener { event: GenericEvent ->
         when (event) {
             is ReadyEvent -> readyHandler?.handle(event)
             is ShutdownEvent -> shutdownHandler?.handle(event)
             is SlashCommandInteractionEvent -> slashCommandHandler?.handle(event)
+            is CommandAutoCompleteInteractionEvent -> autoCompleteHandler?.handle(event)
         }
     }
 
