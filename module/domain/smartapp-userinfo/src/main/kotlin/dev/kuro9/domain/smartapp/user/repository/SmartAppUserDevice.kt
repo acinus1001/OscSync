@@ -11,7 +11,7 @@ object SmartAppUserDevices : CompositeIdTable("smartapp_user_device") {
     val deviceId = varchar("device_id", 100)
     val deviceComponent = varchar("device_component", 50)
     val deviceCapability = varchar("device_capability", 50)
-    val deviceName = varchar("device_name", 50).nullable()
+    val deviceName = varchar("device_name", 50) // must be unique per user
 
     private data object EntityId {
         val userId = SmartAppUserDevices.userId.entityId()

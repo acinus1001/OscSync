@@ -13,6 +13,7 @@ import dev.minn.jda.ktx.interactions.commands.option
 import dev.minn.jda.ktx.interactions.commands.subcommand
 import dev.minn.jda.ktx.messages.Embed
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
@@ -29,6 +30,14 @@ class SmartAppCommand(
             option<String>("device-id", "Paste your device ID to register.", required = true)
             option<String>("device-name", "Write name of your device to use.", required = false)
         }
+        subcommand("execute", "execute my device") {
+            option<String>(
+                "device-name",
+                "Enter your aliased device name to execute",
+                required = true,
+                autocomplete = true
+            )
+        }
     }
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
@@ -41,6 +50,13 @@ class SmartAppCommand(
             }
         }.onFailure {
             getDefaultExceptionEmbed(it).let { deferReply.editOriginalEmbeds(it).await(); return }
+        }
+    }
+
+    override suspend fun handleAutoComplete(event: CommandAutoCompleteInteractionEvent) {
+        when (event.subcommandName) {
+            "execute" -> handleDeviceListAutoComplete(event)
+            else -> return
         }
     }
 
@@ -75,6 +91,17 @@ class SmartAppCommand(
             color = Color.GREEN.rgb
             description = "DEVICE=$deviceName"
         }.let { deferReply.editOriginalEmbeds(it).await() }
+    }
+
+    private suspend fun handleDeviceListAutoComplete(event: CommandAutoCompleteInteractionEvent) {
+        if (event.focusedOption.name != "device-name") return
+
+        // 캐시 처ㅣㄹ 해주세요\
+        smartAppUserService.getRegisteredDevices(event.user.idLong)
+            .filter { it.deviceName.startsWith(event.focusedOption.value) }
+            .map { it.deviceName }
+            .let(event::replyChoiceStrings)
+            .await()
     }
 
     private fun getDefaultExceptionEmbed(t: Throwable): MessageEmbed =

@@ -4,6 +4,7 @@ import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.DuplicatedRegisterException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.NotSupportException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppUserException.CredentialNotFoundException
+import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDeviceEntity
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevices
 import dev.kuro9.internal.smartapp.api.dto.request.SmartAppDeviceCommandRequest
 import dev.kuro9.internal.smartapp.api.dto.response.SmartAppDeviceListResponse
@@ -11,6 +12,7 @@ import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponseObject.Devic
 import dev.kuro9.internal.smartapp.api.exception.ApiNotSuccessException
 import dev.kuro9.internal.smartapp.api.service.SmartAppApiService
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SizedIterable
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.upsert
 import org.springframework.stereotype.Service
@@ -123,5 +125,13 @@ class SmartAppUserService(
         }
 
         return result.results.singleOrNull()?.status == "ACCEPTED"
+    }
+
+    fun getRegisteredDevices(userId: Long): SizedIterable<SmartAppUserDeviceEntity> {
+        return transaction(database) {
+            SmartAppUserDeviceEntity
+                .find { SmartAppUserDevices.userId eq userId }
+                .notForUpdate()
+        }
     }
 }
