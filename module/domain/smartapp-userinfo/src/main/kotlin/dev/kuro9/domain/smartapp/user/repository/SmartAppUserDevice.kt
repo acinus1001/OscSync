@@ -16,11 +16,15 @@ object SmartAppUserDevices : CompositeIdTable("smartapp_user_device") {
     private data object EntityId {
         val userId = SmartAppUserDevices.userId.entityId()
         val deviceId = SmartAppUserDevices.deviceId.entityId()
+        val deviceComponent = SmartAppUserDevices.deviceComponent.entityId()
+        val deviceCapability = SmartAppUserDevices.deviceCapability.entityId()
     }
 
     override val primaryKey = PrimaryKey(
         EntityId.userId,
         EntityId.deviceId,
+        EntityId.deviceComponent,
+        EntityId.deviceCapability
     )
 }
 
