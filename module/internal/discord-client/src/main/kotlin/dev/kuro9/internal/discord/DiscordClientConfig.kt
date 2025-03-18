@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.events.session.ShutdownEvent
 import org.springframework.context.annotation.Bean
@@ -22,12 +23,14 @@ class DiscordClientConfig {
         shutdownHandler: DiscordEventHandler<ShutdownEvent>?,
         slashCommandHandler: DiscordEventHandler<SlashCommandInteractionEvent>?,
         autoCompleteHandler: DiscordEventHandler<CommandAutoCompleteInteractionEvent>?,
+        buttonEventHandler: DiscordEventHandler<ButtonInteractionEvent>?,
     ): CoroutineEventListener = CoroutineEventListener { event: GenericEvent ->
         when (event) {
             is ReadyEvent -> readyHandler?.handle(event)
             is ShutdownEvent -> shutdownHandler?.handle(event)
             is SlashCommandInteractionEvent -> slashCommandHandler?.handle(event)
             is CommandAutoCompleteInteractionEvent -> autoCompleteHandler?.handle(event)
+            is ButtonInteractionEvent -> buttonEventHandler?.handle(event)
         }
     }
 
