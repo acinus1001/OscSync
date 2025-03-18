@@ -1,8 +1,7 @@
 package dev.kuro9.domain.smartapp.user.service
 
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException
-import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.DuplicatedRegisterException
-import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.NotSupportException
+import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.*
 import dev.kuro9.domain.smartapp.user.exception.SmartAppUserException.CredentialNotFoundException
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDeviceEntity
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevices
@@ -11,10 +10,8 @@ import dev.kuro9.internal.smartapp.api.dto.response.SmartAppDeviceListResponse
 import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponseObject.DeviceInfo
 import dev.kuro9.internal.smartapp.api.exception.ApiNotSuccessException
 import dev.kuro9.internal.smartapp.api.service.SmartAppApiService
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.upsert
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -96,6 +93,7 @@ class SmartAppUserService(
         return deviceName
     }
 
+    @Throws(NotSupportException::class)
     suspend fun executeDevice(
         userId: Long,
         deviceId: String,
@@ -125,6 +123,40 @@ class SmartAppUserService(
         }
 
         return result.results.singleOrNull()?.status == "ACCEPTED"
+    }
+
+    @Throws(NotFoundException::class, NotSupportException::class)
+    suspend fun executeDeviceByName(
+        userId: Long,
+        deviceName: String,
+        desireState: Boolean,
+    ) {
+        val device = transaction(database) {
+            getRegisteredDeviceByName(userId, deviceName)
+                ?: throw NotFoundException("device name $deviceName not found.")
+        }
+
+        executeDevice(
+            userId = userId,
+            deviceId = device.deviceId,
+            deviceComponentId = "main",
+            deviceCapabilityId = "switch",
+            desireState = desireState,
+        )
+    }
+
+    fun getRegisteredDeviceByName(
+        userId: Long,
+        deviceName: String,
+    ): SmartAppUserDeviceEntity? {
+        return transaction(database) {
+            Op.build { SmartAppUserDevices.userId eq userId }
+                .and { SmartAppUserDevices.deviceName eq deviceName }
+                .and { SmartAppUserDevices.deviceComponent eq "main" }
+                .and { SmartAppUserDevices.deviceCapability eq "switch" }
+                .let(SmartAppUserDeviceEntity::find)
+                .singleOrNull()
+        }
     }
 
     fun getRegisteredDevices(userId: Long): SizedIterable<SmartAppUserDeviceEntity> {

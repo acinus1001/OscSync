@@ -37,6 +37,7 @@ class SmartAppCommand(
                 required = true,
                 autocomplete = true
             )
+            option<Boolean>("desire-state", "Enter your desire state", required = true)
         }
     }
 
@@ -46,6 +47,7 @@ class SmartAppCommand(
             when (event.subcommandName) {
                 "devices" -> listDevices(event, deferReply)
                 "register" -> registerDevice(event, deferReply)
+                "execute" -> executeDevice(event, deferReply)
                 else -> throw IllegalArgumentException("Unknown command=${event.fullCommandName}")
             }
         }.onFailure {
@@ -90,6 +92,23 @@ class SmartAppCommand(
             title = "Device Registered"
             color = Color.GREEN.rgb
             description = "DEVICE=$deviceName"
+        }.let { deferReply.editOriginalEmbeds(it).await() }
+    }
+
+    private suspend fun executeDevice(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
+        val deviceName = event.getOption("device-name")!!.asString
+        val desireState = event.getOption("desire-state")!!.asBoolean
+
+        smartAppUserService.executeDeviceByName(
+            userId = event.user.idLong,
+            deviceName = deviceName,
+            desireState = desireState,
+        )
+
+        Embed {
+            title = "Device Executed"
+            description = "Current State is : ${if (desireState) "ON" else "OFF"}"
+            color = Color.GREEN.rgb
         }.let { deferReply.editOriginalEmbeds(it).await() }
     }
 
