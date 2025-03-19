@@ -10,11 +10,8 @@ import dev.kuro9.internal.smartapp.api.dto.response.SmartAppDeviceListResponse
 import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponseObject.DeviceInfo
 import dev.kuro9.internal.smartapp.api.exception.ApiNotSuccessException
 import dev.kuro9.internal.smartapp.api.service.SmartAppApiService
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.upsert
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
@@ -31,6 +28,15 @@ class SmartAppUserService(
     @Throws(CredentialNotFoundException::class)
     suspend fun getUserDevices(userId: Long): SmartAppDeviceListResponse {
         return apiClient.listDevices(userCredentialService.getUserCredential(userId))
+    }
+
+    fun getUserRegisteredDevices(userId: Long): List<SmartAppUserDeviceEntity> {
+        return transaction(database) {
+            SmartAppUserDeviceEntity
+                .find { SmartAppUserDevices.userId eq userId }
+                .notForUpdate()
+                .toList()
+        }
     }
 
     @Throws(CredentialNotFoundException::class)
@@ -151,6 +157,21 @@ class SmartAppUserService(
         )
     }
 
+    /**
+     * deviceName으로 사용자 기기 삭제
+     *
+     * @return 삭제 row 존재 여부
+     */
+    @Transactional
+    @CacheEvict(cacheNames = ["smartapp-registered-devices"])
+    suspend fun deleteDeviceByName(userId: Long, deviceName: String): Boolean {
+        return transaction(database) {
+            Op.build { SmartAppUserDevices.userId eq userId }
+                .and { SmartAppUserDevices.deviceName eq deviceName }
+                .let { op -> SmartAppUserDevices.deleteWhere { op } } != 0
+        }
+    }
+
     fun getRegisteredDeviceByName(
         userId: Long,
         deviceName: String,
@@ -173,5 +194,9 @@ class SmartAppUserService(
                 .notForUpdate()
                 .toList()
         }
+    }
+
+    fun saveUserCredential(userId: Long, smartAppToken: String) {
+        userCredentialService.saveUserCredential(userId, smartAppToken)
     }
 }

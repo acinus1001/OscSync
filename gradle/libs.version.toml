@@ -13,6 +13,7 @@ orbit-mvi = "9.0.0"
 decompose = "3.3.0"
 mvi-kotlin = "4.3.0"
 ksp = "0.7.2"
+aspectj = "1.9.23"
 
 junit = "4.13.2"
 
@@ -64,6 +65,9 @@ exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "e
 exposed-spring-boot-starter = { module = "org.jetbrains.exposed:exposed-spring-boot-starter", version.ref = "exposed" }
 
 jdbc-postgres = { module = "org.postgresql:postgresql", version = "42.7.5" }
+
+aspectj-runtime = { module = "org.aspectj:aspectjrt", version.ref = "aspectj" }
+aspectj-weaver = { module = "org.aspectj:aspectjweaver", version.ref = "aspectj" }
 
 androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }

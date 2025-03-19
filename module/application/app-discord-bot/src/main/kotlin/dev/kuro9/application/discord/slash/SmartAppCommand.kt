@@ -25,11 +25,15 @@ class SmartAppCommand(
     private val smartAppUserService: SmartAppUserService,
 ) : SlashCommandComponent {
     override val commandData: SlashCommandData = Command("iot", "control iot devices") {
-        subcommand("devices", "list my devices")
+        subcommand("token", "Register your SmartApp Token to access your devices") {
+            option<String>("token", "https://account.smartthings.com/tokens", required = true)
+        }
+        subcommand("devices", "list my devices on smartthings server")
         subcommand("register", "register my device") {
             option<String>("device-id", "Paste your device ID to register.", required = true)
             option<String>("device-name", "Write name of your device to use.", required = false)
         }
+        subcommand("registered", "list my registered devices")
         subcommand("execute", "execute my device") {
             option<String>(
                 "device-name",
@@ -39,25 +43,42 @@ class SmartAppCommand(
             )
             option<Boolean>("desire-state", "Enter your desire state", required = true)
         }
+        subcommand("delete", "delete my device") {
+            option<String>(
+                "device-name",
+                "Enter your aliased device name to delete",
+                required = true,
+                autocomplete = true
+            )
+        }
     }
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
-        val deferReply = event.deferReply().await()
+        var deferReply: InteractionHook? = null
         runCatching {
             when (event.subcommandName) {
-                "devices" -> listDevices(event, deferReply)
-                "register" -> registerDevice(event, deferReply)
-                "execute" -> executeDevice(event, deferReply)
+                "token" -> registerToken(event, event.deferReply(true).await().also { deferReply = it })
+                "devices" -> listDevices(event, event.deferReply(false).await().also { deferReply = it })
+                "register" -> registerDevice(event, event.deferReply(false).await().also { deferReply = it })
+                "registered" -> listRegisteredDevices(event, event.deferReply(false).await().also { deferReply = it })
+                "execute" -> executeDevice(event, event.deferReply(false).await().also { deferReply = it })
+                "delete" -> deleteDevice(event, event.deferReply(false).await().also { deferReply = it })
                 else -> throw IllegalArgumentException("Unknown command=${event.fullCommandName}")
             }
         }.onFailure {
-            getDefaultExceptionEmbed(it).let { deferReply.editOriginalEmbeds(it).await(); return }
+            getDefaultExceptionEmbed(it).let {
+                when (deferReply) {
+                    null -> event.replyEmbeds(it).await()
+                    else -> deferReply.editOriginalEmbeds(it).await()
+                }
+                return
+            }
         }
     }
 
     override suspend fun handleAutoComplete(event: CommandAutoCompleteInteractionEvent) {
         when (event.subcommandName) {
-            "execute" -> handleDeviceListAutoComplete(event)
+            "execute", "delete" -> handleDeviceListAutoComplete(event)
             else -> return
         }
     }
@@ -67,8 +88,8 @@ class SmartAppCommand(
         val devices = smartAppUserService.getUserDevices(event.user.idLong)
 
         val embed = Embed {
-            title = "Device List of `${event.user.name}`"
-            description = "use `/iot register` to handle device"
+            title = "Device list of `${event.user.name}`"
+            description = "use `/iot register` to register device"
             devices.items.forEach { device ->
                 field {
                     name = device.name ?: device.deviceId
@@ -78,6 +99,22 @@ class SmartAppCommand(
             }
         }
         deferReply.editOriginalEmbeds(embed).await()
+    }
+
+    private suspend fun listRegisteredDevices(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
+        val devices = smartAppUserService.getUserRegisteredDevices(event.user.idLong)
+
+        Embed {
+            title = "Registered device list of `${event.user.name}`"
+            description = "use `/iot execute` to handle device"
+            devices.forEach { device ->
+                field {
+                    name = device.deviceName
+                    value = "ID=`${device.deviceId}`"
+                    inline = false
+                }
+            }
+        }.let { deferReply.editOriginalEmbeds(it).await(); return }
     }
 
     private suspend fun registerDevice(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
@@ -90,8 +127,8 @@ class SmartAppCommand(
 
         Embed {
             title = "Device Registered"
+            description = "DEVICE=`$deviceName`"
             color = Color.GREEN.rgb
-            description = "DEVICE=$deviceName"
         }.let { deferReply.editOriginalEmbeds(it).await() }
     }
 
@@ -107,15 +144,49 @@ class SmartAppCommand(
 
         Embed {
             title = "Device Executed"
-            description = "Current State is : ${if (desireState) "ON" else "OFF"}"
+            description = "Current State is : `${if (desireState) "ON" else "OFF"}`"
             color = Color.GREEN.rgb
         }.let { deferReply.editOriginalEmbeds(it).await() }
+    }
+
+    private suspend fun deleteDevice(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
+        val deviceName = event.getOption("device-name")!!.asString
+
+        val hasDeleted = smartAppUserService.deleteDeviceByName(
+            userId = event.user.idLong,
+            deviceName = deviceName,
+        )
+
+        when (hasDeleted) {
+            true -> Embed {
+                title = "Device Deleted"
+                description = "Device deleted: `$deviceName`"
+                color = Color.GREEN.rgb
+            }
+
+            false -> Embed {
+                title = "Device not found"
+                description = "Device not found: `$deviceName`"
+                color = Color.YELLOW.rgb
+            }
+        }.let { deferReply.editOriginalEmbeds(it).await() }
+    }
+
+    private suspend fun registerToken(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
+        smartAppUserService.saveUserCredential(
+            userId = event.user.idLong,
+            smartAppToken = event.getOption("token")!!.asString
+        )
+
+        Embed {
+            title = "Token Registered"
+            color = Color.GREEN.rgb
+        }.let { deferReply.editOriginalEmbeds(it).await(); return }
     }
 
     private suspend fun handleDeviceListAutoComplete(event: CommandAutoCompleteInteractionEvent) {
         if (event.focusedOption.name != "device-name") return
 
-        // 캐시 처ㅣㄹ 해주세요\
         smartAppUserService.getRegisteredDevices(event.user.idLong)
             .filter { it.deviceName.startsWith(event.focusedOption.value) }
             .map { it.deviceName }
@@ -127,7 +198,7 @@ class SmartAppCommand(
         when (t) {
             is CredentialNotFoundException -> Embed {
                 title = "SmartApp Credential Not Registered"
-                description = "Use `//TODO` to register token"
+                description = "Use `/iot token` to register token"
                 color = Color.RED.rgb
             }
 
