@@ -9,6 +9,7 @@ import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.Command
+import dev.minn.jda.ktx.interactions.commands.group
 import dev.minn.jda.ktx.interactions.commands.option
 import dev.minn.jda.ktx.interactions.commands.subcommand
 import dev.minn.jda.ktx.messages.Embed
@@ -25,9 +26,6 @@ class SmartAppCommand(
     private val smartAppUserService: SmartAppUserService,
 ) : SlashCommandComponent {
     override val commandData: SlashCommandData = Command("iot", "control iot devices") {
-        subcommand("token", "Register your SmartApp Token to access your devices") {
-            option<String>("token", "https://account.smartthings.com/tokens", required = true)
-        }
         subcommand("devices", "list my devices on smartthings server")
         subcommand("register", "register my device") {
             option<String>("device-id", "Paste your device ID to register.", required = true)
@@ -51,20 +49,38 @@ class SmartAppCommand(
                 autocomplete = true
             )
         }
+
+        group("token", "Manage your SmartApp Token") {
+            subcommand("register", "Register your SmartApp Token to access your devices") {
+                option<String>("token", "https://account.smartthings.com/tokens", required = true)
+            }
+            subcommand("delete", "Delete your exist SmartApp Token")
+        }
     }
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
         var deferReply: InteractionHook? = null
         runCatching {
-            when (event.subcommandName) {
-                "token" -> registerToken(event, event.deferReply(true).await().also { deferReply = it })
-                "devices" -> listDevices(event, event.deferReply(false).await().also { deferReply = it })
-                "register" -> registerDevice(event, event.deferReply(false).await().also { deferReply = it })
-                "registered" -> listRegisteredDevices(event, event.deferReply(false).await().also { deferReply = it })
-                "execute" -> executeDevice(event, event.deferReply(false).await().also { deferReply = it })
-                "delete" -> deleteDevice(event, event.deferReply(false).await().also { deferReply = it })
-                else -> throw IllegalArgumentException("Unknown command=${event.fullCommandName}")
+            when (event.subcommandGroup) {
+                "token" -> when (event.subcommandName) {
+                    "register" -> registerToken(event, event.deferReply(true).await().also { deferReply = it })
+                    "delete" -> deleteToken(event, event.deferReply(false).await().also { deferReply = it })
+                    else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
+                }
+
+                else -> when (event.subcommandName) {
+                    "devices" -> listDevices(event, event.deferReply(false).await().also { deferReply = it })
+                    "register" -> registerDevice(event, event.deferReply(false).await().also { deferReply = it })
+                    "registered" -> listRegisteredDevices(
+                        event,
+                        event.deferReply(false).await().also { deferReply = it })
+
+                    "execute" -> executeDevice(event, event.deferReply(false).await().also { deferReply = it })
+                    "delete" -> deleteDevice(event, event.deferReply(false).await().also { deferReply = it })
+                    else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
+                }
             }
+
         }.onFailure {
             getDefaultExceptionEmbed(it).let {
                 when (deferReply) {
@@ -184,6 +200,15 @@ class SmartAppCommand(
         }.let { deferReply.editOriginalEmbeds(it).await(); return }
     }
 
+    private suspend fun deleteToken(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
+        smartAppUserService.deleteUserCredential(event.user.idLong)
+
+        Embed {
+            title = "Token Deleted"
+            color = Color.GREEN.rgb
+        }.let { deferReply.editOriginalEmbeds(it).await() }
+    }
+
     private suspend fun handleDeviceListAutoComplete(event: CommandAutoCompleteInteractionEvent) {
         if (event.focusedOption.name != "device-name") return
 
@@ -216,6 +241,12 @@ class SmartAppCommand(
             is SmartAppDeviceException.NotFoundException -> Embed {
                 title = "Device Not Found"
                 description = "Check your input."
+                color = Color.RED.rgb
+            }
+
+            is NotImplementedError -> Embed {
+                title = "Not Implemented"
+                description = "This command is not implemented. Contact <@400579163959853056> to report."
                 color = Color.RED.rgb
             }
 

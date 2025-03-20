@@ -199,4 +199,8 @@ class SmartAppUserService(
     fun saveUserCredential(userId: Long, smartAppToken: String) {
         userCredentialService.saveUserCredential(userId, smartAppToken)
     }
+
+    fun deleteUserCredential(userId: Long) {
+        userCredentialService.deleteUserCredential(userId)
+    }
 }

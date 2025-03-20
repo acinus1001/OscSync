@@ -7,4 +7,5 @@ plugins {
 dependencies {
     implementation(projects.module.domain.database)
     implementation(projects.module.internal.smartappClient)
+    implementation(projects.multiplatformCommon.date)
 }

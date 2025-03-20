@@ -1,10 +1,13 @@
 package dev.kuro9.domain.smartapp.user.repository
 
+import dev.kuro9.multiplatform.common.date.util.now
+import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.dao.CompositeEntity
 import org.jetbrains.exposed.dao.CompositeEntityClass
 import org.jetbrains.exposed.dao.id.CompositeID
 import org.jetbrains.exposed.dao.id.CompositeIdTable
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.kotlin.datetime.datetime
 
 object SmartAppUserDevices : CompositeIdTable("smartapp_user_device") {
     val userId = long("user_id")
@@ -12,6 +15,9 @@ object SmartAppUserDevices : CompositeIdTable("smartapp_user_device") {
     val deviceComponent = varchar("device_component", 50)
     val deviceCapability = varchar("device_capability", 50)
     val deviceName = varchar("device_name", 50) // must be unique per user
+
+    val createdAt = datetime("created_at")
+    val updatedAt = datetime("updated_at")
 
     private data object EntityId {
         val userId = SmartAppUserDevices.userId.entityId()
@@ -35,6 +41,12 @@ class SmartAppUserDeviceEntity(pk: EntityID<CompositeID>) : CompositeEntity(pk) 
     val deviceId by SmartAppUserDevices.deviceId
     val deviceComponent by SmartAppUserDevices.deviceComponent
     val deviceCapability by SmartAppUserDevices.deviceCapability
-    var deviceName by SmartAppUserDevices.deviceName
-        internal set
+    var deviceName by SmartAppUserDevices.deviceName; private set
+    val createdAt by SmartAppUserDevices.createdAt
+    var updatedAt by SmartAppUserDevices.updatedAt; private set
+
+    fun updateName(name: String) {
+        this.deviceName = name
+        this.updatedAt = LocalDateTime.now()
+    }
 }
