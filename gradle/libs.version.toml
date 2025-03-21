@@ -103,6 +103,8 @@ mvi-kotlin-extensions-coroutines = { module = "com.arkivanov.mvikotlin:mvikotlin
 kotlin-inject-ksp = { module = "me.tatarka.inject:kotlin-inject-compiler-ksp", version.ref = "ksp" }
 kotlin-inject-runtime = { module = "me.tatarka.inject:kotlin-inject-runtime", version.ref = "ksp" }
 
+google-ai = { module = "com.google.genai:google-genai", version = "0.2.0" }
+
 
 
 

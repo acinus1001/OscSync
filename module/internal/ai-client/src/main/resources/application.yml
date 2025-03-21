@@ -1,0 +1,4 @@
+dev:
+  kuro9:
+    gemini:
+      api-key: ${GEMINI_API_KEY}
