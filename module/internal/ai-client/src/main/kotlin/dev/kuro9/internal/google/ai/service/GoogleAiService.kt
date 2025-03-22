@@ -29,7 +29,7 @@ class GoogleAiService(private val token: GoogleAiToken) {
 
     fun test(text: String): GenerateContentResponse {
         return client.models.generateContent(
-            "gemini-1.5-pro",
+            "gemini-2.0-flash-lite",
             text,
             GenerateContentConfig.builder()
                 .responseMimeType("application/json")
