@@ -28,7 +28,7 @@ class GoogleAiService(private val token: GoogleAiToken) {
         responseSchema: Schema,
     ): T {
         val response = client.models.generateContent(
-            "gemini-2.0-flash-lite",
+            "gemini-2.0-flash",
             input,
             GenerateContentConfig.builder()
                 .responseMimeType("application/json")

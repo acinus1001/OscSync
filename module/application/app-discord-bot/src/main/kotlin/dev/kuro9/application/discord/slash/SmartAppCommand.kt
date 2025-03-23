@@ -29,7 +29,11 @@ class SmartAppCommand(
         subcommand("devices", "list my devices on smartthings server")
         subcommand("register", "register my device") {
             option<String>("device-id", "Paste your device ID to register.", required = true)
-            option<String>("device-name", "Write name of your device to use.", required = false)
+            option<String>(
+                "device-name",
+                "Write name of your device to use.",
+                required = true
+            )
         }
         subcommand("registered", "list my registered devices")
         subcommand("execute", "execute my device") {
