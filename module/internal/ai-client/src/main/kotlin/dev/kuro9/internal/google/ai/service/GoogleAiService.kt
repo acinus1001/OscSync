@@ -44,7 +44,7 @@ class GoogleAiService(private val token: GoogleAiToken) {
                             )
                         ).build()
                 )
-                .tools(listOf(searchTool))
+//                .tools(listOf(searchTool))
                 .build()
         ).text()!!
 

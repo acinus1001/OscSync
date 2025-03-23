@@ -1,6 +1,7 @@
 package dev.kuro9.application.discord.mention
 
 import dev.kuro9.common.logger.infoLog
+import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
 import dev.kuro9.internal.discord.message.model.MentionedMessageHandler
 import dev.kuro9.internal.google.ai.service.GoogleAiService
 import dev.minn.jda.ktx.coroutines.await
@@ -9,7 +10,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class GoogleAiChatHandler(
-    private val aiService: GoogleAiService
+    private val aiService: GoogleAiService,
+    private val smartAppUserService: SmartAppUserService,
 ) : MentionedMessageHandler {
     private val prompt = """
         # 다음 세미콜론까지의 내용은 당신의 업무 지침을 나타냅니다.
@@ -33,9 +35,21 @@ class GoogleAiChatHandler(
             prompt = prompt,
             input = message,
             responseType = GoogleAiResponse::class,
-            responseSchema = GoogleAiResponse.schema
+            responseSchema = GoogleAiResponse.getSchema(
+                smartAppUserService.getRegisteredDevices(event.author.idLong)
+                    .map { it.deviceName }
+                    .also(::println)
+            )
         )
         infoLog(response.toString())
-        event.channel.sendMessage(response.outputText).await()
+        val (outputText, lightControl) = response
+        if (lightControl != null) {
+            smartAppUserService.executeDeviceByName(
+                userId = event.author.idLong,
+                deviceName = lightControl.deviceName,
+                desireState = lightControl.desireState,
+            )
+        }
+        event.channel.sendMessage(outputText).await()
     }
 }
