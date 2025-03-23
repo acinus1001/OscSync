@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import org.springframework.stereotype.Component
 
 @Component
-class SlashCommandListener(
+internal class SlashCommandListener(
     private val slashCommands: List<SlashCommandComponent>
 ) : DiscordEventHandler<SlashCommandInteractionEvent> {
     private val commandMap: Map<String, SlashCommandComponent> = slashCommands.associateBy { it.commandData.name }

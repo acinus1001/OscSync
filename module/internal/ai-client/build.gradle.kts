@@ -11,5 +11,5 @@ dependencies {
     implementation(projects.module.common.logger)
     implementation(projects.multiplatformCommon.serialization)
 
-    implementation(libs.google.ai)
+    api(libs.google.ai)
 }

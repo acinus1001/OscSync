@@ -7,7 +7,7 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import org.springframework.stereotype.Component
 
 @Component
-class SlashButtonEventListener(
+internal class SlashButtonEventListener(
     slashCommands: List<SlashCommandComponent>
 ) : DiscordEventHandler<ButtonInteractionEvent> {
     private val commandMap: Map<String, SlashCommandComponent> = slashCommands.associateBy { it.commandData.name }

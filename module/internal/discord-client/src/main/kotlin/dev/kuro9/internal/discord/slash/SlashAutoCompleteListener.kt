@@ -7,7 +7,7 @@ import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInterac
 import org.springframework.stereotype.Component
 
 @Component
-class SlashAutoCompleteListener(
+internal class SlashAutoCompleteListener(
     slashCommands: List<SlashCommandComponent>
 ) : DiscordEventHandler<CommandAutoCompleteInteractionEvent> {
     override val kClass = CommandAutoCompleteInteractionEvent::class

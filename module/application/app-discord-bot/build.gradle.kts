@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.kotlin.spring)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 dependencies {
@@ -24,8 +25,10 @@ dependencies {
     implementation(projects.module.common.network)
     implementation(projects.module.internal.smartappClient)
     implementation(projects.module.internal.discordClient)
+    implementation(projects.module.internal.aiClient)
     implementation(projects.module.domain.database)
     implementation(projects.module.domain.smartappUserinfo)
+
 
     implementation(projects.module.domain.memberAuthentication)
 }

@@ -25,3 +25,5 @@ dev:
       token: ${SMARTAPP_TOKEN}
     jwt:
       key: test123
+    gemini:
+      api-key: ${GEMINI_API_KEY}
