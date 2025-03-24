@@ -47,6 +47,7 @@ internal fun GoogleAiResponse.Companion.getSchema(
                 "outputText" to Schema.builder()
                     .type("string")
                     .description("사용자에게 출력될 응답")
+                    .nullable(false)
                     .build(),
                 "lightControl" to lightControlSchema
             )

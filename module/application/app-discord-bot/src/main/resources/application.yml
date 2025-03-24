@@ -1,4 +1,7 @@
 spring:
+  profiles:
+    include:
+      - ai
   datasource:
     url: ${PGSQL_URL}
     username: ${PGSQL_USER}
@@ -25,5 +28,3 @@ dev:
       token: ${SMARTAPP_TOKEN}
     jwt:
       key: test123
-    gemini:
-      api-key: ${GEMINI_API_KEY}

@@ -33,7 +33,6 @@ class GoogleAiChatHandler(
             node
         }
         .let(minifyJson::encodeToString)
-        .also(::println)
 
 
     override suspend fun handleMention(
@@ -48,7 +47,7 @@ class GoogleAiChatHandler(
             .map { it.deviceName }
         val response = runCatching {
             aiService.generate(
-                prompt = getPrompt(userDeviceNameList),
+                prompt = getInstruction(userDeviceNameList),
                 input = message,
                 responseType = GoogleAiResponse::class,
                 responseSchema = GoogleAiResponse.getSchema(userDeviceNameList)
@@ -115,9 +114,7 @@ class GoogleAiChatHandler(
     }
 
 
-    private fun getPrompt(deviceNameList: List<String>): String = """
-        # 다음 세미콜론까지의 내용은 당신의 업무 지침을 나타냅니다.
-        
+    private fun getInstruction(deviceNameList: List<String>): String = """
         당신은 discord 라는 채팅 프로그램의 `AGB`라는 이름의 채팅 봇입니다. 
         사무적인 대답보다는 사용자에게 친근감을 표현해 주십시오.
         당신의 관리자는 `<@!400579163959853056>`입니다. 
@@ -130,7 +127,6 @@ class GoogleAiChatHandler(
         사용자가 명시적으로 단위 변경을 요청하지 않는다면 미국 임페리얼 단위를 사용하십시오.
         온도의 단위는 화씨를 사용하십시오.
         응답은 한국어를 사용하십시오.
-        사용자의 입력값이 글자가 아닌 무의미한 특수기호, 숫자, 알파벳 등의 혼합이라고 판단된다면 인사를 건네십시오.
         명령어는 `/`를 앞에 붙여 사용하고, 하위 명령어는 스페이스로 붙여 사용합니다. 
         명령어 사용을 유도할 때는 백틱 등으로 감싸 표시해 주세요.
         사용가능한 명령어는 다음과 같습니다.
@@ -138,6 +134,5 @@ class GoogleAiChatHandler(
         ```json
         $commandDataList
         ```
-        ;
     """.trimIndent()
 }
