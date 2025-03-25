@@ -2,6 +2,7 @@
 
 package dev.kuro9.domain.member.auth.jwt
 
+import dev.kuro9.domain.member.auth.config.JwtTokenConfigProperties
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import kotlinx.datetime.Clock
@@ -22,7 +23,7 @@ import kotlin.time.Duration.Companion.minutes
 
 @Service
 class JwtTokenService(
-    private val secretKey: JwtSecretKey,
+    private val properties: JwtTokenConfigProperties,
 ) {
     private val noPaddingBase64 = Base64.withPadding(Base64.PaddingOption.ABSENT)
     private val accessTokenExpireDuration = 30.minutes
@@ -38,15 +39,15 @@ class JwtTokenService(
             avatarUrl = userDetail.avatarUrl,
         )
 
-        return makeToken(payload, secretKey.value)
+        return makeToken(payload, properties.key)
     }
 
     @Throws(JwtValidationException::class, SerializationException::class)
     fun validateAndGetPayload(token: JwtToken): JwtPayloadV1 {
-        return token.validateAndGetPayload(secretKey.value)
+        return token.validateAndGetPayload(properties.key)
     }
 
-    fun isValid(token: JwtToken): Boolean = token.isValid<JwtPayloadV1>(secretKey.value)
+    fun isValid(token: JwtToken): Boolean = token.isValid<JwtPayloadV1>(properties.key)
 
 
     private inline fun <reified T : JwtBasicPayload> makeToken(jwtPayload: T, secretKey: String): JwtToken {

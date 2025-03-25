@@ -2,6 +2,7 @@ spring:
   profiles:
     include:
       - ai
+      - member
   datasource:
     url: ${PGSQL_URL}
     username: ${PGSQL_USER}
