@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+      context: ../../../
+      dockerfile: ./script/backend/app-discord-bot/Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ${ENV_FILE_LOC}
