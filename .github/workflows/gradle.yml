@@ -48,6 +48,9 @@ jobs:
       - name: Docker Image Build
         run: docker build -f ./script/backend/app-discord-bot/Dockerfile -t app-discord-bot .
 
+      - name: Docker Image Tag
+        run: docker image tag app-discord-bot kurovine9/app-discord-bot
+
       - name: Docker Image Push
         run: docker push kurovine9/app-discord-bot
 
