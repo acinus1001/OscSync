@@ -57,7 +57,7 @@ class GoogleAiChatHandler(
         }.getOrThrow()
         infoLog(response.toString())
         val (outputText, lightControl) = response
-        CoroutineScope(Dispatchers.Default).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             if (lightControl != null) {
                 smartAppUserService.executeDeviceByName(
                     userId = event.author.idLong,
