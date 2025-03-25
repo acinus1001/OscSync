@@ -39,7 +39,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Docker Image Build
-        run: docker-compose -f ./script/backend/app-discord-bot/docker-compose.yml build
+        run: docker -f ./script/backend/app-discord-bot/Dockerfile build
 
 
 
