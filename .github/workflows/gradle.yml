@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-
+    environment: secrets
     runs-on: ubuntu-latest
     permissions:
       contents: read
