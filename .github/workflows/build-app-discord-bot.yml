@@ -74,11 +74,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      COMPOSE_FILE_LOC: "/var/services/homes/github-cd/app-discord-bot/docker-compose-deploy.yml"
     steps:
       - name: Deploy Remote Server
         uses: appleboy/ssh-action@v1
-        env:
-          COMPOSE_FILE_LOC: "/var/services/homes/github-cd/app-discord-bot/docker-compose-deploy.yml"
         with:
           username: ${{ secrets.SSH_USERNAME }}
           host: ${{ secrets.SSH_HOST }}
