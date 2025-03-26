@@ -9,10 +9,16 @@ name: build app-discord-bot
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_when_build_success:
+        description: deploy app when build ended up successfully.
+        type: boolean
+        required: true
+        default: true
 
 jobs:
   build:
-    environment: secrets
+    environment: APP_DISCORD_BOT
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -42,17 +48,17 @@ jobs:
       - name: Log in to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          username: ${{ APP_DISCORD_BOT.DOCKER_HUB_USERNAME }}
+          password: ${{ APP_DISCORD_BOT.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Docker Image Build
         run: docker build -f ./script/backend/app-discord-bot/Dockerfile -t app-discord-bot .
 
       - name: Docker Image Tag
-        run: docker image tag app-discord-bot kurovine9/app-discord-bot
+        run: docker image tag app-discord-bot ${{ APP_DISCORD_BOT.DOCKER_HUB_USERNAME }}/${{ APP_DISCORD_BOT.DOCKER_HUB_REPO_NAME }}
 
       - name: Docker Image Push
-        run: docker push kurovine9/app-discord-bot
+        run: docker push ${{ APP_DISCORD_BOT.DOCKER_HUB_USERNAME }}/${{ APP_DISCORD_BOT.DOCKER_HUB_REPO_NAME }}
 
 
 
