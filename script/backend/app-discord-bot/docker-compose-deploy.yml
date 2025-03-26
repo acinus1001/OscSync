@@ -1,0 +1,10 @@
+services:
+  app:
+    container_name: app
+    image: kurovine9/app-discord-bot
+    ports:
+      - "8080:8080"
+    expose:
+      - "8080"
+    env_file:
+      - ${ENV_FILE_LOC}
