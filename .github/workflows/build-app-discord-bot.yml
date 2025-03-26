@@ -10,14 +10,20 @@ name: build app-discord-bot
 on:
   workflow_dispatch:
     inputs:
-      deploy_when_build_success:
-        description: deploy app when build ended up successfully.
+      do_build:
+        description: execute build job
+        type: boolean
+        required: true
+        default: true
+      do_depoly:
+        description: execute deploy job.
         type: boolean
         required: true
         default: true
 
 jobs:
   build:
+    if: ${{ inputs.do_build }}
     environment: APP_DISCORD_BOT
     runs-on: ubuntu-latest
     permissions:
@@ -61,8 +67,8 @@ jobs:
         run: docker push ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
 
   deploy:
-    if: ${{ inputs.deploy_when_build_success }}
-    needs: 
+    if: ${{ inputs.do_depoly }}
+    needs:
       - build
     environment: APP_DISCORD_BOT
     runs-on: ubuntu-latest
