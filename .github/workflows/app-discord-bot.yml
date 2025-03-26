@@ -5,7 +5,7 @@
 # This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
 
-name: build app-discord-bot
+name: app-discord-bot ci/cd
 
 on:
   workflow_dispatch:
@@ -88,8 +88,8 @@ jobs:
             echo "tst"
             echo "$COMPOSE_FILE_LOC"
             /usr/local/bin/docker login -u ${{ vars.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-            /usr/local/bin/docker-compose -f /var/services/homes/github-cd/app-discord-bot/docker-compose-deploy.yml down
             /usr/local/bin/docker-compose pull ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
+            /usr/local/bin/docker-compose -f /var/services/homes/github-cd/app-discord-bot/docker-compose-deploy.yml down
             /usr/local/bin/docker-compose -f /var/services/homes/github-cd/app-discord-bot/docker-compose-deploy.yml up -d
   
   dependency-submission:
