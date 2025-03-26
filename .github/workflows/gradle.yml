@@ -79,9 +79,9 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            /usr/local/bin/docker compose -f $COMPOSE_FILE_LOC down
-            /usr/local/bin/docker compose pull ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
-            /usr/local/bin/docker compose -f $COMPOSE_FILE_LOC up -d
+            /usr/local/bin/docker-compose -f $COMPOSE_FILE_LOC down
+            /usr/local/bin/docker-compose pull ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
+            /usr/local/bin/docker-compose -f $COMPOSE_FILE_LOC up -d
   
   dependency-submission:
 
