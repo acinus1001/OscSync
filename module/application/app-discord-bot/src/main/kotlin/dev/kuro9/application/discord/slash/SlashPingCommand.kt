@@ -18,6 +18,6 @@ class SlashPingCommand : SlashCommandComponent {
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
         val requestTime = event.timeCreated.toInstant()
         val duration = Duration.between(requestTime, Instant.now()).toKotlinDuration()
-        event.reply(duration.toString()).setEphemeral(true).await()
+        event.reply(duration.toString()).setEphemeral(false).await()
     }
 }
