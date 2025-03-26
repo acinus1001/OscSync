@@ -87,7 +87,7 @@ jobs:
           script: |
             echo "tst"
             echo "$COMPOSE_FILE_LOC"
-            /usr/local/bin/docker -u ${{ vars.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+            /usr/local/bin/docker login -u ${{ vars.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
             /usr/local/bin/docker-compose -f /var/services/homes/github-cd/app-discord-bot/docker-compose-deploy.yml down
             /usr/local/bin/docker-compose pull ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
             /usr/local/bin/docker-compose -f /var/services/homes/github-cd/app-discord-bot/docker-compose-deploy.yml up -d
