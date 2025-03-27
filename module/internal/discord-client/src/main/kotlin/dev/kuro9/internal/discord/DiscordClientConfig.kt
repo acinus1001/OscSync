@@ -1,6 +1,5 @@
 package dev.kuro9.internal.discord
 
-import dev.kuro9.internal.discord.model.DiscordClientProperty
 import dev.kuro9.internal.discord.model.DiscordEventHandler
 import dev.minn.jda.ktx.events.CoroutineEventListener
 import dev.minn.jda.ktx.jdabuilder.default
@@ -40,7 +39,7 @@ class DiscordClientConfig {
 
     @Bean
     fun getDiscordClient(
-        discordProperty: DiscordClientProperty,
+        discordProperty: DiscordConfigProperties,
         eventListener: CoroutineEventListener,
         eventHandler: List<DiscordEventHandler<*>>,
     ): JDA {

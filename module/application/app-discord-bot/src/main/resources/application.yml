@@ -3,6 +3,7 @@ spring:
     include:
       - ai
       - member
+      - discord
   datasource:
     url: ${PGSQL_URL}
     username: ${PGSQL_USER}
@@ -23,8 +24,6 @@ logging:
 
 dev:
   kuro9:
-    discord:
-      token: ${DISCORD_TOKEN}
     smartapp:
       token: ${SMARTAPP_TOKEN}
     jwt:
