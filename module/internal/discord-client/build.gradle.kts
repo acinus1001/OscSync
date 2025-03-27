@@ -4,6 +4,11 @@ plugins {
     alias(libs.plugins.kotlin.spring)
 }
 
+repositories {
+    mavenCentral()
+    maven(url = "https://jitpack.io")
+}
+
 dependencies {
     implementation(libs.spring.boot.starter.web)
     implementation(libs.kotlinx.datetime)
