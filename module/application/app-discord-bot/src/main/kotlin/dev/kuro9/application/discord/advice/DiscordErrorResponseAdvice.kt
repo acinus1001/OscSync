@@ -39,18 +39,18 @@ class DiscordErrorResponseAdvice : ServerErrorHandler {
             title = "Unexpected Error Occurred"
             description = "Please contact to <@!400579163959853056>"
             field {
-                title = "Author"
-                description = event.user.asMention
+                name = "Author"
+                value = event.user.asMention
                 inline = true
             }
             field {
-                title = "Command"
-                description = event.fullCommandName
+                name = "Command"
+                value = event.fullCommandName
                 inline = true
             }
             field {
-                title = "RequestTime"
-                description = event.timeCreated.toString()
+                name = "RequestTime"
+                value = event.timeCreated.toString()
                 inline = true
             }
         }.let {

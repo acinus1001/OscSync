@@ -15,5 +15,5 @@ dependencies {
     implementation(projects.module.common.network)
     implementation(projects.module.internal.errorHandler)
 
-    implementation(libs.bundles.jda)
+    implementation(projects.module.internal.discordClient)
 }

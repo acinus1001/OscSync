@@ -1,6 +1,5 @@
 package dev.kuro9.application.discord.slash
 
-import dev.kuro9.common.logger.errorLog
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.DuplicatedRegisterException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.NotSupportException
@@ -254,14 +253,7 @@ class SmartAppCommand(
                 color = Color.RED.rgb
             }
 
-            else -> {
-                errorLog("Unknown error", t)
-                Embed {
-                    title = "Unknown Error"
-                    description = "Contact <@400579163959853056> to report."
-                    color = Color.RED.rgb
-                }
-            }
+            else -> throw t
         }
 
 }

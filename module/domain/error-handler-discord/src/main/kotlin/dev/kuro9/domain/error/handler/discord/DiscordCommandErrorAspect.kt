@@ -6,7 +6,6 @@ import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.context.annotation.EnableAspectJAutoProxy
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import kotlin.coroutines.Continuation
@@ -14,12 +13,11 @@ import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 
 @[Aspect Component]
-@EnableAspectJAutoProxy
 class DiscordCommandErrorAspect(
     private val eventPublisher: ApplicationEventPublisher
 ) {
 
-    @Around("(@within(DiscordCommandErrorHandle) || @annotation(DiscordCommandErrorHandle)) && args(event, ..)")
+    @Around("(@within(DiscordCommandErrorHandle) || @annotation(DiscordCommandErrorHandle) || execution(* dev.kuro9.internal.discord.slash.model.SlashCommandComponent.handleEvent(..))) && args(event, ..)")
     fun onError(joinPoint: ProceedingJoinPoint, event: GenericEvent): Any? {
         return joinPoint.runCoroutine {
             joinPoint.proceedCoroutine().let { rtn ->

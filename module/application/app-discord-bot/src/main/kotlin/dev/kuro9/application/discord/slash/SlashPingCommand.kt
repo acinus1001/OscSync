@@ -14,7 +14,6 @@ import kotlin.time.toKotlinDuration
 class SlashPingCommand : SlashCommandComponent {
     override val commandData: SlashCommandData = slash("ping", "ping time")
 
-
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
         val requestTime = event.timeCreated.toInstant()
         val duration = Duration.between(requestTime, Instant.now()).toKotlinDuration()
