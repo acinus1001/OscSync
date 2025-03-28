@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConditionalOnBean(ServerErrorHandler::class)
-class ServerErrorHandleExecuter(
+class ServerErrorAdvice(
     private val handler: List<ServerErrorHandler>,
 ) {
     private val coroutineErrorHandler = CoroutineExceptionHandler { _, throwable ->
@@ -23,7 +23,7 @@ class ServerErrorHandleExecuter(
         CoroutineScope(Dispatchers.IO).launch(coroutineErrorHandler) {
             handler.forEach { handler ->
                 launch {
-                    handler.doHandle(e.t)
+                    handler.doHandle(e)
                 }
             }
         }

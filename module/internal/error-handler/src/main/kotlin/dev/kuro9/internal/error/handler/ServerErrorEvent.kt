@@ -1,5 +1,4 @@
 package dev.kuro9.internal.error.handler
 
-data class ServerErrorEvent(
-    val t: Throwable,
-)
+open class ServerErrorEvent(open val t: Throwable)
+

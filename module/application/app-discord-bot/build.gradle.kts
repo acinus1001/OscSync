@@ -23,11 +23,13 @@ dependencies {
     implementation(projects.multiplatformCommon.network)
 
     implementation(projects.module.common.network)
+    implementation(projects.module.common.logger)
 
     implementation(projects.module.internal.smartappClient)
     implementation(projects.module.internal.discordClient)
     implementation(projects.module.internal.aiClient)
     implementation(projects.module.internal.errorHandler)
+    implementation(projects.module.domain.errorHandlerDiscord)
 
     implementation(projects.module.domain.database)
     implementation(projects.module.domain.smartappUserinfo)

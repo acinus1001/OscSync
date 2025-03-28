@@ -3,6 +3,7 @@ package dev.kuro9.internal.discord
 import dev.kuro9.internal.discord.model.DiscordEventHandler
 import dev.minn.jda.ktx.events.CoroutineEventListener
 import dev.minn.jda.ktx.jdabuilder.default
+import kotlinx.coroutines.InternalCoroutinesApi
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
@@ -37,6 +38,7 @@ class DiscordClientConfig {
         }
     }
 
+    @OptIn(InternalCoroutinesApi::class)
     @Bean
     fun getDiscordClient(
         discordProperty: DiscordConfigProperties,
