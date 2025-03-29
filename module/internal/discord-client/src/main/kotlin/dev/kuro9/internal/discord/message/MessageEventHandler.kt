@@ -23,11 +23,11 @@ internal class MessageEventHandler(
         infoLog(message)
         when {
             event.message.isFromGuild && message.startsWith(mentionString) -> handler.handleMention(
-                message.removePrefix(mentionString), event
+                event, message.removePrefix(mentionString)
             )
 
             !event.message.isFromGuild -> handler.handleMention(
-                message.removePrefix(mentionString), event
+                event, message.removePrefix(mentionString)
             )
         }
     }
