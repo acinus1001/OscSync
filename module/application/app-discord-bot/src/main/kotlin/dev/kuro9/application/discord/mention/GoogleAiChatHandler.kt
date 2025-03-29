@@ -1,6 +1,7 @@
 package dev.kuro9.application.discord.mention
 
 import dev.kuro9.common.logger.infoLog
+import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
 import dev.kuro9.internal.discord.message.model.MentionedMessageHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
@@ -34,10 +35,10 @@ class GoogleAiChatHandler(
         }
         .let(minifyJson::encodeToString)
 
-
+    @DiscordCommandErrorHandle
     override suspend fun handleMention(
+        event: MessageReceivedEvent,
         message: String,
-        event: MessageReceivedEvent
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             event.channel.sendTyping().await()
@@ -45,16 +46,12 @@ class GoogleAiChatHandler(
         val userDeviceNameList = smartAppUserService
             .getRegisteredDevices(event.author.idLong)
             .map { it.deviceName }
-        val response = runCatching {
-            aiService.generate(
-                prompt = getInstruction(userDeviceNameList),
-                input = message,
-                responseType = GoogleAiResponse::class,
-                responseSchema = GoogleAiResponse.getSchema(userDeviceNameList)
-            )
-        }.onFailure { ex ->
-
-        }.getOrThrow()
+        val response = aiService.generate(
+            prompt = getInstruction(userDeviceNameList),
+            input = message,
+            responseType = GoogleAiResponse::class,
+            responseSchema = GoogleAiResponse.getSchema(userDeviceNameList)
+        )
         infoLog(response.toString())
         val (outputText, lightControl) = response
         CoroutineScope(Dispatchers.IO).launch {
