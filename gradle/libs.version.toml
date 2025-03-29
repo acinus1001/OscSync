@@ -106,6 +106,8 @@ kotlin-inject-runtime = { module = "me.tatarka.inject:kotlin-inject-runtime", ve
 
 google-ai = { module = "com.google.genai:google-genai", version = "0.2.0" }
 
+jsoup = { module = "org.jsoup:jsoup", version = "1.19.1" }
+
 
 
 
