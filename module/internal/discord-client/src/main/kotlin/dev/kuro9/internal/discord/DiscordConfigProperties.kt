@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(prefix = "dev.kuro9.discord")
 data class DiscordConfigProperties(
     val token: String,
-    private val testGuildStr: String?,
+    private val testGuild: String?,
 ) {
-    val testGuild: Long? = testGuildStr?.toLongOrNull()
+    val testGuildLong: Long? = testGuild?.toLongOrNull()
 }

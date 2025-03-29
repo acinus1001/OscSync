@@ -1,6 +1,7 @@
 package dev.kuro9.internal.discord.slash
 
 import dev.kuro9.common.logger.errorLog
+import dev.kuro9.common.logger.useLogger
 import dev.kuro9.internal.discord.DiscordConfigProperties
 import dev.kuro9.internal.discord.model.DiscordEventHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
@@ -15,6 +16,7 @@ internal class SlashCommandListener(
     private val property: DiscordConfigProperties,
 ) : DiscordEventHandler<SlashCommandInteractionEvent> {
     private val commandMap: Map<String, SlashCommandComponent> = slashCommands.associateBy { it.commandData.name }
+    private val log by useLogger()
 
     override val kClass = SlashCommandInteractionEvent::class
 
@@ -23,13 +25,16 @@ internal class SlashCommandListener(
     }
 
     override fun initialize(jda: JDA): Unit = jda.run {
-        when (property.testGuild) {
+        when (property.testGuildLong) {
             null -> updateCommands {
                 addCommands(slashCommands.map { it.commandData })
             }
 
-            else -> getGuildById(property.testGuild)!!.updateCommands {
-                addCommands(slashCommands.map { it.commandData })
+            else -> {
+                log.info("Registering slash commands to test guild: ${property.testGuildLong}")
+                getGuildById(property.testGuildLong)!!.updateCommands {
+                    addCommands(slashCommands.map { it.commandData })
+                }
             }
         }.queue()
     }

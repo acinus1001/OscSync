@@ -28,3 +28,5 @@ dev:
       token: ${SMARTAPP_TOKEN}
     jwt:
       key: test123
+    webhook:
+      url: ${DISCORD_ERROR_WEBHOOK}
