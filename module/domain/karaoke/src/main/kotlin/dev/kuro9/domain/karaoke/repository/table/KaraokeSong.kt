@@ -13,7 +13,7 @@ object KaraokeSongs : CompositeIdTable("karaoke_songs") {
     val brand = enumeration<KaraokeBrand>("brand").entityId()
     val songNo = integer("song_no").entityId()
     val title = varchar("song_title", 200)
-    val artist = varchar("artist", 50)
+    val singer = varchar("singer", 50)
     val releaseDate = date("release_date")
 
     val createdAt = datetime("created_at")
@@ -27,7 +27,7 @@ class KaraokeSongEntity(pk: EntityID<CompositeID>) : CompositeEntity(pk) {
     val brand by KaraokeSongs.brand
     val songNo by KaraokeSongs.songNo
     val title by KaraokeSongs.title
-    val artist by KaraokeSongs.artist
+    val singer by KaraokeSongs.singer
     val releaseDate by KaraokeSongs.releaseDate
     val createdAt by KaraokeSongs.createdAt
 }

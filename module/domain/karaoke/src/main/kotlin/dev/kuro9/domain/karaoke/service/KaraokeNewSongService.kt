@@ -7,19 +7,25 @@ import kotlinx.coroutines.*
 import org.springframework.stereotype.Service
 
 @Service
-class KaraokeService(
-    newSongServices: List<KaraokeSongServiceI>
+class KaraokeNewSongService(
+    newSongServices: List<KaraokeSongServiceI>,
 ) {
     private val log by useLogger()
     private val serviceMap = newSongServices.associateBy { it.supportBrand }
     private val context = Dispatchers.IO + CoroutineName("KaraokeService")
 
+    /**
+     * 브랜드별 오늘 새로 추가된 노래 리턴
+     */
     suspend fun getNewSongs(brand: KaraokeBrand): List<KaraokeSongDto> {
         return serviceMap[brand]
             ?.getNewReleaseSongs()
             ?: emptyList()
     }
 
+    /**
+     * 오늘 새로 추가된 노래 리턴
+     */
     suspend fun getNewSongs(): Deferred<List<KaraokeSongDto>> {
         return withContext(context) {
             async {
@@ -29,9 +35,5 @@ class KaraokeService(
                     .flatMap { it }
             }
         }
-    }
-
-    suspend fun getSongByNo(brand: KaraokeBrand, songNo: Int): KaraokeSongDto? {
-        return serviceMap[brand]?.getSongByNo(songNo)
     }
 }

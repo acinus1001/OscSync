@@ -7,6 +7,6 @@ data class KaraokeSongDto(
     val brand: KaraokeBrand,
     val songNo: Int,
     val title: String,
-    val artist: String,
+    val singer: String,
     val releaseDate: LocalDate,
 )

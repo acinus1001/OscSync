@@ -22,14 +22,14 @@ class KaraokeRepo {
         brand: KaraokeBrand,
         songNo: Int,
         title: String,
-        artist: String,
+        singer: String,
         releaseDate: LocalDate = LocalDate.now()
     ) {
         KaraokeSongs.insertIgnore {
             it[KaraokeSongs.brand] = brand
             it[KaraokeSongs.songNo] = songNo
             it[KaraokeSongs.title] = title
-            it[KaraokeSongs.artist] = artist
+            it[KaraokeSongs.singer] = singer
             it[KaraokeSongs.releaseDate] = releaseDate
             it[KaraokeSongs.createdAt] = LocalDateTime.now()
         }
