@@ -17,16 +17,16 @@ class KaraokeNewSongService(
     /**
      * 브랜드별 오늘 새로 추가된 노래 리턴
      */
-    suspend fun getNewSongs(brand: KaraokeBrand): List<KaraokeSongDto> {
+    suspend fun fetchAndSaveNewSongs(brand: KaraokeBrand): List<KaraokeSongDto> {
         return serviceMap[brand]
             ?.getNewReleaseSongs()
             ?: emptyList()
     }
 
     /**
-     * 오늘 새로 추가된 노래 리턴
+     * 오늘 새로 추가된 노래 db 저장 및 리턴
      */
-    suspend fun getNewSongs(): Deferred<List<KaraokeSongDto>> {
+    suspend fun fetchAndSaveNewSongs(): Deferred<List<KaraokeSongDto>> {
         return withContext(context) {
             async {
                 serviceMap.values
