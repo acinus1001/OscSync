@@ -1,7 +1,13 @@
 package dev.kuro9.application.batch.karaoke.job
 
 import com.navercorp.spring.batch.plus.kotlin.configuration.BatchDsl
+import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemProcessor
+import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamReader
+import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamWriter
+import dev.kuro9.application.batch.karaoke.tasklet.KaraokeWebhookTasklet
 import dev.kuro9.common.logger.useLogger
+import dev.kuro9.domain.karaoke.repository.table.KaraokeNotifySendLog
+import dev.kuro9.domain.karaoke.repository.table.KaraokeSubscribeChannelEntity
 import dev.kuro9.domain.karaoke.service.KaraokeNewSongService
 import kotlinx.coroutines.runBlocking
 import org.springframework.batch.core.ExitStatus
@@ -19,6 +25,7 @@ class KaraokeCrawlBatchConfig(
     private val batch: BatchDsl,
     private val txManager: PlatformTransactionManager,
     private val karaokeService: KaraokeNewSongService,
+    private val webhookTasklet: KaraokeWebhookTasklet
 ) {
     private val log by useLogger()
 
@@ -68,10 +75,11 @@ class KaraokeCrawlBatchConfig(
     @Bean
     fun karaokeNotifyNewSongStep(): Step = batch {
         step("karaokeNotifyNewSongStep") {
-            tasklet(transactionManager = txManager, tasklet = { sc: StepContribution, cc: ChunkContext ->
-
-                TODO()
-            })
+            chunk<KaraokeSubscribeChannelEntity, KaraokeNotifySendLog>(1, txManager) {
+                reader(webhookTasklet.asItemStreamReader())
+                processor(webhookTasklet.asItemProcessor())
+                writer(webhookTasklet.asItemStreamWriter())
+            }
         }
     }
 

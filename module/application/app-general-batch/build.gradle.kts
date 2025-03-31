@@ -17,6 +17,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.reactor.kotlin.extensions)
 
+    implementation(projects.multiplatformCommon.network)
+    implementation(projects.multiplatformCommon.serialization)
+
     implementation(projects.module.common.logger)
     implementation(projects.module.domain.database)
 
