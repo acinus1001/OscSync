@@ -26,17 +26,19 @@ class DiscordEmbedBuilder {
     var color: Int = 0x000000
     private val fields: MutableList<Field> = mutableListOf()
 
-    fun field(action: FieldBuilder.() -> Unit) {
+    @Suppress("FunctionName")
+    fun Field(action: FieldBuilder.() -> Unit) {
         fields.add(FieldBuilder().apply(action).build())
     }
 
-    fun build() = DiscordEmbed(
+    internal fun build() = DiscordEmbed(
         title = title!!,
         description = description!!,
         color = color,
         fields = fields,
     )
 
+    @DiscordEmbedDsl
     class FieldBuilder {
         var name: String? = null
         var value: String? = null

@@ -1,13 +1,22 @@
 package dev.kuro9.application.batch.karaoke.tasklet
 
 import com.navercorp.spring.batch.plus.step.adapter.ItemStreamIterableReaderProcessorWriter
+import dev.kuro9.application.batch.discord.DiscordWebhookPayload
+import dev.kuro9.application.batch.discord.Embed
 import dev.kuro9.application.batch.discord.service.DiscordWebhookService
+import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.repository.table.KaraokeNotifySendLog
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSubscribeChannelEntity
 import dev.kuro9.domain.karaoke.service.KaraokeChannelService
+import dev.kuro9.domain.karaoke.service.KaraokeNewSongService
+import dev.kuro9.multiplatform.common.date.util.now
+import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import org.springframework.batch.core.configuration.annotation.StepScope
 import org.springframework.batch.item.Chunk
 import org.springframework.batch.item.ExecutionContext
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
 @StepScope
@@ -15,11 +24,16 @@ import org.springframework.stereotype.Component
 class KaraokeWebhookTasklet(
     private val webhookService: DiscordWebhookService,
     private val channelService: KaraokeChannelService,
+    private val newSongService: KaraokeNewSongService,
+    @Value("#{jobParameters['executeDate']}") private val executeDate: LocalDate,
 ) : ItemStreamIterableReaderProcessorWriter<KaraokeSubscribeChannelEntity, KaraokeNotifySendLog> {
     private var lastChannelId: Long? = null
+    private val webhookPayload = makeWebhookPayload()
 
     override fun readIterable(context: ExecutionContext): Iterable<KaraokeSubscribeChannelEntity> {
-        return channelService.getAllSubscribedChannels(
+        if (webhookPayload == null) return emptyList() // 데이터 없다면 종료
+
+        return channelService.getAllFilteredSubscribedChannels(
             pageSize = 1000,
             lastChannelId = lastChannelId
         ).also {
@@ -27,12 +41,49 @@ class KaraokeWebhookTasklet(
         }
     }
 
-    override fun process(channelEntity: KaraokeSubscribeChannelEntity): KaraokeNotifySendLog {
-        TODO("send webhook and make log")
+    override fun process(channelEntity: KaraokeSubscribeChannelEntity): KaraokeNotifySendLog? {
+        val requestTime = LocalDateTime.now()
+        val exception = runCatching {
+            runBlocking {
+                webhookService.sendWebhook(channelEntity.webhookUrl, webhookPayload ?: return@runBlocking null)
+            }
+        }.exceptionOrNull()
+
+        return KaraokeNotifySendLog(
+            channelId = channelEntity.channelId.value,
+            guildId = channelEntity.guildId,
+            exception = exception,
+            sendDate = requestTime,
+        )
     }
 
-    override fun write(chunk: Chunk<out KaraokeNotifySendLog?>) {
-        TODO("save log, chunksize 1")
+    override fun write(chunk: Chunk<out KaraokeNotifySendLog>) {
+        channelService.batchInsertLogs(chunk.items)
     }
 
+    private fun makeWebhookPayload(): DiscordWebhookPayload? {
+        val tjReleaseSongs = newSongService.getNewReleaseSongs(
+            brand = KaraokeBrand.TJ,
+            targetDate = executeDate,
+        )
+            .takeIf { it.isNotEmpty() }
+            ?: return null
+
+        return DiscordWebhookPayload(
+            username = "AGB: Karaoke Notify",
+            embeds = listOf(
+                Embed {
+                    title = "TJ ${executeDate.monthNumber}/${executeDate.dayOfMonth} 신곡 알림"
+                    description = "$executeDate 09:00 데이터"
+                    tjReleaseSongs.forEach { song ->
+                        Field {
+                            name = "${song.songNo} ${song.title}"
+                            value = song.singer
+                            inline = false
+                        }
+                    }
+                }
+            )
+        )
+    }
 }

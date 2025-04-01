@@ -19,6 +19,7 @@ dependencies {
 
     implementation(projects.multiplatformCommon.network)
     implementation(projects.multiplatformCommon.serialization)
+    implementation(projects.multiplatformCommon.date)
 
     implementation(projects.module.common.logger)
     implementation(projects.module.domain.database)

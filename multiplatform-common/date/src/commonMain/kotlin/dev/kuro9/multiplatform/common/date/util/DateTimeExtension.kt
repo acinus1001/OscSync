@@ -7,3 +7,5 @@ fun LocalDateTime.Companion.now(timeZone: TimeZone = TimeZone.of("Asia/Seoul")):
 
 fun LocalDate.Companion.now(timeZone: TimeZone = TimeZone.of("Asia/Seoul")): LocalDate =
     LocalDateTime.now(timeZone).date
+
+fun LocalDate.toRangeOfDay(): ClosedRange<LocalDateTime> = atTime(0, 0)..atTime(23, 59, 59, 59)

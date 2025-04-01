@@ -4,11 +4,11 @@ import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.repository.KaraokeRepo
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSongEntity
+import dev.kuro9.domain.karaoke.repository.table.KaraokeSongs
 import dev.kuro9.multiplatform.common.date.util.now
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import org.jetbrains.exposed.sql.statements.BatchInsertStatement
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jsoup.Jsoup
 import org.springframework.stereotype.Service
 
@@ -17,18 +17,9 @@ class KaraokeTjNewSongService(
     private val karaokeRepo: KaraokeRepo,
 ) : KaraokeSongServiceI {
     override val supportBrand: KaraokeBrand = KaraokeBrand.TJ
-    override suspend fun getNewReleaseSongs(): List<KaraokeSongDto> {
+    override suspend fun saveNewReleaseSongs() {
         val requestDate = LocalDate.now()
-        // db 체크
-        karaokeRepo.findByReleaseDate(
-            brand = KaraokeBrand.TJ,
-            releaseDateRange = requestDate..requestDate,
-        )
-            .takeIf { it.isNotEmpty() }
-            ?.map { it.toDto() }
-            ?.run { return this }
 
-        // 없으면 크롤링
         val document = Jsoup.connect("https://www.tjmedia.com/tjsong/song_monthnew.asp").get()
         val result = document.getElementsByClass("board_type1")
             .single().getElementsByTag("tbody")
@@ -50,8 +41,7 @@ class KaraokeTjNewSongService(
                 )
             }
 
-        // db 저장
-        CoroutineScope(currentCoroutineContext()).launch {
+        BatchInsertStatement(KaraokeSongs).apply {
             result.forEach { song ->
                 karaokeRepo.insertKaraokeSong(
                     brand = song.brand,
@@ -61,9 +51,17 @@ class KaraokeTjNewSongService(
                     releaseDate = song.releaseDate,
                 )
             }
-        }
+        }.execute(TransactionManager.current())
+    }
 
-        return result
+    override fun getNewReleaseSongs(targetDate: LocalDate): List<KaraokeSongDto> {
+        return karaokeRepo.findByReleaseDate(
+            brand = KaraokeBrand.TJ,
+            releaseDateRange = targetDate..targetDate,
+        )
+            .takeIf { it.isNotEmpty() }
+            ?.map { it.toDto() }
+            ?: emptyList()
     }
 
     private fun KaraokeSongEntity.toDto() = KaraokeSongDto(

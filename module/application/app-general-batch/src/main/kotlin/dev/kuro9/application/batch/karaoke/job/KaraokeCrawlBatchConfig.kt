@@ -52,7 +52,7 @@ class KaraokeCrawlBatchConfig(
             tasklet(transactionManager = txManager, tasklet = { sc: StepContribution, cc: ChunkContext ->
                 val throwable = try {
                     runBlocking {
-                        karaokeService.fetchAndSaveNewSongs().await()
+                        karaokeService.saveNewSongs().join()
                     }
                     null
                 } catch (t: Throwable) {
@@ -75,7 +75,7 @@ class KaraokeCrawlBatchConfig(
     @Bean
     fun karaokeNotifyNewSongStep(): Step = batch {
         step("karaokeNotifyNewSongStep") {
-            chunk<KaraokeSubscribeChannelEntity, KaraokeNotifySendLog>(1, txManager) {
+            chunk<KaraokeSubscribeChannelEntity, KaraokeNotifySendLog>(10, txManager) {
                 reader(webhookTasklet.asItemStreamReader())
                 processor(webhookTasklet.asItemProcessor())
                 writer(webhookTasklet.asItemStreamWriter())
