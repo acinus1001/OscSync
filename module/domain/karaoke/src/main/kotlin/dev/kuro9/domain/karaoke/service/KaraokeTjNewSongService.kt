@@ -4,20 +4,19 @@ import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.repository.KaraokeRepo
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSongEntity
-import dev.kuro9.domain.karaoke.repository.table.KaraokeSongs
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDate
-import org.jetbrains.exposed.sql.statements.BatchInsertStatement
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jsoup.Jsoup
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class KaraokeTjNewSongService(
     private val karaokeRepo: KaraokeRepo,
 ) : KaraokeSongServiceI {
     override val supportBrand: KaraokeBrand = KaraokeBrand.TJ
-    override suspend fun saveNewReleaseSongs() {
+    override suspend fun fetchNewReleaseSongs(): List<KaraokeSongDto> {
         val requestDate = LocalDate.now()
 
         val document = Jsoup.connect("https://www.tjmedia.com/tjsong/song_monthnew.asp").get()
@@ -41,19 +40,21 @@ class KaraokeTjNewSongService(
                 )
             }
 
-        BatchInsertStatement(KaraokeSongs).apply {
-            result.forEach { song ->
-                karaokeRepo.insertKaraokeSong(
-                    brand = song.brand,
-                    songNo = song.songNo,
-                    title = song.title,
-                    singer = song.singer,
-                    releaseDate = song.releaseDate,
-                )
-            }
-        }.execute(TransactionManager.current())
-    }
+        return result
 
+//        BatchInsertStatement(KaraokeSongs).apply {
+//            result.forEach { song ->
+//                karaokeRepo.insertKaraokeSong(
+//                    brand = song.brand,
+//                    songNo = song.songNo,
+//                    title = song.title,
+//                    singer = song.singer,
+//                    releaseDate = song.releaseDate,
+//                )
+//            }
+//        }.execute(TransactionManager.current())
+    }
+    
     override fun getNewReleaseSongs(targetDate: LocalDate): List<KaraokeSongDto> {
         return karaokeRepo.findByReleaseDate(
             brand = KaraokeBrand.TJ,

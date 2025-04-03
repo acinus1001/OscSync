@@ -1,6 +1,7 @@
 package dev.kuro9.domain.karaoke.repository
 
 import dev.kuro9.domain.database.between
+import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSongEntity
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSongs
@@ -9,15 +10,13 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.insertIgnore
 import org.springframework.stereotype.Repository
-import org.springframework.transaction.annotation.Transactional
 
 @Repository
-@Transactional(readOnly = true)
 class KaraokeRepo {
 
-    @Transactional
     fun insertKaraokeSong(
         brand: KaraokeBrand,
         songNo: Int,
@@ -32,6 +31,17 @@ class KaraokeRepo {
             it[KaraokeSongs.singer] = singer
             it[KaraokeSongs.releaseDate] = releaseDate
             it[KaraokeSongs.createdAt] = LocalDateTime.now()
+        }
+    }
+
+    fun batchInsertSongs(songs: Iterable<KaraokeSongDto>) {
+        KaraokeSongs.batchInsert(songs, ignore = true) {
+            this[KaraokeSongs.brand] = it.brand
+            this[KaraokeSongs.songNo] = it.songNo
+            this[KaraokeSongs.title] = it.title
+            this[KaraokeSongs.singer] = it.singer
+            this[KaraokeSongs.releaseDate] = it.releaseDate
+            this[KaraokeSongs.createdAt] = LocalDateTime.now()
         }
     }
 

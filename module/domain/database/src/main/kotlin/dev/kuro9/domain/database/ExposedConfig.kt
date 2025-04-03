@@ -1,5 +1,6 @@
 package dev.kuro9.domain.database
 
+import org.jetbrains.exposed.spring.SpringTransactionManager
 import org.jetbrains.exposed.spring.autoconfigure.ExposedAutoConfiguration
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.DatabaseConfig
@@ -18,6 +19,9 @@ import javax.sql.DataSource
 )
 @EnableTransactionManagement
 class ExposedConfig {
+
+    @[Primary Bean("transactionManager")]
+    fun transactionManager(txManager: SpringTransactionManager) = txManager
 
     @Bean
     fun exposedDatabaseConfig(): DatabaseConfig = DatabaseConfig {

@@ -111,6 +111,8 @@ jsoup = { module = "org.jsoup:jsoup", version = "1.19.1" }
 
 navercorp-spring-batch-plus = { module = "com.navercorp.spring:spring-boot-starter-batch-plus-kotlin", version = "1.2.0" }
 
+slf4j-api-extensions = { module = "io.github.harryjhin:slf4j-api-extensions", version = "1.0.3" }
+
 
 
 

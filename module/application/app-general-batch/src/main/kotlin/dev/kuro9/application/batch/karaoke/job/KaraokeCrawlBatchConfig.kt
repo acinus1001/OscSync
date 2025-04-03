@@ -4,11 +4,15 @@ import com.navercorp.spring.batch.plus.kotlin.configuration.BatchDsl
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemProcessor
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamReader
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamWriter
+import dev.kuro9.application.batch.discord.DiscordWebhookPayload
+import dev.kuro9.application.batch.discord.config.DiscordProperties
+import dev.kuro9.application.batch.discord.dto.Embed
+import dev.kuro9.application.batch.discord.service.DiscordWebhookService
+import dev.kuro9.application.batch.karaoke.tasklet.KaraokeSongFetchTasklet
 import dev.kuro9.application.batch.karaoke.tasklet.KaraokeWebhookTasklet
-import dev.kuro9.common.logger.useLogger
+import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
 import dev.kuro9.domain.karaoke.repository.table.KaraokeNotifySendLog
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSubscribeChannelEntity
-import dev.kuro9.domain.karaoke.service.KaraokeNewSongService
 import kotlinx.coroutines.runBlocking
 import org.springframework.batch.core.ExitStatus
 import org.springframework.batch.core.Job
@@ -18,62 +22,49 @@ import org.springframework.batch.core.scope.context.ChunkContext
 import org.springframework.batch.repeat.RepeatStatus
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.retry.backoff.ExponentialBackOffPolicy
 import org.springframework.transaction.PlatformTransactionManager
 
 @Configuration
 class KaraokeCrawlBatchConfig(
     private val batch: BatchDsl,
     private val txManager: PlatformTransactionManager,
-    private val karaokeService: KaraokeNewSongService,
-    private val webhookTasklet: KaraokeWebhookTasklet
 ) {
-    private val log by useLogger()
 
     @Bean
-    fun karaokeCrawlJob(): Job = batch {
+    fun karaokeCrawlJob(
+        fetchTasklet: KaraokeSongFetchTasklet,
+    ): Job = batch {
         job("karaokeCrawlJob") {
-            step(karaokeCrawlNewSongStep()) {
+            step(karaokeCrawlNewSongStep(fetchTasklet)) {
                 on(ExitStatus.COMPLETED.exitCode) {
-                    step(karaokeNotifyNewSongStep())
+                    stepBean("karaokeNotifyNewSongStep")
                 }
                 on(ExitStatus.FAILED.exitCode) {
-                    step(karaokeNotifyCrawlFailure())
-                }
-                on("*") {
-                    stop()
+                    stepBean("karaokeCrawlFailureStep")
                 }
             }
         }
     }
 
     @Bean
-    fun karaokeCrawlNewSongStep(): Step = batch {
+    fun karaokeCrawlNewSongStep(fetchTasklet: KaraokeSongFetchTasklet): Step = batch {
         step("karaokeCrawlNewSongStep") {
-            tasklet(transactionManager = txManager, tasklet = { sc: StepContribution, cc: ChunkContext ->
-                val throwable = try {
-                    runBlocking {
-                        karaokeService.saveNewSongs().join()
-                    }
-                    null
-                } catch (t: Throwable) {
-                    log.error("Exception on crawl new songs", t)
-                    t
-                }
+            chunk<KaraokeSongDto, KaraokeSongDto>(1000, txManager) {
+                reader(fetchTasklet.asItemStreamReader())
+                writer(fetchTasklet.asItemStreamWriter())
 
-                when (throwable) {
-                    null -> RepeatStatus.FINISHED
-
-                    else -> {
-                        sc.exitStatus = ExitStatus.FAILED
-                        RepeatStatus.CONTINUABLE
-                    }
+                faultTolerant {
+                    retry<Throwable>()
+                    retryLimit(3)
+                    backOffPolicy(ExponentialBackOffPolicy())
                 }
-            })
+            }
         }
     }
 
     @Bean
-    fun karaokeNotifyNewSongStep(): Step = batch {
+    fun karaokeNotifyNewSongStep(webhookTasklet: KaraokeWebhookTasklet): Step = batch {
         step("karaokeNotifyNewSongStep") {
             chunk<KaraokeSubscribeChannelEntity, KaraokeNotifySendLog>(10, txManager) {
                 reader(webhookTasklet.asItemStreamReader())
@@ -84,11 +75,28 @@ class KaraokeCrawlBatchConfig(
     }
 
     @Bean
-    fun karaokeNotifyCrawlFailure(): Step = batch {
-        step("karaokeNotifyNewSongStep") {
+    fun karaokeCrawlFailureStep(
+        webhookService: DiscordWebhookService,
+        discordProperties: DiscordProperties,
+    ): Step = batch {
+        step("karaokeCrawlFailureStep") {
             tasklet(transactionManager = txManager, tasklet = { sc: StepContribution, cc: ChunkContext ->
+                runBlocking {
+                    webhookService.sendWebhook(
+                        discordProperties.errorUrl, payload = DiscordWebhookPayload(
+                            username = "Batch Error Notify",
+                            embeds = listOf(
+                                Embed {
+                                    title = "Batch Error Alert"
+                                    description = this::class.simpleName
+                                    color = 0xFF0000
+                                }
+                            )
+                        )
+                    )
+                }
 
-                TODO()
+                RepeatStatus.FINISHED
             })
         }
     }

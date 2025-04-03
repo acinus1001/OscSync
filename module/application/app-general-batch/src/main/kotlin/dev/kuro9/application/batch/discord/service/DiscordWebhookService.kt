@@ -5,8 +5,8 @@ import dev.kuro9.multiplatform.common.network.httpClient
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.resources.post
-import io.ktor.client.request.setBody
+import io.ktor.client.plugins.logging.*
+import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import org.springframework.stereotype.Service
@@ -17,6 +17,7 @@ class DiscordWebhookService {
         install(ContentNegotiation) {
             json(minifyJson)
         }
+        install(Logging)
         expectSuccess = true
 
         defaultRequest {
@@ -25,6 +26,9 @@ class DiscordWebhookService {
     }
 
     suspend fun sendWebhook(url: String, payload: DiscordWebhookPayload) {
-        httpClient.post(url) { setBody(payload) }
+        httpClient.post(urlString = url) {
+            contentType(ContentType.Application.Json)
+            setBody(payload)
+        }
     }
 }

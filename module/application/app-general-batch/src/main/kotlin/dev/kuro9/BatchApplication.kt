@@ -1,19 +1,21 @@
-package dev.kuro9.application.discord
+package dev.kuro9
 
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
 import org.springframework.scheduling.annotation.EnableAsync
-import org.springframework.transaction.annotation.EnableTransactionManagement
+import org.springframework.scheduling.annotation.EnableScheduling
 
 @EnableAsync
-@EnableTransactionManagement
+@EnableScheduling
+@EnableBatchProcessing
 @EnableConfigurationProperties
-@ConfigurationPropertiesScan(basePackages = ["dev.kuro9"])
-@SpringBootApplication(scanBasePackages = ["dev.kuro9"])
-class DiscordBotApplication
+@ConfigurationPropertiesScan
+@SpringBootApplication
+class BatchApplication
 
-fun main() {
-    runApplication<DiscordBotApplication>()
+fun main(args: Array<String>) {
+    runApplication<BatchApplication>(*args)
 }

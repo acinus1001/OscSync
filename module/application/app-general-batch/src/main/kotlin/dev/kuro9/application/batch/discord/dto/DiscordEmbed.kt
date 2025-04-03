@@ -1,6 +1,6 @@
-package dev.kuro9.application.batch.discord
+package dev.kuro9.application.batch.discord.dto
 
-import dev.kuro9.application.batch.discord.DiscordEmbed.Field
+import dev.kuro9.application.batch.discord.dto.DiscordEmbed.Field
 import kotlinx.serialization.Serializable
 
 @Serializable

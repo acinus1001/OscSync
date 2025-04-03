@@ -6,4 +6,5 @@ plugins {
 
 dependencies {
     implementation(libs.spring.boot.starter.logging)
+    api(libs.slf4j.api.extensions)
 }

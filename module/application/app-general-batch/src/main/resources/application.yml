@@ -1,0 +1,10 @@
+spring:
+  profiles:
+    include:
+      - database
+
+
+dev:
+  kuro9:
+    discord:
+      error-url: ${DISCORD_ERROR_WEBHOOK}

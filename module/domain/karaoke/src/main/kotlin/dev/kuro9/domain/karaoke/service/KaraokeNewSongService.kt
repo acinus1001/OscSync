@@ -17,21 +17,22 @@ class KaraokeNewSongService(
     private val context = Dispatchers.IO + CoroutineName("KaraokeService")
 
     /**
-     * 브랜드별 오늘 새로 추가된 노래 db에 저장
+     * 브랜드별 오늘 새로 추가된 노래 가져오기
      */
-    suspend fun saveNewSongs(brand: KaraokeBrand) {
-        serviceMap[brand]?.saveNewReleaseSongs()
+    suspend fun fetchNewSongs(brand: KaraokeBrand) {
+        serviceMap[brand]?.fetchNewReleaseSongs()
     }
 
     /**
-     * 오늘 새로 추가된 노래 db 저장
+     * 오늘 새로 추가된 노래 가져오기
      */
-    suspend fun saveNewSongs(): Job {
+    suspend fun fetchNewSongs(): Deferred<List<KaraokeSongDto>> {
         return withContext(context) {
-            launch {
+            async {
                 serviceMap.values
-                    .map { async(CoroutineName("KaraokeNew:${it.supportBrand}")) { it.saveNewReleaseSongs() } }
+                    .map { async(CoroutineName("KaraokeNew:${it.supportBrand}")) { it.fetchNewReleaseSongs() } }
                     .awaitAll()
+                    .flatMap { it }
             }
         }
     }
