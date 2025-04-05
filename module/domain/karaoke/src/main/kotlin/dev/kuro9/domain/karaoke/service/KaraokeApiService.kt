@@ -1,6 +1,5 @@
 package dev.kuro9.domain.karaoke.service
 
-import dev.kuro9.common.logger.useLogger
 import dev.kuro9.domain.karaoke.dto.KaraokeSongApiDto
 import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
@@ -18,7 +17,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class KaraokeApiService {
-    private val log by useLogger()
+
     private val httpClient = httpClient {
         install(ContentNegotiation) {
             json(minifyJson)

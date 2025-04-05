@@ -19,7 +19,7 @@ class KaraokeLogRepo {
      */
     fun initLog(
         channelId: Long,
-        guildId: Long,
+        guildId: Long?,
     ): Long {
         return KaraokeNotifySendLogs.insertAndGetId {
             it[KaraokeNotifySendLogs.channelId] = channelId

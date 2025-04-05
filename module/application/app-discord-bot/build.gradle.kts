@@ -24,6 +24,7 @@ dependencies {
 
     implementation(projects.module.common.network)
     implementation(projects.module.common.logger)
+    implementation(projects.module.common)
 
     implementation(projects.module.internal.smartappClient)
     implementation(projects.module.internal.discordClient)
@@ -33,6 +34,7 @@ dependencies {
 
     implementation(projects.module.domain.database)
     implementation(projects.module.domain.smartappUserinfo)
+    implementation(projects.module.domain.karaoke)
 
 
     implementation(projects.module.domain.memberAuthentication)

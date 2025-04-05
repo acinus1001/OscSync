@@ -1,5 +1,6 @@
 package dev.kuro9.domain.karaoke.service
 
+import dev.kuro9.common.exception.DuplicatedInsertException
 import dev.kuro9.domain.karaoke.repository.KaraokeChannelRepo
 import dev.kuro9.domain.karaoke.repository.KaraokeLogRepo
 import dev.kuro9.domain.karaoke.repository.table.KaraokeNotifySendLog
@@ -17,16 +18,22 @@ class KaraokeChannelService(
 ) {
 
     /**
+     * 이미 등록된 채널인지 체크합니다.
+     */
+    fun checkRegisteredChannel(channelId: Long): Boolean = channelRepo.isRegisteredChannel(channelId)
+
+    /**
      * 신곡 알림을 받을 채널을 등록합니다.
-     * @return true 시 등록 성공, false 시 이미 등록된 채널
+     * @throws DuplicatedInsertException 이미 등록된 채널일 때
      */
     @Transactional
+    @Throws(DuplicatedInsertException::class)
     fun registerChannel(
         channelId: Long,
-        guildId: Long,
+        guildId: Long?,
         registerUserId: Long,
         webhookUrl: String,
-    ): Boolean = channelRepo.registerChannel(channelId, guildId, registerUserId, webhookUrl)
+    ) = channelRepo.registerChannel(channelId, guildId, registerUserId, webhookUrl)
 
     /**
      * 등록된 신곡 알림 채널을 삭제합니다.

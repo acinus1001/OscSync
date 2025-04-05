@@ -1,6 +1,6 @@
 package dev.kuro9.internal.error.handler
 
-import dev.kuro9.common.logger.errorLog
+import io.github.harryjhin.slf4j.extension.error
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,16 +15,14 @@ class ServerErrorAdvice(
     private val handler: List<ServerErrorHandler>,
 ) {
     private val coroutineErrorHandler = CoroutineExceptionHandler { _, throwable ->
-        this.errorLog("exception in coroutine", throwable)
+        error(throwable) { "exception in coroutine" }
     }
 
     @EventListener
     fun handle(e: ServerErrorEvent) {
-        CoroutineScope(Dispatchers.IO).launch(coroutineErrorHandler) {
+        CoroutineScope(Dispatchers.IO).launch {
             handler.forEach { handler ->
-                launch {
-                    handler.doHandle(e)
-                }
+                launch(coroutineErrorHandler) { handler.doHandle(e) }
             }
         }
     }

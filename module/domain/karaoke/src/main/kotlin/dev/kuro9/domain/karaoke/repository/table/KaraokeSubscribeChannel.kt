@@ -8,7 +8,7 @@ import org.jetbrains.exposed.sql.kotlin.datetime.datetime
 
 object KaraokeSubscribeChannels : LongIdTable("karaoke_subscribe_channel", "channe_id") {
     val channelId by ::id
-    val guildId = long("guild_id")
+    val guildId = long("guild_id").nullable()
     val webhookUrl = varchar("webhook_url", 500)
     val registeredUserId = long("registered_user_id")
     val createdAt = datetime("created_at")

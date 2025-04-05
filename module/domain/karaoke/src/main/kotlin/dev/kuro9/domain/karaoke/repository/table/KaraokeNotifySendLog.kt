@@ -11,7 +11,7 @@ import org.jetbrains.exposed.sql.kotlin.datetime.datetime
 object KaraokeNotifySendLogs : LongIdTable(name = "karaoke_notify_send_log", "seq") {
     val seq by ::id
     val channelId = long("channel_id")
-    val guildId = long("guild_id")
+    val guildId = long("guild_id").nullable()
     val phase = enumerationByName<KaraokeNotifyPhase>("phase", 10)
     val exception = text("exception").nullable()
     val sendDate = datetime("send_date")

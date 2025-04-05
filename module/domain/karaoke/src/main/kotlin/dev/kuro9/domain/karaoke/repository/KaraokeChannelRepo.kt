@@ -1,6 +1,8 @@
 package dev.kuro9.domain.karaoke.repository
 
+import dev.kuro9.common.exception.DuplicatedInsertException
 import dev.kuro9.domain.database.between
+import dev.kuro9.domain.database.exists
 import dev.kuro9.domain.karaoke.repository.table.KaraokeNotifySendLogs
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSubscribeChannelEntity
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSubscribeChannels
@@ -16,22 +18,36 @@ import org.springframework.stereotype.Repository
 class KaraokeChannelRepo {
 
     /**
-     * 신곡 알림을 받을 채널을 등록합니다.
-     * @return true 시 등록 성공, false 시 이미 등록된 채널
+     * 이미 등록된 채널인지 체크합니다.
      */
+    fun isRegisteredChannel(channelId: Long): Boolean {
+        return KaraokeSubscribeChannels.select(intLiteral(1))
+            .where { KaraokeSubscribeChannels.channelId eq channelId }
+            .exists()
+    }
+
+    /**
+     * 신곡 알림을 받을 채널을 등록합니다.
+     *
+     * @param guildId null 시 DM
+     * @throws DuplicatedInsertException 이미 등록된 채널일 때
+     */
+    @Throws(DuplicatedInsertException::class)
     fun registerChannel(
         channelId: Long,
-        guildId: Long,
+        guildId: Long?,
         registerUserId: Long,
         webhookUrl: String,
-    ): Boolean {
-        return KaraokeSubscribeChannels.insertIgnore {
+    ) {
+        val isInserted = KaraokeSubscribeChannels.insertIgnore {
             it[KaraokeSubscribeChannels.channelId] = channelId
             it[KaraokeSubscribeChannels.guildId] = guildId
             it[KaraokeSubscribeChannels.webhookUrl] = webhookUrl
             it[KaraokeSubscribeChannels.registeredUserId] = registerUserId
             it[KaraokeSubscribeChannels.createdAt] = LocalDateTime.now()
         }.insertedCount == 1
+
+        if (!isInserted) throw DuplicatedInsertException()
     }
 
     /**
