@@ -60,15 +60,16 @@ class KaraokeChannelService(
     ): List<KaraokeSubscribeChannelEntity> =
         channelRepo.getAllFilteredSubscribedChannels(targetDate, pageSize, lastChannelId)
 
-    @Transactional
-    fun saveLog(
+    @Transactional(noRollbackFor = [Throwable::class])
+    suspend fun executeWithLog(
         data: KaraokeSubscribeChannelEntity,
-        action: (KaraokeSubscribeChannelEntity) -> Unit,
+        action: suspend (KaraokeSubscribeChannelEntity) -> Unit,
     ) {
         val seq = logRepo.initLog(data.channelId.value, data.guildId)
 
         try {
             action(data)
+            logRepo.markAsSuccess(seq)
         } catch (t: Throwable) {
             logRepo.updateException(seq, t)
         }

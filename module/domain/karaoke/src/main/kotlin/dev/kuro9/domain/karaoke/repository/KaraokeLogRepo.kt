@@ -1,5 +1,6 @@
 package dev.kuro9.domain.karaoke.repository
 
+import dev.kuro9.domain.karaoke.repository.table.KaraokeNotifyPhase
 import dev.kuro9.domain.karaoke.repository.table.KaraokeNotifySendLog
 import dev.kuro9.domain.karaoke.repository.table.KaraokeNotifySendLogs
 import dev.kuro9.multiplatform.common.date.util.now
@@ -23,15 +24,25 @@ class KaraokeLogRepo {
         return KaraokeNotifySendLogs.insertAndGetId {
             it[KaraokeNotifySendLogs.channelId] = channelId
             it[KaraokeNotifySendLogs.guildId] = guildId
+            it[KaraokeNotifySendLogs.phase] = KaraokeNotifyPhase.INIT
             it[KaraokeNotifySendLogs.exception] = null
             it[KaraokeNotifySendLogs.sendDate] = LocalDateTime.now()
         }.value
+    }
+
+    fun markAsSuccess(seq: Long) {
+        KaraokeNotifySendLogs.update(
+            where = { KaraokeNotifySendLogs.seq eq seq },
+        ) {
+            it[KaraokeNotifySendLogs.phase] = KaraokeNotifyPhase.SUCCESS
+        }
     }
 
     fun updateException(seq: Long, t: Throwable) {
         KaraokeNotifySendLogs.update(
             where = { KaraokeNotifySendLogs.seq eq seq },
         ) {
+            it[KaraokeNotifySendLogs.phase] = KaraokeNotifyPhase.FAILURE
             it[KaraokeNotifySendLogs.exception] = t.stackTraceToString().take(2500)
         }
     }
@@ -40,6 +51,8 @@ class KaraokeLogRepo {
         KaraokeNotifySendLogs.batchInsert(logs, ignore = true) { log ->
             this[KaraokeNotifySendLogs.channelId] = log.channelId
             this[KaraokeNotifySendLogs.guildId] = log.guildId
+            this[KaraokeNotifySendLogs.phase] =
+                if (log.exception != null) KaraokeNotifyPhase.FAILURE else KaraokeNotifyPhase.SUCCESS
             this[KaraokeNotifySendLogs.exception] = log.exception?.stackTraceToString()?.take(2500)
             this[KaraokeNotifySendLogs.sendDate] = log.sendDate
         }

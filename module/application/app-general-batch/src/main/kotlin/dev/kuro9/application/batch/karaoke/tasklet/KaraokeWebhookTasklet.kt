@@ -1,22 +1,22 @@
 package dev.kuro9.application.batch.karaoke.tasklet
 
-import com.navercorp.spring.batch.plus.step.adapter.ItemStreamIterableReaderProcessorWriter
+import com.navercorp.spring.batch.plus.step.adapter.ItemStreamIterableReaderWriter
 import dev.kuro9.application.batch.discord.DiscordWebhookPayload
 import dev.kuro9.application.batch.discord.dto.Embed
 import dev.kuro9.application.batch.discord.service.DiscordWebhookService
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
-import dev.kuro9.domain.karaoke.repository.table.KaraokeNotifySendLog
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSubscribeChannelEntity
 import dev.kuro9.domain.karaoke.service.KaraokeChannelService
 import dev.kuro9.domain.karaoke.service.KaraokeNewSongService
-import dev.kuro9.multiplatform.common.date.util.now
+import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toKotlinLocalDate
 import org.springframework.batch.core.configuration.annotation.StepScope
 import org.springframework.batch.item.Chunk
 import org.springframework.batch.item.ExecutionContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.time.LocalDate
 
 @StepScope
 @Component
@@ -24,9 +24,9 @@ class KaraokeWebhookTasklet(
     private val webhookService: DiscordWebhookService,
     private val channelService: KaraokeChannelService,
     private val newSongService: KaraokeNewSongService,
-    @Value("#{jobParameters['executeDate']}") private val _executeDate: String,
-) : ItemStreamIterableReaderProcessorWriter<KaraokeSubscribeChannelEntity, KaraokeNotifySendLog> {
-    private val executeDate = kotlinx.datetime.LocalDate.parse(_executeDate)
+    @Value("#{jobParameters['executeDate']}") private val _executeDate: LocalDate,
+) : ItemStreamIterableReaderWriter<KaraokeSubscribeChannelEntity> {
+    private val executeDate = _executeDate.toKotlinLocalDate()
     private var lastChannelId: Long? = null
     private val webhookPayload = makeWebhookPayload()
 
@@ -41,24 +41,18 @@ class KaraokeWebhookTasklet(
         }
     }
 
-    override fun process(channelEntity: KaraokeSubscribeChannelEntity): KaraokeNotifySendLog? {
-        val requestTime = LocalDateTime.now()
-        val exception = runCatching {
+    override fun write(chunk: Chunk<out KaraokeSubscribeChannelEntity>) {
+        if (webhookPayload == null) {
+            info { "WebhookPayload is null" }
+            return
+        }
+        for (entity in chunk) {
             runBlocking {
-                webhookService.sendWebhook(channelEntity.webhookUrl, webhookPayload ?: return@runBlocking null)
+                channelService.executeWithLog(entity) {
+                    webhookService.sendWebhook(entity.webhookUrl, webhookPayload)
+                }
             }
-        }.exceptionOrNull()
-
-        return KaraokeNotifySendLog(
-            channelId = channelEntity.channelId.value,
-            guildId = channelEntity.guildId,
-            exception = exception,
-            sendDate = requestTime,
-        )
-    }
-
-    override fun write(chunk: Chunk<out KaraokeNotifySendLog>) {
-        channelService.batchInsertLogs(chunk.items)
+        }
     }
 
     private fun makeWebhookPayload(): DiscordWebhookPayload? {
@@ -91,4 +85,5 @@ class KaraokeWebhookTasklet(
             embeds = embedList
         )
     }
+
 }
