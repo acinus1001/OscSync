@@ -1,0 +1,112 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+name: app-batch ci/cd
+
+on:
+  workflow_dispatch:
+    inputs:
+      do_build:
+        description: execute build job
+        type: boolean
+        required: true
+        default: true
+      do_depoly:
+        description: execute deploy job.
+        type: boolean
+        required: true
+        default: true
+
+jobs:
+  build:
+    if: ${{ inputs.do_build }}
+    environment: APP_BATCH
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
+      # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build with Gradle Wrapper
+        run: ./gradlew module:application:app-general-batch
+
+      - name: Docker Image Build
+        run: docker build -f ./script/backend/app-general-batch/Dockerfile -t app-general-batch .
+
+      - name: Docker Image Tag
+        run: docker image tag app-general-batch ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
+
+      - name: Docker Image Push
+        run: docker push ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
+
+  deploy:
+    if: always() && (needs.build.result == 'skipped' || needs.build.result == 'success') && inputs.do_depoly
+    needs:
+      - build
+    environment: APP_BATCH
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      COMPOSE_FILE_LOC: "/var/services/homes/github-cd/app-general-batch/docker-compose-deploy.yml"
+    steps:
+      - name: Deploy Remote Server
+        uses: appleboy/ssh-action@v1
+        with:
+          username: ${{ secrets.SSH_USERNAME }}
+          host: ${{ secrets.SSH_HOST }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            echo "tst"
+            echo "$COMPOSE_FILE_LOC"
+            echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | /usr/local/bin/docker login -u ${{ vars.DOCKER_HUB_USERNAME }} --password-stdin
+            /usr/local/bin/docker pull ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
+            /usr/local/bin/docker-compose -f /var/services/homes/github-cd/app-general-batch/docker-compose-deploy.yml down
+            /usr/local/bin/docker-compose -f /var/services/homes/github-cd/app-general-batch/docker-compose-deploy.yml up -d
+  
+  dependency-submission:
+    if: inputs.do_build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Generates and submits a dependency graph, enabling Dependabot Alerts for all project dependencies.
+      # See: https://github.com/gradle/actions/blob/main/dependency-submission/README.md
+      - name: Generate and submit dependency graph
+        uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
