@@ -39,6 +39,7 @@ class KaraokeTjNewSongService(
                     releaseDate = requestDate
                 )
             }
+            .filter { it.songNo in 52565..53000 }
 
         return result
 
@@ -54,7 +55,7 @@ class KaraokeTjNewSongService(
 //            }
 //        }.execute(TransactionManager.current())
     }
-    
+
     override fun getNewReleaseSongs(targetDate: LocalDate): List<KaraokeSongDto> {
         return karaokeRepo.findByReleaseDate(
             brand = KaraokeBrand.TJ,
