@@ -55,7 +55,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build with Gradle Wrapper
-        run: ./gradlew module:application:app-general-batch
+        run: ./gradlew module:application:app-general-batch:build
 
       - name: Docker Image Build
         run: docker build -f ./script/backend/app-general-batch/Dockerfile -t app-general-batch .
