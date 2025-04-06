@@ -1,6 +1,7 @@
 package dev.kuro9.application.discord.slash
 
 import dev.kuro9.common.exception.DuplicatedInsertException
+import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.service.KaraokeApiService
 import dev.kuro9.domain.karaoke.service.KaraokeChannelService
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
@@ -64,12 +65,12 @@ class SlashKaraokeCommand(
             when (event.subcommandGroup) {
                 "channel" -> when (event.subcommandName) {
                     "register" -> return registerChannel(event, deferReply)
-                    "unregister" -> return registerChannel(event, deferReply)
+                    "unregister" -> return unregisterChannel(event, deferReply)
                 }
 
                 "search" -> when (event.subcommandName) {
-                    "no" -> return registerChannel(event, deferReply)
-                    "title" -> return registerChannel(event, deferReply)
+                    "no" -> return searchByNo(event, deferReply)
+                    "title" -> return searchByTitle(event, deferReply)
                 }
             }
 
@@ -129,7 +130,18 @@ class SlashKaraokeCommand(
 
     private suspend fun unregisterChannel(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
         val targetChannel: TextChannel =
-            event.getOption("channel")?.asChannel?.asTextChannel() ?: event.channel.asTextChannel()
+            event.getOption("channel")?.asChannel?.let {
+                if (it !is TextChannel) {
+                    Embed {
+                        title = "400 Bad Request"
+                        description = "해당 채널은 텍스트 채널이 아닙니다. 텍스트 채널을 선택해주세요."
+                        color = Color.RED.rgb
+                    }.let { deferReply.await().editOriginalEmbeds(it).await() }
+                    return
+                }
+
+                it as TextChannel
+            } ?: event.channel.asTextChannel()
 
         val registerInfo = channelService.getRegisteredChannel(targetChannel.idLong)
 
@@ -154,10 +166,48 @@ class SlashKaraokeCommand(
     }
 
     private suspend fun searchByNo(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        val songNo = event.getOption("song-number")!!.asInt
 
+        val result = apiService.getSongInfoByNo(KaraokeBrand.TJ, songNo)
+
+        if (result == null) {
+            Embed {
+                title = "404 Not Found"
+                description = "해당 번호의 곡이 존재하지 않습니다."
+                color = Color.YELLOW.rgb
+            }.let { deferReply.await().editOriginalEmbeds(it).await() }
+            return
+        }
+
+        Embed {
+            title = "200 OK"
+            description = "TJ NO.$songNo 검색 결과"
+            field {
+                name = result.title
+                value = result.singer
+                inline = false
+            }
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
     }
 
-    private suspend fun searchByTitle(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {}
+    private suspend fun searchByTitle(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        val songTitle = event.getOption("song-title")!!.asString
+
+        val result = apiService.getSongInfoByName(KaraokeBrand.TJ, songTitle)
+
+        Embed {
+            title = "200 OK"
+            description = "해당 제목에 대한 결과 : ${result.size}개 (25개까지 표시)"
+
+            result.take(25).forEach {
+                field {
+                    name = "[${it.songNo}] ${it.title}"
+                    value = it.singer
+                    inline = false
+                }
+            }
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
+    }
 
     private fun getDefaultExceptionEmbed(t: Throwable): MessageEmbed = when (t) {
         is DuplicatedInsertException -> Embed {
