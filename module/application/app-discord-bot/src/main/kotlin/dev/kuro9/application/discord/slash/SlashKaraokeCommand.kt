@@ -29,7 +29,9 @@ class SlashKaraokeCommand(
             subcommand("register", "이 채널을 신곡 알림 받을 채널로 등록합니다.") {
                 option<TextChannel>("channel", "등록할 채널 (기본값=현재 채널)")
             }
-            subcommand("unregister", "이 채널을 등록 해제합니다.")
+            subcommand("unregister", "이 채널을 등록 해제합니다.") {
+                option<TextChannel>("channel", "등록 해제할 채널 (기본값=현재 채널)")
+            }
         }
 
         group("search", "노래 검색") {
@@ -82,7 +84,7 @@ class SlashKaraokeCommand(
         val targetChannel: TextChannel =
             event.getOption("channel")?.asChannel?.asTextChannel() ?: event.channel.asTextChannel()
 
-        val isRegistered = channelService.checkRegisteredChannel(targetChannel.idLong)
+        val isRegistered = channelService.getRegisteredChannel(targetChannel.idLong) != null
 
         if (isRegistered) {
             Embed {
@@ -100,18 +102,45 @@ class SlashKaraokeCommand(
             channelId = event.channelIdLong,
             guildId = event.guild?.idLong,
             webhookUrl = webhook.url,
+            webhookId = webhook.idLong,
             registerUserId = event.user.idLong,
         )
-        
+
         Embed {
             title = "200 OK"
             description = "채널 등록에 성공하였습니다."
         }.let { deferReply.await().editOriginalEmbeds(it).await() }
     }
 
-    private suspend fun unregisterChannel(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {}
+    private suspend fun unregisterChannel(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        val targetChannel: TextChannel =
+            event.getOption("channel")?.asChannel?.asTextChannel() ?: event.channel.asTextChannel()
 
-    private suspend fun searchByNo(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {}
+        val registerInfo = channelService.getRegisteredChannel(targetChannel.idLong)
+
+        if (registerInfo == null) {
+            Embed {
+                title = "409 Conflict"
+                description = "이미 등록 해제되거나 등록되지 않은 채널입니다."
+                color = Color.YELLOW.rgb
+            }.let { deferReply.await().editOriginalEmbeds(it).await() }
+
+            return
+        }
+
+        targetChannel.deleteWebhookById(registerInfo.webhookId.toString()).await()
+        channelService.unregisterChannel(registerInfo.channelId.value).takeIf { it }
+            ?: throw IllegalStateException("Channel delete failed")
+
+        Embed {
+            title = "200 OK"
+            description = "채널 등록 해제에 성공하였습니다."
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
+    }
+
+    private suspend fun searchByNo(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        
+    }
 
     private suspend fun searchByTitle(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {}
 

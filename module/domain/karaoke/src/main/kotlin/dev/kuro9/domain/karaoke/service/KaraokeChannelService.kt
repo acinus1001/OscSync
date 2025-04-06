@@ -20,7 +20,8 @@ class KaraokeChannelService(
     /**
      * 이미 등록된 채널인지 체크합니다.
      */
-    fun checkRegisteredChannel(channelId: Long): Boolean = channelRepo.isRegisteredChannel(channelId)
+    fun getRegisteredChannel(channelId: Long): KaraokeSubscribeChannelEntity? =
+        channelRepo.getRegisteredChannel(channelId)
 
     /**
      * 신곡 알림을 받을 채널을 등록합니다.
@@ -33,7 +34,8 @@ class KaraokeChannelService(
         guildId: Long?,
         registerUserId: Long,
         webhookUrl: String,
-    ) = channelRepo.registerChannel(channelId, guildId, registerUserId, webhookUrl)
+        webhookId: Long,
+    ) = channelRepo.registerChannel(channelId, guildId, registerUserId, webhookUrl, webhookId)
 
     /**
      * 등록된 신곡 알림 채널을 삭제합니다.
