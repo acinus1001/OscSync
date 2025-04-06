@@ -8,7 +8,7 @@ plugins {
 dependencies {
     implementation(projects.module.common.logger)
 
-    implementation(libs.spring.boot.starter.actuator)
+    // implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.boot.starter.batch)
     implementation(libs.navercorp.spring.batch.plus)

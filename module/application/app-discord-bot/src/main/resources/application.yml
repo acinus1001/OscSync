@@ -6,6 +6,10 @@ spring:
       - discord
       - database
 
+management:
+  server:
+    port: 9090
+
 logging:
   level:
     root: info
