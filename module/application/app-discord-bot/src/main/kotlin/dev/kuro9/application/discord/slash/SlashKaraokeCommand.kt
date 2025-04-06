@@ -7,6 +7,7 @@ import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.*
 import dev.minn.jda.ktx.messages.Embed
+import io.github.harryjhin.slf4j.extension.error
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -62,18 +63,19 @@ class SlashKaraokeCommand(
         runCatching {
             when (event.subcommandGroup) {
                 "channel" -> when (event.subcommandName) {
-                    "register" -> registerChannel(event, deferReply)
-                    "unregister" -> registerChannel(event, deferReply)
+                    "register" -> return registerChannel(event, deferReply)
+                    "unregister" -> return registerChannel(event, deferReply)
                 }
 
                 "search" -> when (event.subcommandName) {
-                    "no" -> registerChannel(event, deferReply)
-                    "title" -> registerChannel(event, deferReply)
+                    "no" -> return registerChannel(event, deferReply)
+                    "title" -> return registerChannel(event, deferReply)
                 }
             }
 
             throw NotImplementedError("Unknown command=${event.fullCommandName}")
         }.onFailure { t: Throwable ->
+            error(t) { "handl event error: ${event.fullCommandName}" }
             deferReply.await()
                 .editOriginalEmbeds(getDefaultExceptionEmbed(t))
                 .await()
@@ -81,8 +83,21 @@ class SlashKaraokeCommand(
     }
 
     private suspend fun registerChannel(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+
         val targetChannel: TextChannel =
-            event.getOption("channel")?.asChannel?.asTextChannel() ?: event.channel.asTextChannel()
+            event.getOption("channel")?.asChannel?.let {
+                if (it !is TextChannel) {
+                    Embed {
+                        title = "400 Bad Request"
+                        description = "해당 채널은 텍스트 채널이 아닙니다. 텍스트 채널을 선택해주세요."
+                        color = Color.RED.rgb
+                    }.let { deferReply.await().editOriginalEmbeds(it).await() }
+                    return
+                }
+
+                it as TextChannel
+            }
+                ?: event.channel.asTextChannel()
 
         val isRegistered = channelService.getRegisteredChannel(targetChannel.idLong) != null
 
@@ -139,7 +154,7 @@ class SlashKaraokeCommand(
     }
 
     private suspend fun searchByNo(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
-        
+
     }
 
     private suspend fun searchByTitle(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {}
