@@ -53,6 +53,14 @@ class SlashKaraokeCommand(
                     autocomplete = false
                 )
             }
+            subcommand("singer", "가수 이름으로 검색합니다.") {
+                option<String>(
+                    "singer",
+                    "가수/밴드 이름",
+                    required = true,
+                    autocomplete = false
+                )
+            }
         }
     }
 
@@ -71,6 +79,7 @@ class SlashKaraokeCommand(
                 "search" -> when (event.subcommandName) {
                     "no" -> return searchByNo(event, deferReply)
                     "title" -> return searchByTitle(event, deferReply)
+                    "singer" -> return searchBySinger(event, deferReply)
                 }
             }
 
@@ -194,6 +203,25 @@ class SlashKaraokeCommand(
         val songTitle = event.getOption("song-title")!!.asString
 
         val result = apiService.getSongInfoByName(KaraokeBrand.TJ, songTitle)
+
+        Embed {
+            title = "200 OK"
+            description = "해당 제목에 대한 결과 : ${result.size}개 (25개까지 표시)"
+
+            result.take(25).forEach {
+                field {
+                    name = "[${it.songNo}] ${it.title}"
+                    value = it.singer
+                    inline = false
+                }
+            }
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
+    }
+
+    private suspend fun searchBySinger(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        val singer = event.getOption("singer")!!.asString
+
+        val result = apiService.getSongInfoByArtist(KaraokeBrand.TJ, singer)
 
         Embed {
             title = "200 OK"
