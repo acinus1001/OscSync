@@ -190,7 +190,7 @@ class SlashKaraokeCommand(
 
         Embed {
             title = "200 OK"
-            description = "TJ NO.$songNo 검색 결과"
+            description = "TJ [$songNo] 검색 결과"
             field {
                 name = result.title
                 value = result.singer
@@ -206,7 +206,7 @@ class SlashKaraokeCommand(
 
         Embed {
             title = "200 OK"
-            description = "해당 제목에 대한 결과 : ${result.size}개 (25개까지 표시)"
+            description = "$songTitle 에 대한 결과 : ${result.size}개 (25개까지 표시)"
 
             result.take(25).forEach {
                 field {
@@ -225,7 +225,7 @@ class SlashKaraokeCommand(
 
         Embed {
             title = "200 OK"
-            description = "해당 제목에 대한 결과 : ${result.size}개 (25개까지 표시)"
+            description = "$singer 에 대한 결과 : ${result.size}개 (25개까지 표시)"
 
             result.take(25).forEach {
                 field {
