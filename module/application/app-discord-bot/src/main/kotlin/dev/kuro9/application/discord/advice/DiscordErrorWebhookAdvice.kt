@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.intellij.lang.annotations.Language
 import org.springframework.stereotype.Component
 
@@ -78,6 +79,7 @@ class DiscordErrorWebhookAdvice(private val errorUrl: ErrorWebhookUrl) : ServerE
         is SlashCommandInteractionEvent -> "/$fullCommandName"
         is CommandAutoCompleteInteractionEvent -> "/$fullCommandName"
         is ButtonInteractionEvent -> componentId
+        is MessageReceivedEvent -> message.contentRaw
         else -> "<unknown>"
     }.let { "${this::class.simpleName}(`$it`)" }
 
@@ -85,6 +87,7 @@ class DiscordErrorWebhookAdvice(private val errorUrl: ErrorWebhookUrl) : ServerE
         is SlashCommandInteractionEvent -> user.asMention
         is CommandAutoCompleteInteractionEvent -> user.asMention
         is ButtonInteractionEvent -> user.asMention
+        is MessageReceivedEvent -> author.asMention
         else -> "<unknown>"
     }
 }
