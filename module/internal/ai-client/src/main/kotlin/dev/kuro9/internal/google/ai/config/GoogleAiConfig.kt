@@ -1,6 +1,6 @@
 package dev.kuro9.internal.google.ai.config
 
-import dev.kuro9.internal.google.ai.model.GoogleAiToken
+import dev.kuro9.internal.google.ai.dto.GoogleAiToken
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
