@@ -13,7 +13,7 @@ class KaraokeCrawlJobScheduler(
     private val jobRegistry: JobRegistry,
 ) {
 
-    @Scheduled(cron = "0 0 9 * * *", zone = "KST")
+    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     fun runKaraokeJob() {
         val job = jobRegistry.getJob("karaokeCrawlJob")
         jobLauncher.run(
