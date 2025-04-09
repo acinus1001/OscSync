@@ -17,6 +17,8 @@ class GoogleAiService(token: GoogleAiToken) {
         .apiKey(token.token)
         .build()
 
+    private val googleSearchTool = listOf(Tool.builder().googleSearch(GoogleSearch.builder().build()).build())
+
     suspend fun chat(
         systemInstruction: String,
         input: String,
@@ -91,6 +93,24 @@ class GoogleAiService(token: GoogleAiToken) {
         ).also { response ->
             chatLog += response.toTextResponseContent()
         }.text()!!
+    }
+
+    suspend fun search(query: String): String {
+
+        val systemInstruction = """
+            당신은 다른 자동화된 봇을 위한 검색 결과 제공 서비스입니다. 
+            최대한 짧고 간결하게 응답을 요약해 제공하십시오.
+        """.trimIndent()
+
+        return client.models.generateContent(
+            modelVersion,
+            query.toUserChatContent(),
+            GenerateContentConfig.builder()
+                .candidateCount(1)
+                .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
+                .tools(googleSearchTool)
+                .build()
+        ).text()!!
     }
 
 

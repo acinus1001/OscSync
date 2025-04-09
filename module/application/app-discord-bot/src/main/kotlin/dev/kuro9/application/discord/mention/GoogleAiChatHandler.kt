@@ -93,6 +93,7 @@ class GoogleAiChatHandler(
         val isAutoCompletable: Boolean,
     )
 
+    @Suppress("UNCHECKED_CAST")
     private fun makeMapSmall(map: MutableMap<String, Any?>) {
         map.remove("name_localizations")
         map.remove("description_localizations")
@@ -106,6 +107,7 @@ class GoogleAiChatHandler(
         (map["options"] as List<MutableMap<String, Any?>>?)?.forEach { makeMapSmall(it) }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun replaceMapToNode(element: Any?): JsonElement {
         return when (element) {
             null -> JsonNull
@@ -248,13 +250,41 @@ class GoogleAiChatHandler(
                         else -> throw IllegalArgumentException("unknown type: $type")
                     }
                 }
-            )
+            ),
+            GoogleAiToolDto(
+                name = "webSearch",
+                function = FunctionDeclaration.builder()
+                    .name("webSearch")
+                    .description("인터넷 검색 및 요약 함수")
+                    .parameters(
+                        Schema.builder()
+                            .type("object")
+                            .properties(
+                                mapOf(
+                                    "query" to Schema.builder()
+                                        .type("string")
+                                        .description("검색어")
+                                        .nullable(false)
+                                        .build(),
+                                )
+                            )
+                            .build()
+                    )
+                    .build(),
+                needToolResponse = true,
+                toolResponseConsumer = {
+                    val query: String by it
+                    info { "args : $it" }
+
+                    mapOf("result" to aiService.search(query))
+                }
+            ),
         )
     }
 
 
     private fun getInstruction(deviceNameList: List<String>): String = """
-        당신은 `KGB`라는 이름의 채팅 봇입니다. 
+        당신은 `KGB`라는 이름의 채팅 봇입니다. (stands for : kurovine9's general bot)
         사무적인 대답보다는 사용자에게 친근감을 표현해 주십시오.
         당신의 관리자는 `<@!400579163959853056>`입니다. 
         당신에게는 사물인터넷을 이용해 사용자의 전자기기를 조작할 수 있는 권한이 있습니다.
