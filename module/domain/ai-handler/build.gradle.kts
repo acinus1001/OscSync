@@ -18,4 +18,5 @@ dependencies {
     implementation(projects.module.common.logger)
     implementation(projects.module.internal.aiClient)
     implementation(projects.module.domain.database)
+    implementation(projects.module.domain.cache)
 }
