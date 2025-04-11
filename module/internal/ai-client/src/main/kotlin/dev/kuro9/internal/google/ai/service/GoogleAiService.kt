@@ -2,6 +2,7 @@ package dev.kuro9.internal.google.ai.service
 
 import com.google.genai.Client
 import com.google.genai.types.*
+import dev.kuro9.internal.google.ai.dto.GoogleAiChatResponse
 import dev.kuro9.internal.google.ai.dto.GoogleAiToken
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import kotlinx.coroutines.*
@@ -23,12 +24,14 @@ class GoogleAiService(token: GoogleAiToken) {
         systemInstruction: String,
         input: String,
         tools: List<GoogleAiToolDto> = emptyList(),
-        chatLog: MutableList<Content> = mutableListOf()
-    ): String {
-        chatLog += input.toUserChatContent()
+        chatLog: List<Content> = emptyList()
+    ): GoogleAiChatResponse {
+        val nowSessionChatLog = mutableListOf<Content>()
+        nowSessionChatLog += input.toUserChatContent()
+
         val response = client.models.generateContent(
             modelVersion,
-            chatLog,
+            chatLog + nowSessionChatLog,
             GenerateContentConfig.builder()
                 .candidateCount(1)
                 .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
@@ -59,8 +62,11 @@ class GoogleAiService(token: GoogleAiToken) {
                 }
             }
 
-            chatLog += response.toTextResponseContent()
-            return response.text()!!
+            nowSessionChatLog += response.toTextResponseContent()
+            return GoogleAiChatResponse(
+                result = response.text()!!,
+                sessionChatLog = nowSessionChatLog,
+            )
         }
 
         val toolResponse = CoroutineScope(currentCoroutineContext()).async {
@@ -73,26 +79,29 @@ class GoogleAiService(token: GoogleAiToken) {
 
             waitFunctionCall.map {
                 async {
-                    chatLog += it.toRequestContent()
+                    nowSessionChatLog += it.toRequestContent()
                     val handler = tools.first { t -> it.name().getOrNull() == t.name }
                     handler.name to handler.toolResponseConsumer(it.args().get())
                 }
             }.awaitAll()
         }.await()
 
-        chatLog += toolResponse.toFunctionResponseContent()
+        nowSessionChatLog += toolResponse.toFunctionResponseContent()
 
-        return client.models.generateContent(
+        val responseWithTool = client.models.generateContent(
             modelVersion,
-            chatLog,
+            chatLog + nowSessionChatLog,
             GenerateContentConfig.builder()
                 .candidateCount(1)
                 .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
                 .tools(tools.toTools())
                 .build()
-        ).also { response ->
-            chatLog += response.toTextResponseContent()
-        }.text()!!
+        )
+        nowSessionChatLog += response.toTextResponseContent()
+        return GoogleAiChatResponse(
+            result = responseWithTool.text()!!,
+            sessionChatLog = nowSessionChatLog,
+        )
     }
 
     suspend fun search(query: String): String {

@@ -1,0 +1,30 @@
+package dev.kuro9.domain.ai.table
+
+import dev.kuro9.multiplatform.common.date.util.now
+import kotlinx.datetime.LocalDateTime
+import org.jetbrains.exposed.dao.LongEntity
+import org.jetbrains.exposed.dao.LongEntityClass
+import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.kotlin.datetime.datetime
+
+object AiChatLogs : LongIdTable("ai_chat_log") {
+    val key = varchar("key", 28)
+    val payload = text("payload")
+    val createdAt = datetime("created_at").clientDefault { LocalDateTime.now() }
+    val revokeAt = datetime("revoke_at").nullable()
+}
+
+class AiChatLogEntity(id: EntityID<Long>) : LongEntity(id) {
+    companion object : LongEntityClass<AiChatLogEntity>(AiChatLogs)
+
+    var key by AiChatLogs.key
+    var payload by AiChatLogs.payload
+    var createdAt by AiChatLogs.createdAt
+    var revokeAt by AiChatLogs.revokeAt
+}
+
+data class AiChatLog(
+    val key: String,
+    val payload: String,
+)

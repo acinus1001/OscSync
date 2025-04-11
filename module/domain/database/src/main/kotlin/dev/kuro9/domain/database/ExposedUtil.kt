@@ -8,8 +8,10 @@ infix fun <T : Comparable<T>, S : T?> ExpressionWithColumnType<in S>.between(ran
 }
 
 fun Query.fetchFirst() = this.limit(1).first()
-
 fun Query.fetchFirstOrNull() = this.limit(1).firstOrNull()
+fun <T> Query.fetchFirst(exp: Expression<T>) = this.fetchFirst()[exp]
+fun <T> Query.fetchFirstOrNull(exp: Expression<T>) = this.fetchFirstOrNull()?.get(exp)
+
 
 fun Query.exists(): Boolean = Table.Dual.select(intLiteral(1))
     .where(exists(this@exists))

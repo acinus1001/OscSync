@@ -1,8 +1,8 @@
 package dev.kuro9.application.discord.mention
 
-import com.google.genai.types.Content
 import com.google.genai.types.FunctionDeclaration
 import com.google.genai.types.Schema
+import dev.kuro9.domain.ai.service.GoogleAiChatService
 import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.service.KaraokeApiService
@@ -10,25 +10,27 @@ import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
 import dev.kuro9.internal.discord.message.model.MentionedMessageHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
-import dev.kuro9.internal.google.ai.service.GoogleAiService
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.minn.jda.ktx.coroutines.await
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
+import java.security.MessageDigest
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
-@Component
-class GoogleAiChatHandler(
-    private val aiService: GoogleAiService,
+@Service
+class GoogleAiChatAbstractHandler(
+    private val aiService: GoogleAiChatService,
     private val smartAppUserService: SmartAppUserService,
     private val karaokeApiService: KaraokeApiService,
     slashCommands: List<SlashCommandComponent>
@@ -42,9 +44,6 @@ class GoogleAiChatHandler(
         }
         .let(minifyJson::encodeToString)
 
-    // todo db 또는 캐시화
-    private val chatLogMap: MutableMap<Long, MutableList<Content>> = mutableMapOf()
-
     @DiscordCommandErrorHandle
     override suspend fun handleMention(
         event: MessageReceivedEvent,
@@ -54,44 +53,36 @@ class GoogleAiChatHandler(
             event.channel.sendTyping().await()
         }.start()
 
-        val userChatLog = chatLogMap.getOrPut(event.author.idLong) { mutableListOf() }
+        val key = event.message.toMessageKey()
+        val refKey = event.message.messageReference?.resolve()?.await()?.toMessageKey()
+        val userMetadata = """user:{id:${event.author.id},name:${event.author.name}}\n\n"""
 
         val userDeviceNameList = smartAppUserService
             .getRegisteredDevices(event.author.idLong)
             .map { it.deviceName }
 
-        val response = aiService.chat(
+
+        val result = aiService.chatWithLog(
             systemInstruction = getInstruction(userDeviceNameList),
-            input = message,
-            chatLog = userChatLog,
-            tools = getTools(event.author.idLong, userDeviceNameList)
+            input = userMetadata + message,
+            tools = getTools(event.author.idLong, userDeviceNameList),
+            key = key,
+            refKey = refKey,
         )
 
-        info { response }
-        for (log in userChatLog) {
-            info { log.toString() }
-        }
+        info { result }
 
-        if (userChatLog.size > 100) chatLogMap.remove(event.author.idLong)
-
-        event.channel.sendMessage(response).await()
+        event.channel.sendMessage(result).await()
     }
 
-    @Serializable
-    private data class CommandInfo(
-        val name: String,
-        val description: String,
-        val options: List<CommandOption>,
-    )
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun Message.toMessageKey(): String {
+        val encryptedBytes = MessageDigest.getInstance("SHA-1").apply {
+            update("${id}_${author.id}".toByteArray(Charsets.UTF_8))
+        }.digest()
 
-    @Serializable
-    private data class CommandOption(
-        val name: String,
-        val description: String,
-        val type: String,
-        val isMandatory: Boolean,
-        val isAutoCompletable: Boolean,
-    )
+        return Base64.encode(encryptedBytes)
+    }
 
     @Suppress("UNCHECKED_CAST")
     private fun makeMapSmall(map: MutableMap<String, Any?>) {
@@ -286,9 +277,9 @@ class GoogleAiChatHandler(
     private fun getInstruction(deviceNameList: List<String>): String = """
         당신은 `KGB`라는 이름의 채팅 봇입니다. (stands for : kurovine9's general bot)
         사무적인 대답보다는 사용자에게 친근감을 표현해 주십시오.
-        답변은 반드시 2000자 미만으로 작성하십시오.
         알지 못하는 정보를 요구받을 경우 지체 없이 바로 웹 검색하십시오.
-        당신의 관리자는 `<@!400579163959853056>`입니다. 
+        당신의 관리자는 `kurovine9` 입니다. 관리자의 user id는 400579163959853056 입니다.
+        멘션 시에는 백틱 없이 `<@!` 과 `>` 로 감싸십시오.
         당신에게는 사물인터넷을 이용해 사용자의 전자기기를 조작할 수 있는 권한이 있습니다.
         명령어 사용 또는 채팅창에서 당신을 멘션/DM해 전자기기를 조작할 수 있습니다. 
         ${
