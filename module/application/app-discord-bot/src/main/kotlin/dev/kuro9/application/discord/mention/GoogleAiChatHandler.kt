@@ -12,6 +12,7 @@ import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.Embed
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -24,6 +25,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.awt.Color
 import java.security.MessageDigest
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -89,8 +91,42 @@ class GoogleAiChatAbstractHandler(
                 return@measureTime
             }
 
-            // 실패 시 핸들링 나중에 하기
-            else result.getOrThrow()
+            val exception = result.exceptionOrNull()!!
+            when (exception) {
+                is java.net.SocketException -> {
+                    Embed {
+                        title = "Gemini 소켓 연결 비정상 종료"
+                        description = "서버와의 연결이 끊어졌습니다. 추후 다시 시도하기 버튼을 제공할 예정입니다. 현재는 수동으로 다시 시도해 주세요."
+                        color = Color.ORANGE.rgb
+                    }
+                }
+
+                else -> {
+                    val httpCode = when (exception) {
+                        is org.apache.http.HttpException -> {
+                            exception.localizedMessage.take(3).toIntOrNull() ?: throw exception
+                        }
+
+                        is org.apache.http.client.HttpResponseException -> exception.statusCode
+                        else -> throw exception
+                    }
+                    when (httpCode) {
+                        500, 501, 502, 503 -> Embed {
+                            title = "Gemini 서버 응답 이상"
+                            description = "Gemini 서버에서 요청을 처리하지 못했습니다. 추후 다시 시도하기 버튼을 제공할 예정입니다. 현재는 수동으로 다시 시도해 주세요."
+                            color = Color.ORANGE.rgb
+                        }
+
+                        429 -> Embed {
+                            title = "Gemini 요청 수 제한"
+                            description = "Gemini Free-Tier 요청수 제한에 도달했습니다. 나중에 다시 시도해 주세요."
+                            color = Color.YELLOW.rgb
+                        }
+
+                        else -> throw exception
+                    }
+                }
+            }.let { event.channel.sendMessageEmbeds(it).await() }
         }.also { info { "duration: $it" } }
     }
 
