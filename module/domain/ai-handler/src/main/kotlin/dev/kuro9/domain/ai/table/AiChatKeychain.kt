@@ -9,8 +9,8 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.kotlin.datetime.datetime
 
 object AiChatKeychains : LongIdTable("ai_chat_keychain", "seq") {
-    val rootKey = varchar("root_key", 28)
-    val refKey = varchar("refKey", 28)
+    val rootKey = varchar("root_key", 28).index()
+    val refKey = varchar("refKey", 28).index()
     val key = varchar("key", 28).uniqueIndex()
     val createdAt = datetime("created_at").clientDefault { LocalDateTime.now() }
 }

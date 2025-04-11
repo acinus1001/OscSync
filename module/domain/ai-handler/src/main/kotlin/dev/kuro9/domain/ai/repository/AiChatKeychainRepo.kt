@@ -2,20 +2,22 @@ package dev.kuro9.domain.ai.repository
 
 import dev.kuro9.domain.ai.table.AiChatKeychains
 import dev.kuro9.domain.database.fetchFirstOrNull
-import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.orWhere
 import org.springframework.stereotype.Repository
 
 @Repository
 class AiChatKeychainRepo {
 
-    fun findRootKey(refKey: String): String? {
+    fun findRootKey(key: String): String? {
         return AiChatKeychains.select(AiChatKeychains.rootKey)
-            .where { AiChatKeychains.refKey eq refKey }
+            .where { AiChatKeychains.key eq key }
+            .orWhere { AiChatKeychains.refKey eq key }
             .fetchFirstOrNull(AiChatKeychains.rootKey)
     }
 
     fun insertKey(rootKey: String, refKey: String, key: String) {
-        AiChatKeychains.insert {
+        AiChatKeychains.insertIgnore {
             it[this.rootKey] = rootKey
             it[this.refKey] = refKey
             it[this.key] = key

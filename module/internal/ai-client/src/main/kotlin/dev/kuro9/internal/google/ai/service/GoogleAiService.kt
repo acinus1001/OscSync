@@ -97,7 +97,7 @@ class GoogleAiService(token: GoogleAiToken) {
                 .tools(tools.toTools())
                 .build()
         )
-        nowSessionChatLog += response.toTextResponseContent()
+        nowSessionChatLog += responseWithTool.toTextResponseContent()
         return GoogleAiChatResponse(
             result = responseWithTool.text()!!,
             sessionChatLog = nowSessionChatLog,

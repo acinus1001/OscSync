@@ -10,15 +10,15 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class GoogleAiChatStorageService(private val repo: AiChatLogRepo) : GoogleAiChatStorage {
 
-    override fun get(key: String): List<Content>? {
-        return repo.findAll(key).map {
+    override fun get(rootKey: String): List<Content>? {
+        return repo.findAllByRootKey(rootKey).map {
             Content.fromJson(it.payload)
         }
     }
 
     @Transactional
-    override fun append(key: String, log: List<Content>) {
-        log.map { AiChatLog(key = key, payload = it.toJson()) }
+    override fun append(key: String, rootKey: String, log: List<Content>) {
+        log.map { AiChatLog(key = key, rootKey = rootKey, payload = it.toJson()) }
             .let(repo::saveAll)
     }
 

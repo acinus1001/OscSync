@@ -6,8 +6,8 @@ import org.springframework.transaction.annotation.Transactional
 
 @[Transactional(readOnly = true) Service]
 class GoogleAiKeychainStorageService(private val repo: AiChatKeychainRepo) : GoogleAiKeychainStorage {
-    override fun getRootKey(refKey: String): String? {
-        return repo.findRootKey(refKey)
+    override fun getRootKey(key: String): String? {
+        return repo.findRootKey(key)
     }
 
     @Transactional

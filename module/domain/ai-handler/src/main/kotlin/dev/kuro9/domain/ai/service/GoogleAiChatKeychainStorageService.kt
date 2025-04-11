@@ -2,8 +2,8 @@ package dev.kuro9.domain.ai.service
 
 import com.google.genai.types.Content
 import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.springframework.stereotype.Service
 
@@ -16,19 +16,24 @@ class GoogleAiChatKeychainStorageService(
     suspend fun get(refKey: String?, nowKey: String): List<Content> {
         val rootKey = refKey?.let(keyChainStorage::getRootKey)
 
-        CoroutineScope(context).launch {
-            when (rootKey) {
-                null -> keyChainStorage.addKeychain(nowKey, nowKey, nowKey)
-                else -> keyChainStorage.addKeychain(rootKey, refKey, nowKey)
+        coroutineScope {
+            launch {
+                when (rootKey) {
+                    null -> keyChainStorage.addKeychain(nowKey, nowKey, nowKey)
+                    else -> keyChainStorage.addKeychain(rootKey, refKey, nowKey)
+                }
             }
         }
 
-        return storage[nowKey] ?: emptyList()
+        return storage[rootKey ?: nowKey] ?: emptyList()
     }
 
-    fun append(key: String, log: List<Content>) {
-        CoroutineScope(context).launch {
-            storage.append(key, log)
+    suspend fun append(key: String, log: List<Content>) {
+        coroutineScope {
+            launch {
+                val rootKey = keyChainStorage.getRootKey(key)
+                storage.append(key, rootKey ?: key, log)
+            }
         }
     }
 

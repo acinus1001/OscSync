@@ -13,17 +13,17 @@ import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.minn.jda.ktx.coroutines.await
 import io.github.harryjhin.slf4j.extension.info
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.security.MessageDigest
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -45,40 +45,84 @@ class GoogleAiChatAbstractHandler(
         .let(minifyJson::encodeToString)
 
     @DiscordCommandErrorHandle
+    @Transactional(rollbackFor = [Throwable::class])
     override suspend fun handleMention(
         event: MessageReceivedEvent,
         message: String,
     ) {
-        CoroutineScope(Dispatchers.IO).launch {
-            event.channel.sendTyping().await()
-        }.start()
-
-        val key = event.message.toMessageKey()
-        val refKey = event.message.messageReference?.resolve()?.await()?.toMessageKey()
         val userMetadata = """user:{id:${event.author.id},name:${event.author.name}}\n\n"""
 
-        val userDeviceNameList = smartAppUserService
-            .getRegisteredDevices(event.author.idLong)
-            .map { it.deviceName }
+        val result = coroutineScope {
+            launch {
+                event.channel.sendTyping().await()
+            }
+            val keyJob = async {
+                determineKeys(event)
+            }
+            val deviceJob = async {
+                smartAppUserService
+                    .getRegisteredDevices(event.author.idLong)
+                    .map { it.deviceName }
+            }
 
+            val (key, refKey) = keyJob.await()
+            val userDeviceNameList = deviceJob.await()
 
-        val result = aiService.chatWithLog(
-            systemInstruction = getInstruction(userDeviceNameList),
-            input = userMetadata + message,
-            tools = getTools(event.author.idLong, userDeviceNameList),
-            key = key,
-            refKey = refKey,
-        )
+            info { "key: $key, ref: $refKey" }
 
-        info { result }
+            runCatching {
+                aiService.chatWithLog(
+                    systemInstruction = getInstruction(userDeviceNameList),
+                    input = userMetadata + message,
+                    tools = getTools(event.author.idLong, userDeviceNameList),
+                    key = key,
+                    refKey = refKey,
+                )
+            }
+        }
 
-        event.channel.sendMessage(result).await()
+        if (result.isSuccess) {
+            val resultStr = result.getOrThrow()
+            info { resultStr }
+
+            resultStr.chunked(1500).forEach {
+                event.message.reply(it).await()
+            }
+            return
+        }
+
+        // 실패 시 핸들링 나중에 하기
+        result.getOrThrow()
+    }
+
+    /**
+     * 채널에 따라 key 결정
+     * @return key to refKey
+     */
+    suspend fun determineKeys(event: MessageReceivedEvent): Pair<String, String?> {
+        return when {
+            !event.message.isFromGuild -> {
+                val key = event.author.id
+                makeKey(key).let { it to it }
+            }
+
+            else -> {
+                val messageRef = event.message.messageReference?.resolve()?.await()
+                    ?.messageReference?.resolve()?.await()
+                info { "ref=${messageRef?.contentRaw}" }
+                val key = "${event.message.id}_${event.message.author.id}"
+                val refKey = messageRef?.let {
+                    "${it.id}_${event.message.author.id}"
+                }
+                makeKey(key) to refKey?.let(::makeKey)
+            }
+        }
     }
 
     @OptIn(ExperimentalEncodingApi::class)
-    private fun Message.toMessageKey(): String {
+    private fun makeKey(plainKey: String): String {
         val encryptedBytes = MessageDigest.getInstance("SHA-1").apply {
-            update("${id}_${author.id}".toByteArray(Charsets.UTF_8))
+            update(plainKey.toByteArray(Charsets.UTF_8))
         }.digest()
 
         return Base64.encode(encryptedBytes)
@@ -279,7 +323,7 @@ class GoogleAiChatAbstractHandler(
         사무적인 대답보다는 사용자에게 친근감을 표현해 주십시오.
         알지 못하는 정보를 요구받을 경우 지체 없이 바로 웹 검색하십시오.
         당신의 관리자는 `kurovine9` 입니다. 관리자의 user id는 400579163959853056 입니다.
-        멘션 시에는 백틱 없이 `<@!` 과 `>` 로 감싸십시오.
+        멘션 시에는 반드시 백틱 없이 `<@!` 과 `>` 로 감싸십시오.
         당신에게는 사물인터넷을 이용해 사용자의 전자기기를 조작할 수 있는 권한이 있습니다.
         명령어 사용 또는 채팅창에서 당신을 멘션/DM해 전자기기를 조작할 수 있습니다. 
         ${

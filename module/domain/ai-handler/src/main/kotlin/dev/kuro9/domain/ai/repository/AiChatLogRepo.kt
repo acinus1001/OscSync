@@ -21,6 +21,14 @@ class AiChatLogRepo {
             .apply { if (limit != null) limit(limit) }
     }
 
+    fun findAllByRootKey(rootKey: String, limit: Int? = null): SizedIterable<AiChatLogEntity> {
+        return Op.build { AiChatLogs.rootKey eq rootKey }
+            .and { AiChatLogs.revokeAt.isNull() }
+            .let(AiChatLogEntity::find)
+            .orderBy(AiChatLogs.id to SortOrder.ASC)
+            .apply { if (limit != null) limit(limit) }
+    }
+
     fun findAllId(key: String, limit: Int? = null): List<Long> {
         return AiChatLogs.select(AiChatLogs.id)
             .where { AiChatLogs.key eq key }
@@ -30,9 +38,19 @@ class AiChatLogRepo {
             .map { it[AiChatLogs.id].value }
     }
 
+    fun findAllIdByRootKey(rootKey: String, limit: Int? = null): List<Long> {
+        return AiChatLogs.select(AiChatLogs.id)
+            .where { AiChatLogs.rootKey eq rootKey }
+            .andWhere { AiChatLogs.revokeAt.isNull() }
+            .orderBy(AiChatLogs.id to SortOrder.ASC)
+            .apply { if (limit != null) limit(limit) }
+            .map { it[AiChatLogs.id].value }
+    }
+
     fun saveAll(logs: Iterable<AiChatLog>) {
         AiChatLogs.batchInsert(logs) { log ->
             this[AiChatLogs.key] = log.key
+            this[AiChatLogs.rootKey] = log.rootKey
             this[AiChatLogs.payload] = log.payload
             this[AiChatLogs.createdAt] = LocalDateTime.now()
             this[AiChatLogs.revokeAt] = null
