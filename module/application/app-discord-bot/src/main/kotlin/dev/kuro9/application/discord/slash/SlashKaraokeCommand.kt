@@ -1,6 +1,8 @@
 package dev.kuro9.application.discord.slash
 
+import dev.kuro9.application.discord.exception.OperationNotPermittedException
 import dev.kuro9.common.exception.DuplicatedInsertException
+import dev.kuro9.domain.error.handler.discord.exception.DiscordEmbedException
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.service.KaraokeApiService
 import dev.kuro9.domain.karaoke.service.KaraokeChannelService
@@ -9,10 +11,8 @@ import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.*
 import dev.minn.jda.ktx.messages.Embed
 import io.github.harryjhin.slf4j.extension.error
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -27,7 +27,7 @@ class SlashKaraokeCommand(
 ) : SlashCommandComponent {
     override val commandData = Command("kara", "노래방 관련 명령어 모음") {
         group("channel", "알림 관련 채널 설정") {
-            restrict(guild = true) // guild only
+            restrict(guild = true, Permission.MANAGE_WEBHOOKS) // guild only
             subcommand("register", "이 채널을 신곡 알림 받을 채널로 등록합니다.") {
                 option<TextChannel>("channel", "등록할 채널 (기본값=현재 채널)")
             }
@@ -93,7 +93,7 @@ class SlashKaraokeCommand(
     }
 
     private suspend fun registerChannel(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
-
+        checkPermission(event, Permission.MANAGE_WEBHOOKS)
         val targetChannel: TextChannel =
             event.getOption("channel")?.asChannel?.let {
                 if (it !is TextChannel) {
@@ -105,11 +105,13 @@ class SlashKaraokeCommand(
                     return
                 }
 
-                it as TextChannel
+                it
             }
                 ?: event.channel.asTextChannel()
 
-        val isRegistered = channelService.getRegisteredChannel(targetChannel.idLong) != null
+        val isRegistered = withContext(Dispatchers.IO) {
+            channelService.getRegisteredChannel(targetChannel.idLong)
+        } != null
 
         if (isRegistered) {
             Embed {
@@ -123,13 +125,15 @@ class SlashKaraokeCommand(
 
         val webhook = targetChannel.createWebhook("KGB: Karaoke Notify Hook").await()
 
-        channelService.registerChannel(
-            channelId = event.channelIdLong,
-            guildId = event.guild?.idLong,
-            webhookUrl = webhook.url,
-            webhookId = webhook.idLong,
-            registerUserId = event.user.idLong,
-        )
+        withContext(Dispatchers.IO) {
+            channelService.registerChannel(
+                channelId = event.channelIdLong,
+                guildId = event.guild?.idLong,
+                webhookUrl = webhook.url,
+                webhookId = webhook.idLong,
+                registerUserId = event.user.idLong,
+            )
+        }
 
         Embed {
             title = "200 OK"
@@ -138,6 +142,7 @@ class SlashKaraokeCommand(
     }
 
     private suspend fun unregisterChannel(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        checkPermission(event, Permission.MANAGE_WEBHOOKS)
         val targetChannel: TextChannel =
             event.getOption("channel")?.asChannel?.let {
                 if (it !is TextChannel) {
@@ -149,10 +154,12 @@ class SlashKaraokeCommand(
                     return
                 }
 
-                it as TextChannel
+                it
             } ?: event.channel.asTextChannel()
 
-        val registerInfo = channelService.getRegisteredChannel(targetChannel.idLong)
+        val registerInfo = withContext(Dispatchers.IO) {
+            channelService.getRegisteredChannel(targetChannel.idLong)
+        }
 
         if (registerInfo == null) {
             Embed {
@@ -165,7 +172,9 @@ class SlashKaraokeCommand(
         }
 
         targetChannel.deleteWebhookById(registerInfo.webhookId.toString()).await()
-        channelService.unregisterChannel(registerInfo.channelId.value).takeIf { it }
+        withContext(Dispatchers.IO) {
+            channelService.unregisterChannel(registerInfo.channelId.value)
+        }.takeIf { it }
             ?: throw IllegalStateException("Channel delete failed")
 
         Embed {
@@ -237,6 +246,26 @@ class SlashKaraokeCommand(
         }.let { deferReply.await().editOriginalEmbeds(it).await() }
     }
 
+    @Throws(OperationNotPermittedException::class)
+    private suspend fun checkPermission(
+        event: SlashCommandInteractionEvent,
+        permission: Permission,
+    ) {
+        when {
+            event.user.idLong == 400579163959853056L -> return
+            event.member?.hasPermission(permission) == true -> return
+        }
+
+        throw OperationNotPermittedException(
+            embed = Embed {
+                title = "403 Forbidden"
+                description = "$permission 권한이 없습니다."
+                color = Color.RED.rgb
+            },
+            message = "user ${event.user.id} $permission not permitted."
+        )
+    }
+
     private fun getDefaultExceptionEmbed(t: Throwable): MessageEmbed = when (t) {
         is DuplicatedInsertException -> Embed {
             title = "409 Conflict"
@@ -249,6 +278,8 @@ class SlashKaraokeCommand(
             description = "This command is not implemented. Contact <@400579163959853056> to report."
             color = Color.RED.rgb
         }
+
+        is DiscordEmbedException -> t.embed
 
         else -> throw t
     }

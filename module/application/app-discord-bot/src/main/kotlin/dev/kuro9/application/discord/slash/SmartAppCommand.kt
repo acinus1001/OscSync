@@ -12,6 +12,7 @@ import dev.minn.jda.ktx.interactions.commands.group
 import dev.minn.jda.ktx.interactions.commands.option
 import dev.minn.jda.ktx.interactions.commands.subcommand
 import dev.minn.jda.ktx.messages.Embed
+import kotlinx.coroutines.*
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -62,36 +63,28 @@ class SmartAppCommand(
     }
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
-        var deferReply: InteractionHook? = null
         runCatching {
             when (event.subcommandGroup) {
                 "token" -> when (event.subcommandName) {
-                    "register" -> registerToken(event, event.deferReply(true).await().also { deferReply = it })
-                    "delete" -> deleteToken(event, event.deferReply(false).await().also { deferReply = it })
+                    "register" -> registerToken(event)
+                    "delete" -> deleteToken(event)
                     else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
                 }
 
                 else -> when (event.subcommandName) {
-                    "devices" -> listDevices(event, event.deferReply(false).await().also { deferReply = it })
-                    "register" -> registerDevice(event, event.deferReply(false).await().also { deferReply = it })
-                    "registered" -> listRegisteredDevices(
-                        event,
-                        event.deferReply(false).await().also { deferReply = it })
+                    "devices" -> listDevices(event)
+                    "register" -> registerDevice(event)
+                    "registered" -> listRegisteredDevices(event)
 
-                    "execute" -> executeDevice(event, event.deferReply(false).await().also { deferReply = it })
-                    "delete" -> deleteDevice(event, event.deferReply(false).await().also { deferReply = it })
+                    "execute" -> executeDevice(event)
+                    "delete" -> deleteDevice(event)
                     else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
                 }
             }
 
-        }.onFailure {
-            getDefaultExceptionEmbed(it).let {
-                when (deferReply) {
-                    null -> event.replyEmbeds(it).await()
-                    else -> deferReply.editOriginalEmbeds(it).await()
-                }
-                return
-            }
+        }.onFailure { t ->
+            event.replyEmbeds(getDefaultExceptionEmbed(t)).await()
+            return
         }
     }
 
@@ -102,8 +95,8 @@ class SmartAppCommand(
         }
     }
 
-    private suspend fun listDevices(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
-
+    private suspend fun listDevices(event: SlashCommandInteractionEvent) {
+        val deferReply = event.asyncDeferReply()
         val devices = smartAppUserService.getUserDevices(event.user.idLong)
 
         val embed = Embed {
@@ -117,11 +110,14 @@ class SmartAppCommand(
                 }
             }
         }
-        deferReply.editOriginalEmbeds(embed).await()
+        deferReply.await().editOriginalEmbeds(embed).await()
     }
 
-    private suspend fun listRegisteredDevices(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
-        val devices = smartAppUserService.getUserRegisteredDevices(event.user.idLong)
+    private suspend fun listRegisteredDevices(event: SlashCommandInteractionEvent) {
+        val deferReply = event.asyncDeferReply()
+        val devices = withContext(Dispatchers.IO) {
+            smartAppUserService.getUserRegisteredDevices(event.user.idLong)
+        }
 
         Embed {
             title = "Registered device list of `${event.user.name}`"
@@ -133,11 +129,11 @@ class SmartAppCommand(
                     inline = false
                 }
             }
-        }.let { deferReply.editOriginalEmbeds(it).await(); return }
+        }.let { deferReply.await().editOriginalEmbeds(it).await(); return }
     }
 
-    private suspend fun registerDevice(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
-
+    private suspend fun registerDevice(event: SlashCommandInteractionEvent) {
+        val deferReply = event.asyncDeferReply()
         val deviceName = smartAppUserService.registerDeviceWithId(
             userId = event.user.idLong,
             deviceId = event.getOption("device-id")!!.asString,
@@ -148,12 +144,13 @@ class SmartAppCommand(
             title = "Device Registered"
             description = "DEVICE=`$deviceName`"
             color = Color.GREEN.rgb
-        }.let { deferReply.editOriginalEmbeds(it).await() }
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
     }
 
-    private suspend fun executeDevice(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
+    private suspend fun executeDevice(event: SlashCommandInteractionEvent) {
         val deviceName = event.getOption("device-name")!!.asString
         val desireState = event.getOption("desire-state")!!.asBoolean
+        val deferReply = event.asyncDeferReply()
 
         smartAppUserService.executeDeviceByName(
             userId = event.user.idLong,
@@ -165,11 +162,12 @@ class SmartAppCommand(
             title = "Device Executed"
             description = "Current State is : `${if (desireState) "ON" else "OFF"}`"
             color = Color.GREEN.rgb
-        }.let { deferReply.editOriginalEmbeds(it).await() }
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
     }
 
-    private suspend fun deleteDevice(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
+    private suspend fun deleteDevice(event: SlashCommandInteractionEvent) {
         val deviceName = event.getOption("device-name")!!.asString
+        val deferReply = event.asyncDeferReply()
 
         val hasDeleted = smartAppUserService.deleteDeviceByName(
             userId = event.user.idLong,
@@ -188,34 +186,42 @@ class SmartAppCommand(
                 description = "Device not found: `$deviceName`"
                 color = Color.YELLOW.rgb
             }
-        }.let { deferReply.editOriginalEmbeds(it).await() }
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
     }
 
-    private suspend fun registerToken(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
-        smartAppUserService.saveUserCredential(
-            userId = event.user.idLong,
-            smartAppToken = event.getOption("token")!!.asString
-        )
+    private suspend fun registerToken(event: SlashCommandInteractionEvent) {
+        val deferReply = event.asyncDeferReply()
+        withContext(Dispatchers.IO) {
+            smartAppUserService.saveUserCredential(
+                userId = event.user.idLong,
+                smartAppToken = event.getOption("token")!!.asString
+            )
+        }
 
         Embed {
             title = "Token Registered"
             color = Color.GREEN.rgb
-        }.let { deferReply.editOriginalEmbeds(it).await(); return }
+        }.let { deferReply.await().editOriginalEmbeds(it).await(); return }
     }
 
-    private suspend fun deleteToken(event: SlashCommandInteractionEvent, deferReply: InteractionHook) {
-        smartAppUserService.deleteUserCredential(event.user.idLong)
+    private suspend fun deleteToken(event: SlashCommandInteractionEvent) {
+        val deferReply = event.asyncDeferReply()
+        withContext(Dispatchers.IO) {
+            smartAppUserService.deleteUserCredential(event.user.idLong)
+        }
 
         Embed {
             title = "Token Deleted"
             color = Color.GREEN.rgb
-        }.let { deferReply.editOriginalEmbeds(it).await() }
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
     }
 
     private suspend fun handleDeviceListAutoComplete(event: CommandAutoCompleteInteractionEvent) {
         if (event.focusedOption.name != "device-name") return
 
-        smartAppUserService.getRegisteredDevices(event.user.idLong)
+        withContext(Dispatchers.IO) {
+            smartAppUserService.getRegisteredDevices(event.user.idLong)
+        }
             .filter { it.deviceName.startsWith(event.focusedOption.value) }
             .map { it.deviceName }
             .let(event::replyChoiceStrings)
@@ -255,5 +261,11 @@ class SmartAppCommand(
 
             else -> throw t
         }
+
+    private suspend fun SlashCommandInteractionEvent.asyncDeferReply(isEphemeral: Boolean = false): Deferred<InteractionHook> {
+        return coroutineScope {
+            async { deferReply(isEphemeral).await() }
+        }
+    }
 
 }
