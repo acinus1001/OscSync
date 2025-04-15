@@ -1,59 +1,59 @@
 package dev.kuro9.domain.karaoke.service
 
 import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
+import dev.kuro9.domain.karaoke.dto.TjNewSongResponseDto
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.repository.KaraokeRepo
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSongEntity
-import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.network.httpClient
+import dev.kuro9.multiplatform.common.serialization.minifyJson
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
+import io.ktor.client.request.forms.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.datetime.LocalDate
-import org.jsoup.Jsoup
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.YearMonth
 
 @Service
 @Transactional(readOnly = true)
 class KaraokeTjNewSongService(
     private val karaokeRepo: KaraokeRepo,
 ) : KaraokeSongServiceI {
+    private val httpClient = httpClient {
+        install(ContentNegotiation) {
+            json(minifyJson)
+        }
+        install(Logging)
+        expectSuccess = true
+    }
     override val supportBrand: KaraokeBrand = KaraokeBrand.TJ
     override suspend fun fetchNewReleaseSongs(): List<KaraokeSongDto> {
-        val requestDate = LocalDate.now()
+        val requestYearMonth = YearMonth.now()
+        val basicIsoYearMonth = "${requestYearMonth.year}${requestYearMonth.monthValue.toString().padStart(2, '0')}"
+        val response = httpClient.submitForm(
+            url = "https://www.tjmedia.com/legacy/api/newSongOfMonth",
+            formParameters = parameters {
+                append("searchYm", basicIsoYearMonth)
+            }
+        )
 
-        val document = Jsoup.connect("https://www.tjmedia.com/tjsong/song_monthnew.asp").get()
-        val result = document.getElementsByClass("board_type1")
-            .single().getElementsByTag("tbody")
-            .single().children()
-            .drop(1)
+        val songs = response.body<TjNewSongResponseDto>()
+
+        return songs.resultData.items
+            .filter { it.pro in 52565..53000 }
             .map {
-                val (
-                    songNo,
-                    songName,
-                    singer,
-                ) = it.getElementsByTag("td").map { td -> td.text() }
-
                 KaraokeSongDto(
-                    brand = KaraokeBrand.TJ,
-                    songNo = songNo.toInt(),
-                    title = songName,
-                    singer = singer,
-                    releaseDate = requestDate
+                    brand = supportBrand,
+                    songNo = it.pro,
+                    title = it.indexTitle,
+                    singer = it.indexSong,
+                    releaseDate = it.publishdate,
                 )
             }
-            .filter { it.songNo in 52565..53000 }
-
-        return result
-
-//        BatchInsertStatement(KaraokeSongs).apply {
-//            result.forEach { song ->
-//                karaokeRepo.insertKaraokeSong(
-//                    brand = song.brand,
-//                    songNo = song.songNo,
-//                    title = song.title,
-//                    singer = song.singer,
-//                    releaseDate = song.releaseDate,
-//                )
-//            }
-//        }.execute(TransactionManager.current())
     }
 
     override fun getNewReleaseSongs(targetDate: LocalDate): List<KaraokeSongDto> {

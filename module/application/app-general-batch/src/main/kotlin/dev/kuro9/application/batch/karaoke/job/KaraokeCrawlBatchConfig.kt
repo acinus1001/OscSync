@@ -12,12 +12,8 @@ import dev.kuro9.application.batch.karaoke.tasklet.KaraokeWebhookTasklet
 import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
 import dev.kuro9.domain.karaoke.repository.table.KaraokeSubscribeChannelEntity
 import kotlinx.coroutines.runBlocking
-import org.springframework.batch.core.ExitStatus
-import org.springframework.batch.core.Job
-import org.springframework.batch.core.Step
-import org.springframework.batch.core.StepContribution
+import org.springframework.batch.core.*
 import org.springframework.batch.core.scope.context.ChunkContext
-import org.springframework.batch.repeat.RepeatStatus
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.retry.backoff.ExponentialBackOffPolicy
@@ -40,6 +36,7 @@ class KaraokeCrawlBatchConfig(
                 }
                 on(ExitStatus.FAILED.exitCode) {
                     stepBean("karaokeCrawlFailureStep")
+                    fail()
                 }
             }
         }
@@ -48,6 +45,7 @@ class KaraokeCrawlBatchConfig(
     @Bean
     fun karaokeCrawlNewSongStep(fetchTasklet: KaraokeSongFetchTasklet): Step = batch {
         step("karaokeCrawlNewSongStep") {
+            allowStartIfComplete(true)
             chunk<KaraokeSongDto, KaraokeSongDto>(1000, txManager) {
                 reader(fetchTasklet.asItemStreamReader())
                 writer(fetchTasklet.asItemStreamWriter())
@@ -101,7 +99,8 @@ class KaraokeCrawlBatchConfig(
                     )
                 }
 
-                RepeatStatus.FINISHED
+                sc.stepExecution.jobExecution.status = BatchStatus.FAILED
+                throw IllegalStateException("batch execution failed")
             })
         }
     }
