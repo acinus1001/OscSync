@@ -4,3 +4,6 @@ services:
     image: kurovine9/app-general-batch
     env_file:
       - ${ENV_FILE_LOC}
+
+    networks:
+      - database
