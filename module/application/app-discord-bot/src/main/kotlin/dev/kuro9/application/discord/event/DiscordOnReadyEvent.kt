@@ -2,6 +2,8 @@ package dev.kuro9.application.discord.event
 
 import dev.kuro9.common.logger.infoLog
 import dev.kuro9.internal.discord.model.DiscordEventHandler
+import dev.minn.jda.ktx.coroutines.await
+import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.events.session.ReadyEvent
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.Table
@@ -20,6 +22,10 @@ class DiscordOnReadyEvent(private val database: Database) : DiscordEventHandler<
                 .first()
                 .get(stringLiteral("hello, world!"))
                 .also { infoLog("db : $it") }
+
         }
+
+        event.jda.presence.setPresence(Activity.customStatus("멘션을 통해 대화를 시작하세요"), true)
+        event.jda.selfUser.manager.setName("KGB").await()
     }
 }
