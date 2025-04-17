@@ -37,16 +37,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches/modules-2
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('./gradle/libs.version.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
       # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
       # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
       - name: Setup Gradle
