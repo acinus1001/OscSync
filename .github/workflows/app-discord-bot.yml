@@ -52,8 +52,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@06832c7b30a0129d7fb559bcc6e43d26f6374244 # v4.2.2
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      #      - name: Set up QEMU
+      #        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -64,17 +64,21 @@ jobs:
           username: ${{ vars.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build with Gradle Wrapper
-        run: ./gradlew module:application:app-discord-bot:build
+      - name: Build Outside Dependency
+        run: ./gradlew module:application:app-discord-bot:copyDependency
 
-      - name: Docker Image Build
-        run: docker build -f ./script/backend/app-discord-bot/Dockerfile -t app-discord-bot .
+      - name: Build Plain Jar
+        run: ./gradlew module:application:app-discord-bot:jar
 
-      - name: Docker Image Tag
-        run: docker image tag app-discord-bot ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
-
-      - name: Docker Image Push
-        run: docker push ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
+      - name: Build and push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./script/backend/app-discord-bot/Dockerfile
+          push: true
+          tags: ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     if: always() && (needs.build.result == 'skipped' || needs.build.result == 'success') && inputs.do_depoly

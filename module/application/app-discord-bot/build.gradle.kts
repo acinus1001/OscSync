@@ -41,6 +41,22 @@ dependencies {
     implementation(projects.module.domain.memberAuthentication)
 }
 
+
+tasks.named<Jar>("jar") {
+    manifest {
+        attributes(
+            "Main-Class" to "dev.kuro9.DiscordBotApplicationKt",
+            "Implementation-Title" to project.name,
+            "Implementation-Version" to project.version,
+        )
+    }
+}
+
+tasks.register<Copy>("copyDependency") {
+    from(configurations.runtimeClasspath.get())
+    into("${layout.buildDirectory.get()}/libs/lib")
+}
+
 /**
  * front build file copy해 spring static으로 서빙 위한 빌드 태스크
  */
