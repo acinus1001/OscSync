@@ -12,7 +12,8 @@ import kotlin.jvm.optionals.getOrNull
 @Service
 class GoogleAiService(token: GoogleAiToken) {
 
-    private val modelVersion = "gemini-2.0-flash"
+    private val chatModelVersion = "gemini-2.5-flash-preview-04-17"
+    private val searchModelVersion = "gemini-2.0-flash"
 
     private val client = Client.builder()
         .apiKey(token.token)
@@ -30,7 +31,7 @@ class GoogleAiService(token: GoogleAiToken) {
         nowSessionChatLog += input.toUserChatContent()
 
         val response = client.models.generateContent(
-            modelVersion,
+            chatModelVersion,
             chatLog + nowSessionChatLog,
             GenerateContentConfig.builder()
                 .candidateCount(1)
@@ -89,7 +90,7 @@ class GoogleAiService(token: GoogleAiToken) {
         nowSessionChatLog += toolResponse.toFunctionResponseContent()
 
         val responseWithTool = client.models.generateContent(
-            modelVersion,
+            chatModelVersion,
             chatLog + nowSessionChatLog,
             GenerateContentConfig.builder()
                 .candidateCount(1)
@@ -112,7 +113,7 @@ class GoogleAiService(token: GoogleAiToken) {
         """.trimIndent()
 
         return client.models.generateContent(
-            modelVersion,
+            searchModelVersion,
             query.toUserChatContent(),
             GenerateContentConfig.builder()
                 .candidateCount(1)
