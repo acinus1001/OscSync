@@ -54,7 +54,7 @@ class GoogleAiChatAbstractHandler(
         message: String,
     ) {
         measureTime {
-            val userMetadata = """user:{id:${event.author.id},name:${event.author.effectiveName}}\n\n"""
+            val userMetadata = """message by user:{id:${event.author.id},name:${event.author.effectiveName}}\n\n"""
 
             val result = coroutineScope {
                 launch {
