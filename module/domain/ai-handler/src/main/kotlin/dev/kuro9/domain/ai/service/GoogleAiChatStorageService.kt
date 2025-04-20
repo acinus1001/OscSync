@@ -17,8 +17,8 @@ class GoogleAiChatStorageService(private val repo: AiChatLogRepo) : GoogleAiChat
     }
 
     @Transactional
-    override fun append(key: String, rootKey: String, log: List<Content>) {
-        log.map { AiChatLog(key = key, rootKey = rootKey, payload = it.toJson()) }
+    override fun append(userId: Long, key: String, rootKey: String, log: List<Content>) {
+        log.map { AiChatLog(key = key, rootKey = rootKey, payload = it.toJson(), userId = userId) }
             .let(repo::saveAll)
     }
 
@@ -29,8 +29,8 @@ class GoogleAiChatStorageService(private val repo: AiChatLogRepo) : GoogleAiChat
     }
 
     @Transactional
-    override fun remove(key: String) {
-        val idList = repo.findAllId(key)
+    override fun remove(rootKey: String) {
+        val idList = repo.findAllId(rootKey)
         repo.revokeAll(idList)
     }
 

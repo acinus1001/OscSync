@@ -81,6 +81,7 @@ class GoogleAiChatAbstractHandler(
                         tools = getTools(event.author.idLong, userDeviceNameList),
                         key = key,
                         refKey = refKey,
+                        userId = event.author.idLong,
                     )
                 }
             }
@@ -147,7 +148,7 @@ class GoogleAiChatAbstractHandler(
                 info { "ref=${messageRef?.contentRaw}" }
                 val key = "${event.message.id}_${event.message.author.id}"
                 val refKey = messageRef?.let {
-                    "${it.id}_${event.message.author.id}"
+                    "${it.id}_${it.author.id}"
                 }
                 makeKey(key) to refKey?.let(::makeKey)
             }

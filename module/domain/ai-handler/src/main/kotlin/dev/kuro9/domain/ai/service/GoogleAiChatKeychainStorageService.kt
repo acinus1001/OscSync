@@ -28,11 +28,11 @@ class GoogleAiChatKeychainStorageService(
         return storage[rootKey ?: nowKey] ?: emptyList()
     }
 
-    suspend fun append(key: String, log: List<Content>) {
+    suspend fun append(userId: Long, key: String, log: List<Content>) {
         coroutineScope {
             launch {
                 val rootKey = keyChainStorage.getRootKey(key)
-                storage.append(key, rootKey ?: key, log)
+                storage.append(userId, key, rootKey ?: key, log)
             }
         }
     }
