@@ -54,6 +54,7 @@ class AiChatLogRepo {
             this[AiChatLogs.payload] = log.payload
             this[AiChatLogs.createdAt] = LocalDateTime.now()
             this[AiChatLogs.revokeAt] = null
+            this[AiChatLogs.userId] = log.userId
         }
     }
 

@@ -81,6 +81,7 @@ class GoogleAiChatAbstractHandler(
                         tools = getTools(event.author.idLong, userDeviceNameList),
                         key = key,
                         refKey = refKey,
+                        userId = event.author.idLong,
                     )
                 }
             }

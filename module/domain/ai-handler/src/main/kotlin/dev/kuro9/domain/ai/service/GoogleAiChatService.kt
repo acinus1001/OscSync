@@ -16,6 +16,7 @@ class GoogleAiChatService(
         input: String,
         tools: List<GoogleAiToolDto>,
         key: String,
+        userId: Long,
         refKey: String? = null,
     ): String {
         val log = logStorage.get(refKey, key)
@@ -27,7 +28,7 @@ class GoogleAiChatService(
             tools = tools,
             chatLog = log
         )
-        logStorage.append(key, sessionLog)
+        logStorage.append(userId, key, sessionLog)
         return result
     }
 
