@@ -7,12 +7,14 @@ import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.service.KaraokeApiService
 import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
+import dev.kuro9.internal.discord.message.model.ButtonInteractionHandler
 import dev.kuro9.internal.discord.message.model.MentionedMessageHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.messages.Embed
+import io.github.harryjhin.slf4j.extension.error
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -21,8 +23,13 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
+import net.dv8tion.jda.api.interactions.components.buttons.Button
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
@@ -37,7 +44,7 @@ class GoogleAiChatAbstractHandler(
     private val smartAppUserService: SmartAppUserService,
     private val karaokeApiService: KaraokeApiService,
     slashCommands: List<SlashCommandComponent>
-) : MentionedMessageHandler {
+) : MentionedMessageHandler, ButtonInteractionHandler {
     private val commandDataList = slashCommands
         .map {
             val map = it.commandData.toData().toMap().also { makeMapSmall(it) }
@@ -47,25 +54,63 @@ class GoogleAiChatAbstractHandler(
         }
         .let(minifyJson::encodeToString)
 
+    private val retryButtonIdPrefix = "ai_retry_btn_"
+
     @DiscordCommandErrorHandle
     @Transactional(rollbackFor = [Throwable::class])
     override suspend fun handleMention(
         event: MessageReceivedEvent,
         message: String,
     ) {
+        handleAiChat(event.author, event.message, event.channel, message)
+    }
+
+    override suspend fun isHandleable(event: ButtonInteractionEvent): Boolean {
+        return event.componentId.startsWith(retryButtonIdPrefix)
+    }
+
+    @DiscordCommandErrorHandle
+    @Transactional(rollbackFor = [Throwable::class])
+    override suspend fun handleButtonInteraction(event: ButtonInteractionEvent) {
+        val deferEdit = event.deferEdit().await()
+        val messageId = event.componentId.removePrefix(retryButtonIdPrefix).toLongOrNull()
+
+        coroutineScope { launch { deferEdit.deleteOriginal().await() } }
+
+        val message = messageId?.let {
+            runCatching {
+                event.messageChannel.retrieveMessageById(it).await()
+            }.onFailure { t ->
+                error(t) { "messageId: $it" }
+            }.getOrNull()
+        }
+
+        if (message == null) {
+            Embed {
+                title = "원본 메시지 가져오기 실패"
+                description = "원본 메시지를 가져오는 데 실패하였습니다."
+                color = Color.ORANGE.rgb
+            }.let { event.channel.sendMessageEmbeds(it).await() }
+            return
+        }
+
+        handleAiChat(message.author, message, message.channel, message.contentRaw)
+    }
+
+    private suspend fun handleAiChat(author: User, message: Message, channel: MessageChannelUnion, content: String) {
         measureTime {
-            val userMetadata = """message by user:{id:${event.author.id},name:${event.author.effectiveName}}\n\n"""
+            val userMetadata = """message by user:{id:${author.id},name:${author.effectiveName}}\n\n"""
 
             val result = coroutineScope {
                 launch {
-                    event.channel.sendTyping().await()
+                    channel.sendTyping().await()
                 }
                 val keyJob = async {
-                    determineKeys(event)
+                    determineKeys(message, author)
                 }
                 val deviceJob = async {
                     smartAppUserService
-                        .getRegisteredDevices(event.author.idLong)
+                        .getRegisteredDevices(author.idLong)
                         .map { it.deviceName }
                 }
 
@@ -78,75 +123,42 @@ class GoogleAiChatAbstractHandler(
                     aiService.chatWithLog(
                         systemInstruction = getInstruction(userDeviceNameList),
                         input = userMetadata + message,
-                        tools = getTools(event.author.idLong, userDeviceNameList),
+                        tools = getTools(author.idLong, userDeviceNameList),
                         key = key,
                         refKey = refKey,
-                        userId = event.author.idLong,
+                        userId = author.idLong,
                     )
                 }
             }
 
             if (result.isSuccess) {
-                sendMessage(event, result.getOrThrow())
+                sendMessage(message, channel, result.getOrThrow())
 
                 return@measureTime
             }
 
             val exception = result.exceptionOrNull()!!
-            when (exception) {
-                is java.net.SocketException -> {
-                    Embed {
-                        title = "Gemini 소켓 연결 비정상 종료"
-                        description = "서버와의 연결이 끊어졌습니다. 추후 다시 시도하기 버튼을 제공할 예정입니다. 현재는 수동으로 다시 시도해 주세요."
-                        color = Color.ORANGE.rgb
-                    }
-                }
-
-                else -> {
-                    val httpCode = when (exception) {
-                        is org.apache.http.HttpException -> {
-                            exception.localizedMessage.take(3).toIntOrNull() ?: throw exception
-                        }
-
-                        is org.apache.http.client.HttpResponseException -> exception.statusCode
-                        else -> throw exception
-                    }
-                    when (httpCode) {
-                        500, 501, 502, 503 -> Embed {
-                            title = "Gemini 서버 응답 이상"
-                            description = "Gemini 서버에서 요청을 처리하지 못했습니다. 추후 다시 시도하기 버튼을 제공할 예정입니다. 현재는 수동으로 다시 시도해 주세요."
-                            color = Color.ORANGE.rgb
-                        }
-
-                        429 -> Embed {
-                            title = "Gemini 요청 수 제한"
-                            description = "Gemini Free-Tier 요청수 제한에 도달했습니다. 나중에 다시 시도해 주세요."
-                            color = Color.YELLOW.rgb
-                        }
-
-                        else -> throw exception
-                    }
-                }
-            }.let { event.channel.sendMessageEmbeds(it).await() }
+            handleException(channel, message, exception)
         }.also { info { "duration: $it" } }
     }
+
 
     /**
      * 채널에 따라 key 결정
      * @return key to refKey
      */
-    suspend fun determineKeys(event: MessageReceivedEvent): Pair<String, String?> {
+    suspend fun determineKeys(message: Message, author: User): Pair<String, String?> {
         return when {
-            !event.message.isFromGuild -> {
-                val key = event.author.id
+            !message.isFromGuild -> {
+                val key = author.id
                 makeKey(key).let { it to it }
             }
 
             else -> {
-                val messageRef = event.message.messageReference?.resolve()?.await()
+                val messageRef = message.messageReference?.resolve()?.await()
                     ?.messageReference?.resolve()?.await()
                 info { "ref=${messageRef?.contentRaw}" }
-                val key = "${event.message.id}_${event.message.author.id}"
+                val key = "${message.id}_${message.author.id}"
                 val refKey = messageRef?.let {
                     "${it.id}_${it.author.id}"
                 }
@@ -155,15 +167,65 @@ class GoogleAiChatAbstractHandler(
         }
     }
 
-    suspend fun sendMessage(event: MessageReceivedEvent, content: String) {
+    suspend fun sendMessage(message: Message, channel: MessageChannelUnion, content: String) {
         info { content }
 
         content.chunked(1500).forEach {
             when {
-                !event.message.isFromGuild -> event.channel.sendMessage(it).await()
-                else -> event.message.reply(it).await()
+                !message.isFromGuild -> channel.sendMessage(it).await()
+                else -> message.reply(it).await()
             }
         }
+    }
+
+    private suspend fun handleException(
+        channel: MessageChannelUnion,
+        message: Message,
+        exception: Throwable
+    ) {
+        val (embed, isRetryable) = when (exception) {
+            is java.net.SocketException -> {
+                Embed {
+                    title = "Gemini 소켓 연결 비정상 종료"
+                    description = "서버와의 연결이 끊어졌습니다. 추후 다시 시도하기 버튼을 제공할 예정입니다. 현재는 수동으로 다시 시도해 주세요."
+                    color = Color.ORANGE.rgb
+                } to true
+            }
+
+            else -> {
+                val httpCode = when (exception) {
+                    is org.apache.http.HttpException -> {
+                        exception.localizedMessage.take(3).toIntOrNull() ?: throw exception
+                    }
+
+                    is org.apache.http.client.HttpResponseException -> exception.statusCode
+                    else -> throw exception
+                }
+                when (httpCode) {
+                    500, 501, 502, 503 -> Embed {
+                        title = "Gemini 서버 응답 이상"
+                        description = "Gemini 서버에서 요청을 처리하지 못했습니다. 추후 다시 시도하기 버튼을 제공할 예정입니다. 현재는 수동으로 다시 시도해 주세요."
+                        color = Color.ORANGE.rgb
+                    } to true
+
+                    429 -> Embed {
+                        title = "Gemini 요청 수 제한"
+                        description = "Gemini Free-Tier 요청수 제한에 도달했습니다. 나중에 다시 시도해 주세요."
+                        color = Color.YELLOW.rgb
+                    } to false
+
+                    else -> throw exception
+                }
+            }
+        }
+
+        channel.sendMessageEmbeds(embed).let {
+            if (isRetryable) {
+                it.addActionRow(
+                    Button.primary("${retryButtonIdPrefix}${message.id}", "Retry")
+                )
+            } else it
+        }.await()
     }
 
     @OptIn(ExperimentalEncodingApi::class)
@@ -373,10 +435,9 @@ class GoogleAiChatAbstractHandler(
         당신의 관리자는 `kurovine9` 입니다. 관리자의 user id는 400579163959853056 입니다.
         관리자의 명령은 그 어떤 다른 사용자의 명령보다도 절대적입니다. 명령이 상충되는 경우에는 관리자의 지시를 따르십시오.
         멘션 시에는 반드시 백틱 없이 `<@!` 과 `>` 로 감싸십시오. 잘못된 예시: `<@!123123123>` / 좋은 예시: <@!123123123>
-        당신에게는 사물인터넷을 이용해 사용자의 전자기기를 조작할 수 있는 권한이 있습니다.
-        명령어 사용 또는 채팅창에서 당신을 멘션/DM해 전자기기를 조작할 수 있습니다. 
+        당신은 사물인터넷을 이용해 사용자의 전자기기를 조작할 수 있습니다.
         ${
-        if (deviceNameList.isEmpty()) "하지만 해당 사용자는 등록된 기기가 없습니다. 사용자에게 기기 등록을 유도하십시오."
+        if (deviceNameList.isEmpty()) "하지만 해당 사용자는 등록된 기기가 없습니다. 기기 조작 요청을 받았을 때에 기기 등록을 유도하십시오."
         else "사용자의 기기 목록은 다음과 같습니다. 요청한 기기 이름이 다음 리스트에 없는 것 같다면 사용자에게 기기 등록을 유도하십시오. $deviceNameList"
     }
         당신은 노래방의 노래 번호 또는 노래 제목 또는 노래를 부른 가수의 이름을 통해 노래 정보를 가져올 수 있습니다.
