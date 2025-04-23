@@ -8,6 +8,7 @@ import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.BatchUpdateStatement
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -64,6 +65,6 @@ class AiChatLogRepo {
                 addBatch(EntityID(id, AiChatLogs))
                 this[AiChatLogs.revokeAt] = LocalDateTime.now()
             }
-        }
+        }.execute(TransactionManager.current())
     }
 }
