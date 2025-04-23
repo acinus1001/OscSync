@@ -12,6 +12,6 @@ class SlashGithubCommand : SlashCommandComponent {
 
     // todo 버튼식으로 바꿀까?
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
-        event.reply("https://github.com/KuroVine9/OscSync").await()
+        event.reply("https://github.com/acinus1001/OscSync").await()
     }
 }
