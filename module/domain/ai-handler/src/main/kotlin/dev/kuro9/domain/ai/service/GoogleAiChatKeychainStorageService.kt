@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.springframework.stereotype.Service
+import kotlin.jvm.optionals.getOrNull
 
 @Service
 class GoogleAiChatKeychainStorageService(
@@ -28,9 +29,12 @@ class GoogleAiChatKeychainStorageService(
         val list = storage[rootKey ?: nowKey] ?: emptyList()
         if (list.size > 200) {
             val result = list.takeLast(200)
-            val toDrop = list.dropLast(200)
-            coroutineScope { launch { storage.drop(rootKey ?: nowKey, toDrop.size) } }
-            return result
+            val toDrop = result.indexOfFirst { it.role().getOrNull() == "user" }
+                .takeIf { it >= 0 }
+                ?: 0
+
+            coroutineScope { launch { storage.drop(rootKey ?: nowKey, list.size - 200 + toDrop) } }
+            return result.drop(toDrop)
         }
         return list
     }
