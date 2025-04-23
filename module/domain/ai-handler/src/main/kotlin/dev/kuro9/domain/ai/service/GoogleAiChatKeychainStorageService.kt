@@ -1,11 +1,10 @@
 package dev.kuro9.domain.ai.service
 
 import com.google.genai.types.Content
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.springframework.stereotype.Service
+import kotlin.jvm.optionals.getOrDefault
 import kotlin.jvm.optionals.getOrNull
 
 @Service
@@ -29,7 +28,7 @@ class GoogleAiChatKeychainStorageService(
         val list = storage[rootKey ?: nowKey] ?: emptyList()
         if (list.size > 200) {
             val result = list.takeLast(200)
-            val toDrop = result.indexOfFirst { it.role().getOrNull() == "user" }
+            val toDrop = result.indexOfFirst { it.hasValidUserText() }
                 .takeIf { it >= 0 }
                 ?: 0
 
@@ -48,5 +47,14 @@ class GoogleAiChatKeychainStorageService(
         }
     }
 
-    private val context = CoroutineName("GoogleAiServiceDatabase") + Dispatchers.IO
+    private fun Content.hasValidUserText(): Boolean {
+        val userRole = role().getOrNull() == "user"
+        val hasNonNullText: Boolean by lazy {
+            parts()
+                .getOrDefault(emptyList())
+                .any { part -> part.text().getOrNull() != null }
+        }
+
+        return userRole && hasNonNullText
+    }
 }
