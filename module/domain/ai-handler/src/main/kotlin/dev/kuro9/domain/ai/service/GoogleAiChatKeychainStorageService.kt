@@ -25,7 +25,14 @@ class GoogleAiChatKeychainStorageService(
             }
         }
 
-        return storage[rootKey ?: nowKey] ?: emptyList()
+        val list = storage[rootKey ?: nowKey] ?: emptyList()
+        if (list.size > 200) {
+            val result = list.takeLast(200)
+            val toDrop = list.dropLast(200)
+            coroutineScope { launch { storage.drop(rootKey ?: nowKey, toDrop.size) } }
+            return result
+        }
+        return list
     }
 
     suspend fun append(userId: Long, key: String, log: List<Content>) {
