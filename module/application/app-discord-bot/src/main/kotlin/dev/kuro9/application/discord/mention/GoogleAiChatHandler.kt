@@ -58,11 +58,8 @@ class GoogleAiChatAbstractHandler(
 
     @DiscordCommandErrorHandle
     @Transactional(rollbackFor = [Throwable::class])
-    override suspend fun handleMention(
-        event: MessageReceivedEvent,
-        message: String,
-    ) {
-        handleAiChat(event.author, event.message, event.channel, message)
+    override suspend fun handleMention(event: MessageReceivedEvent) {
+        handleAiChat(event.author, event.message, event.channel)
     }
 
     override suspend fun isHandleable(event: ButtonInteractionEvent): Boolean {
@@ -94,12 +91,13 @@ class GoogleAiChatAbstractHandler(
             return
         }
 
-        handleAiChat(message.author, message, message.channel, message.contentRaw)
+        handleAiChat(message.author, message, message.channel)
     }
 
-    private suspend fun handleAiChat(author: User, message: Message, channel: MessageChannelUnion, content: String) {
+    private suspend fun handleAiChat(author: User, message: Message, channel: MessageChannelUnion) {
         measureTime {
             val userMetadata = """message by user:{id:${author.id},name:${author.effectiveName}}\n\n"""
+            info { "INPUT ---------------->\n${message.contentRaw}" }
 
             val result = coroutineScope {
                 launch {
@@ -168,12 +166,28 @@ class GoogleAiChatAbstractHandler(
     }
 
     suspend fun sendMessage(message: Message, channel: MessageChannelUnion, content: String) {
-        info { content }
+        info { "OUTPUT <----------------\n$content" }
 
-        content.chunked(1500).forEach {
+        var backtickLangStr: String? = null
+        val codeBlockPattern = "```(\\w*)".toRegex()
+
+        content.chunked(1900).forEach { chunkedContent ->
+            var resultContent = chunkedContent
+            if (backtickLangStr != null) {
+                resultContent = "```$backtickLangStr\n$resultContent"
+                backtickLangStr = null
+            }
+
+            val allCodeBlocks = codeBlockPattern.findAll(resultContent)
+            if (allCodeBlocks.count() % 2 == 1) {
+                val lastBlock = allCodeBlocks.last().groupValues.first()
+                backtickLangStr = lastBlock.removePrefix("```")
+                resultContent = "$resultContent\n```"
+            }
+
             when {
-                !message.isFromGuild -> channel.sendMessage(it).await()
-                else -> message.reply(it).await()
+                !message.isFromGuild -> channel.sendMessage(resultContent).await()
+                else -> message.reply(resultContent).await()
             }
         }
     }
