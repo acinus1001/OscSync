@@ -122,7 +122,7 @@ class GoogleAiChatAbstractHandler(
                 runCatching {
                     aiService.chatWithLog(
                         systemInstruction = getInstruction(userDeviceNameList),
-                        input = userMetadata + message,
+                        input = userMetadata + message.contentRaw,
                         tools = getTools(author.idLong, userDeviceNameList),
                         key = key,
                         refKey = refKey,
