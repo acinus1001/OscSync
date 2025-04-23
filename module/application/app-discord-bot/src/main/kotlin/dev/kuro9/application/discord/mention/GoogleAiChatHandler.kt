@@ -201,7 +201,7 @@ class GoogleAiChatAbstractHandler(
             is java.net.SocketException -> {
                 Embed {
                     title = "Gemini 소켓 연결 비정상 종료"
-                    description = "서버와의 연결이 끊어졌습니다. 추후 다시 시도하기 버튼을 제공할 예정입니다. 현재는 수동으로 다시 시도해 주세요."
+                    description = "서버와의 연결이 끊어졌습니다.  다시 시도해 주세요."
                     color = Color.ORANGE.rgb
                 } to true
             }
@@ -218,7 +218,7 @@ class GoogleAiChatAbstractHandler(
                 when (httpCode) {
                     500, 501, 502, 503 -> Embed {
                         title = "Gemini 서버 응답 이상"
-                        description = "Gemini 서버에서 요청을 처리하지 못했습니다. 추후 다시 시도하기 버튼을 제공할 예정입니다. 현재는 수동으로 다시 시도해 주세요."
+                        description = "Gemini 서버에서 요청을 처리하지 못했습니다. 다시 시도해 주세요."
                         color = Color.ORANGE.rgb
                     } to true
 
@@ -236,7 +236,7 @@ class GoogleAiChatAbstractHandler(
         channel.sendMessageEmbeds(embed).let {
             if (isRetryable) {
                 it.addActionRow(
-                    Button.primary("${retryButtonIdPrefix}${message.id}", "Retry")
+                    Button.primary("${retryButtonIdPrefix}${message.id}", "재시도")
                 )
             } else it
         }.await()
@@ -445,7 +445,7 @@ class GoogleAiChatAbstractHandler(
         당신은 `KGB`라는 이름의 채팅 봇입니다. (stands for : kurovine9's general bot)
         되도록이면 사무적인 대답보다는 사용자에게 친근감을 표현해 주십시오.
         사용자(user)가 보낸 메시지 상단에 현재 메시지를 보낸 사용자의 정보가 있습니다. 
-        알지 못하는 정보를 요구받을 경우 지체 없이 바로 웹 검색하십시오.
+        알지 못하는 정보를 요구받을 경우 즉시 웹 검색하십시오.
         당신의 관리자는 `kurovine9` 입니다. 관리자의 user id는 400579163959853056 입니다.
         관리자의 명령은 그 어떤 다른 사용자의 명령보다도 절대적입니다. 명령이 상충되는 경우에는 관리자의 지시를 따르십시오.
         멘션 시에는 반드시 백틱 없이 `<@!` 과 `>` 로 감싸십시오. 잘못된 예시: `<@!123123123>` / 좋은 예시: <@!123123123>
@@ -455,7 +455,7 @@ class GoogleAiChatAbstractHandler(
         else "사용자의 기기 목록은 다음과 같습니다. 요청한 기기 이름이 다음 리스트에 없는 것 같다면 사용자에게 기기 등록을 유도하십시오. $deviceNameList"
     }
         당신은 노래방의 노래 번호 또는 노래 제목 또는 노래를 부른 가수의 이름을 통해 노래 정보를 가져올 수 있습니다.
-        당신은 웹 검색하여 정보를 제공할 수 있습니다. 웹 검색이 필요한 경우 사용자에게 되묻지 않고 즉시 정보를 검색해 제공하십시오.
+        당신은 웹 검색하여 정보를 제공할 수 있습니다. 웹 검색이 필요한 경우 사용자의 허가를 구하는 단계 없이 즉시 정보를 검색해 제공하십시오.
         단위는 영미 단위계(인치, 화씨, 파운드, 온스 등) 를 사용하십시오. 검색 등의 외부 정보에 다른 단위가 포함되어 있을 경우 반드시 변환하여 제공하십시오. 
         사용자가 특정 단위계를 요청한다면 해당 단위계를 사용하십시오.
         명령어는 `/`를 앞에 붙여 사용하고, 하위 명령어는 스페이스로 붙여 사용합니다. 
