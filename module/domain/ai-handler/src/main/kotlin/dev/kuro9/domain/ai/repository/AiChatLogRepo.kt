@@ -48,7 +48,7 @@ class AiChatLogRepo {
             .map { it[AiChatLogs.id].value }
     }
 
-    fun saveAll(logs: Iterable<AiChatLog>) {
+    fun saveAll(logs: List<AiChatLog>) {
         AiChatLogs.batchInsert(logs) { log ->
             this[AiChatLogs.key] = log.key
             this[AiChatLogs.rootKey] = log.rootKey
@@ -59,7 +59,8 @@ class AiChatLogRepo {
         }
     }
 
-    fun revokeAll(idSet: Iterable<Long>) {
+    fun revokeAll(idSet: List<Long>) {
+        if (idSet.isEmpty()) return
         BatchUpdateStatement(AiChatLogs).apply {
             idSet.forEach { id ->
                 addBatch(EntityID(id, AiChatLogs))
