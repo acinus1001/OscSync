@@ -32,7 +32,7 @@ class GoogleAiChatKeychainStorageService(
                 .takeIf { it >= 0 }
                 ?: 0
 
-            coroutineScope { launch { storage.drop(rootKey ?: nowKey, list.size - 200 + toDrop) } }
+            coroutineScope { launch { storage.drop(rootKey ?: nowKey, list.size - 300 + toDrop) } }
             return result.drop(toDrop)
         }
         return list
