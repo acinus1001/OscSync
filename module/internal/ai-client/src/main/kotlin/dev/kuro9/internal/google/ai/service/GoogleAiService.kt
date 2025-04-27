@@ -65,7 +65,7 @@ class GoogleAiService(token: GoogleAiToken) {
 
             nowSessionChatLog += response.toTextResponseContent()
             return GoogleAiChatResponse(
-                result = response.text()!!,
+                result = response.text() ?: "",
                 sessionChatLog = nowSessionChatLog,
             )
         }
@@ -100,7 +100,7 @@ class GoogleAiService(token: GoogleAiToken) {
         )
         nowSessionChatLog += responseWithTool.toTextResponseContent()
         return GoogleAiChatResponse(
-            result = responseWithTool.text()!!,
+            result = responseWithTool.text() ?: "",
             sessionChatLog = nowSessionChatLog,
         )
     }
@@ -139,7 +139,7 @@ class GoogleAiService(token: GoogleAiToken) {
     private fun GenerateContentResponse.toTextResponseContent(): Content {
         return Content.builder()
             .role("model")
-            .parts(listOf(Part.fromText(this.text()!!)))
+            .parts(listOf(Part.fromText(this.text() ?: "")))
             .build()
     }
 
