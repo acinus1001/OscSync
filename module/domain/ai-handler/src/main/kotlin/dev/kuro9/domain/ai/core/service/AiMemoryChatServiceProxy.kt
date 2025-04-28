@@ -25,7 +25,7 @@ class AiMemoryChatServiceProxy(
         val memoryList = memoryService.findAllWithIndex(userId)
         val memoryString = memoryList.joinToString(
             separator = "\n",
-            prefix = "현재 규칙(${memoryList.size}개/최대 개수 2개): \n",
+            prefix = "현재 규칙(${memoryList.size}개/최대 개수 10개): \n",
             postfix = "\n\n"
         ) { (index, memory) -> "[$index] $memory" }
 
