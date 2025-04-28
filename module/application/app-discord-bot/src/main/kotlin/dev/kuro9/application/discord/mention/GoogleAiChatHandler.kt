@@ -489,7 +489,7 @@ class GoogleAiChatAbstractHandler(
                         }?.joinAll()
 
                         toAddMemoryString?.let { memory ->
-                            aiMasterMemoryService.add(userId, memory)
+                            aiMasterMemoryService.add(userId, memory, 10)
                         }?.join()
                     }
 
