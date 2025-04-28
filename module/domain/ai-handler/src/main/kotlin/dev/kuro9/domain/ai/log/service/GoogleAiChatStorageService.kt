@@ -1,8 +1,8 @@
-package dev.kuro9.domain.ai.service
+package dev.kuro9.domain.ai.log.service
 
 import com.google.genai.types.Content
-import dev.kuro9.domain.ai.repository.AiChatLogRepo
-import dev.kuro9.domain.ai.table.AiChatLog
+import dev.kuro9.domain.ai.log.repository.AiChatLogRepo
+import dev.kuro9.domain.ai.log.table.AiChatLog
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

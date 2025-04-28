@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInterac
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import org.intellij.lang.annotations.Language
 import org.springframework.stereotype.Component
 
@@ -41,7 +42,27 @@ class DiscordErrorWebhookAdvice(private val errorUrl: ErrorWebhookUrl) : ServerE
             field {
                 name = "EndUser"
                 value = discordEvent.getAuthor()
-                inline = false
+                inline = true
+            }
+
+            field {
+                name = "Guild"
+                value = discordEvent.getGuildName()
+                inline = true
+            }
+
+            field {
+                name = "Channel"
+                value = discordEvent.getChannelName()
+                inline = true
+            }
+
+            discordEvent.getEventArgs().takeIf { it.isNotEmpty() }?.let { args ->
+                field {
+                    name = "Args"
+                    value = args
+                    inline = false
+                }
             }
 
             field {
@@ -83,11 +104,41 @@ class DiscordErrorWebhookAdvice(private val errorUrl: ErrorWebhookUrl) : ServerE
         else -> "<unknown>"
     }.let { "${this::class.simpleName}(`$it`)" }
 
+    private fun GenericEvent.getEventArgs() = when (this) {
+        is SlashCommandInteractionEvent -> {
+            this.options.map { option: OptionMapping ->
+                option.toString()
+            }
+        }
+
+        is ButtonInteractionEvent -> listOf(componentId)
+        is MessageReceivedEvent -> listOf(message.contentRaw)
+        else -> emptyList()
+    }.joinToString(",\n") { "`$it`" }
+
     private fun GenericEvent.getAuthor() = when (this) {
         is SlashCommandInteractionEvent -> user.asMention
         is CommandAutoCompleteInteractionEvent -> user.asMention
         is ButtonInteractionEvent -> user.asMention
         is MessageReceivedEvent -> author.asMention
+        else -> "<unknown>"
+    }
+
+    private fun GenericEvent.getGuildName() = when (this) {
+        is SlashCommandInteractionEvent,
+        is CommandAutoCompleteInteractionEvent,
+        is ButtonInteractionEvent
+            -> guild?.name ?: "<Direct Message>"
+
+        is MessageReceivedEvent -> if (isFromGuild) guild.name else "<Direct Message>"
+        else -> "<unknown>"
+    }.let { "`$it`" }
+
+    private fun GenericEvent.getChannelName() = when (this) {
+        is SlashCommandInteractionEvent -> channel.asMention
+        is CommandAutoCompleteInteractionEvent -> channel.asMention
+        is ButtonInteractionEvent -> channel.asMention
+        is MessageReceivedEvent -> channel.asMention
         else -> "<unknown>"
     }
 }

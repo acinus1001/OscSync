@@ -1,8 +1,8 @@
-package dev.kuro9.domain.ai.repository
+package dev.kuro9.domain.ai.log.repository
 
-import dev.kuro9.domain.ai.table.AiChatLog
-import dev.kuro9.domain.ai.table.AiChatLogEntity
-import dev.kuro9.domain.ai.table.AiChatLogs
+import dev.kuro9.domain.ai.log.table.AiChatLog
+import dev.kuro9.domain.ai.log.table.AiChatLogEntity
+import dev.kuro9.domain.ai.log.table.AiChatLogs
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.dao.id.EntityID

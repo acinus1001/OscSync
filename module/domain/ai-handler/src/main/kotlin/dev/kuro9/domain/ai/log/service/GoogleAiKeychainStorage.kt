@@ -1,4 +1,4 @@
-package dev.kuro9.domain.ai.service
+package dev.kuro9.domain.ai.log.service
 
 interface GoogleAiKeychainStorage {
 
