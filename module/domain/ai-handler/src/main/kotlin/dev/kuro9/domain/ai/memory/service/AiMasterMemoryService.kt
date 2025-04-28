@@ -26,7 +26,7 @@ class AiMasterMemoryService(private val memoryRepo: AiMasterMemoryRepo) {
     suspend fun add(userId: Long, memory: String, sizeLimit: Int? = null): Job {
         return coroutineScope {
             launch {
-                memoryRepo.add(userId, memory, sizeLimit)
+                memoryRepo.add(userId, memory.take(100), sizeLimit)
             }
         }
     }
