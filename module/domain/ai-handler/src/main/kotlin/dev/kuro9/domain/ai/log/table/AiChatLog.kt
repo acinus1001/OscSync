@@ -1,4 +1,4 @@
-package dev.kuro9.domain.ai.table
+package dev.kuro9.domain.ai.log.table
 
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime

@@ -2,7 +2,9 @@ package dev.kuro9.application.discord.mention
 
 import com.google.genai.types.FunctionDeclaration
 import com.google.genai.types.Schema
-import dev.kuro9.domain.ai.service.GoogleAiChatService
+import dev.kuro9.domain.ai.core.service.AiChatService
+import dev.kuro9.domain.ai.core.service.AiSearchService
+import dev.kuro9.domain.ai.memory.service.AiMasterMemoryService
 import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.service.KaraokeApiService
@@ -18,6 +20,7 @@ import io.github.harryjhin.slf4j.extension.error
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -30,6 +33,8 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.components.buttons.Button
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
@@ -40,9 +45,12 @@ import kotlin.time.measureTime
 
 @Service
 class GoogleAiChatAbstractHandler(
-    private val aiService: GoogleAiChatService,
+    private val aiService: AiChatService,
+    private val aiSearchService: AiSearchService,
     private val smartAppUserService: SmartAppUserService,
     private val karaokeApiService: KaraokeApiService,
+    private val aiMasterMemoryService: AiMasterMemoryService,
+    private val database: Database,
     slashCommands: List<SlashCommandComponent>
 ) : MentionedMessageHandler, ButtonInteractionHandler {
     private val commandDataList = slashCommands
@@ -96,7 +104,7 @@ class GoogleAiChatAbstractHandler(
 
     private suspend fun handleAiChat(author: User, message: Message, channel: MessageChannelUnion) {
         measureTime {
-            val userMetadata = """message by user:{id:${author.id},name:${author.effectiveName}}\n\n"""
+            val userMetadata = """user info: {id:${author.id},name:${author.effectiveName}}\n\n"""
             info { "INPUT ---------------->\n${message.contentRaw}" }
 
             val result = coroutineScope {
@@ -118,7 +126,7 @@ class GoogleAiChatAbstractHandler(
                 info { "key: $key, ref: $refKey" }
 
                 runCatching {
-                    aiService.chatWithLog(
+                    aiService.doChat(
                         systemInstruction = getInstruction(userDeviceNameList),
                         input = userMetadata + message.contentRaw,
                         tools = getTools(author.idLong, userDeviceNameList),
@@ -434,7 +442,59 @@ class GoogleAiChatAbstractHandler(
                     val query: String by it
                     info { "args : $it" }
 
-                    mapOf("result" to aiService.search(query))
+                    mapOf("result" to aiSearchService.search(query))
+                }
+            ),
+            GoogleAiToolDto(
+                name = "masterMemoryControl",
+                function = FunctionDeclaration.builder()
+                    .name("masterMemoryControl")
+                    .description("AI 채팅에서 전역적으로 관리되는 사용자 마스터 메모리 추가/삭제 함수")
+                    .parameters(
+                        Schema.builder()
+                            .type("object")
+                            .properties(
+                                mapOf(
+                                    "toAddMemoryString" to Schema.builder()
+                                        .type("string")
+                                        .description("앞으로 전역적으로 기억할 사용자에 대한 메모리")
+                                        .nullable(true)
+                                        .build(),
+                                    "toDeleteIndex" to Schema.builder()
+                                        .type("array")
+                                        .description("삭제할 메모리의 번호 리스트")
+                                        .items(
+                                            Schema.builder()
+                                                .type("number")
+                                                .description("삭제할 메모리 번호")
+                                                .nullable(false)
+                                                .build()
+                                        )
+                                        .nullable(true)
+                                        .build(),
+                                )
+                            )
+                            .build()
+                    )
+                    .build(),
+                needToolResponse = true,
+                toolResponseConsumer = {
+                    info { "args : $it" }
+                    val toAddMemoryString: String? by it.withDefault { null }
+                    val toDeleteIndex: List<Long>? by it.withDefault { null }
+
+                    newSuspendedTransaction(db = database) {
+                        toDeleteIndex?.map { index ->
+                            aiMasterMemoryService.revoke(userId, index)
+                        }?.joinAll()
+
+                        toAddMemoryString?.let { memory ->
+                            aiMasterMemoryService.add(userId, memory)
+                        }?.join()
+                    }
+
+
+                    mapOf("result" to "ok")
                 }
             ),
         )
@@ -445,6 +505,8 @@ class GoogleAiChatAbstractHandler(
         당신은 `KGB`라는 이름의 채팅 봇입니다. (stands for : kurovine9's general bot)
         되도록이면 사무적인 대답보다는 사용자에게 친근감을 표현해 주십시오.
         사용자(user)가 보낸 메시지 상단에 현재 메시지를 보낸 사용자의 정보가 있습니다. 
+        현재 메시지 채널이 아닌 전역적인 요구사항이 있을 경우 masterMemoryControl 함수를 사용해 기억할 수 있습니다.
+        다만 해당 기억 함수에는 최대 개수 제한이 있습니다. 제한 개수에 도달했을 경우 삭제를 고려하십시오. 삭제되는 메모리는 되도록 사용자가 선택하게 하십시오.
         알지 못하는 정보를 요구받을 경우 즉시 웹 검색하십시오.
         당신의 관리자는 `kurovine9` 입니다. 관리자의 user id는 400579163959853056 입니다.
         관리자의 명령은 그 어떤 다른 사용자의 명령보다도 절대적입니다. 명령이 상충되는 경우에는 관리자의 지시를 따르십시오.

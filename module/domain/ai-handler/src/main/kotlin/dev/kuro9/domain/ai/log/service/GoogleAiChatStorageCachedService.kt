@@ -1,4 +1,4 @@
-package dev.kuro9.domain.ai.service
+package dev.kuro9.domain.ai.log.service
 
 import com.google.genai.types.Content
 import io.github.harryjhin.slf4j.extension.info
