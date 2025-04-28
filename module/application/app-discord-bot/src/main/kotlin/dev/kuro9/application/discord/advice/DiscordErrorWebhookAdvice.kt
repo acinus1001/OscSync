@@ -42,13 +42,27 @@ class DiscordErrorWebhookAdvice(private val errorUrl: ErrorWebhookUrl) : ServerE
             field {
                 name = "EndUser"
                 value = discordEvent.getAuthor()
-                inline = false
+                inline = true
             }
 
             field {
-                name = "Args"
-                value = discordEvent.getEventArgs()
-                inline = false
+                name = "Guild"
+                value = discordEvent.getGuildName()
+                inline = true
+            }
+
+            field {
+                name = "Channel"
+                value = discordEvent.getChannelName()
+                inline = true
+            }
+
+            discordEvent.getEventArgs().takeIf { it.isNotEmpty() }?.let { args ->
+                field {
+                    name = "Args"
+                    value = args
+                    inline = false
+                }
             }
 
             field {
@@ -107,6 +121,24 @@ class DiscordErrorWebhookAdvice(private val errorUrl: ErrorWebhookUrl) : ServerE
         is CommandAutoCompleteInteractionEvent -> user.asMention
         is ButtonInteractionEvent -> user.asMention
         is MessageReceivedEvent -> author.asMention
+        else -> "<unknown>"
+    }
+
+    private fun GenericEvent.getGuildName() = when (this) {
+        is SlashCommandInteractionEvent,
+        is CommandAutoCompleteInteractionEvent,
+        is ButtonInteractionEvent
+            -> guild?.name ?: "<Direct Message>"
+
+        is MessageReceivedEvent -> if (isFromGuild) guild.name else "<Direct Message>"
+        else -> "<unknown>"
+    }.let { "`$it`" }
+
+    private fun GenericEvent.getChannelName() = when (this) {
+        is SlashCommandInteractionEvent -> channel.asMention
+        is CommandAutoCompleteInteractionEvent -> channel.asMention
+        is ButtonInteractionEvent -> channel.asMention
+        is MessageReceivedEvent -> channel.asMention
         else -> "<unknown>"
     }
 }
