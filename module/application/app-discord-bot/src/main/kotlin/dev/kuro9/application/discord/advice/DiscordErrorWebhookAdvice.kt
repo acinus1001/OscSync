@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInterac
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import org.intellij.lang.annotations.Language
 import org.springframework.stereotype.Component
 
@@ -41,6 +42,12 @@ class DiscordErrorWebhookAdvice(private val errorUrl: ErrorWebhookUrl) : ServerE
             field {
                 name = "EndUser"
                 value = discordEvent.getAuthor()
+                inline = false
+            }
+
+            field {
+                name = "Args"
+                value = discordEvent.getEventArgs()
                 inline = false
             }
 
@@ -82,6 +89,18 @@ class DiscordErrorWebhookAdvice(private val errorUrl: ErrorWebhookUrl) : ServerE
         is MessageReceivedEvent -> message.contentRaw
         else -> "<unknown>"
     }.let { "${this::class.simpleName}(`$it`)" }
+
+    private fun GenericEvent.getEventArgs() = when (this) {
+        is SlashCommandInteractionEvent -> {
+            this.options.map { option: OptionMapping ->
+                option.toString()
+            }
+        }
+
+        is ButtonInteractionEvent -> listOf(componentId)
+        is MessageReceivedEvent -> listOf(message.contentRaw)
+        else -> emptyList()
+    }.joinToString(",\n") { "`$it`" }
 
     private fun GenericEvent.getAuthor() = when (this) {
         is SlashCommandInteractionEvent -> user.asMention
