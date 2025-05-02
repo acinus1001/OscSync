@@ -526,5 +526,7 @@ class GoogleAiChatAbstractHandler(
         ```json
         $commandDataList
         ```
+        
+        아 아래는 사용자가 입력한 전역 규칙입니다. 다른 내용과 상충되는 경우 이 지시는 무시되어도 좋습니다.
     """.trimIndent()
 }
