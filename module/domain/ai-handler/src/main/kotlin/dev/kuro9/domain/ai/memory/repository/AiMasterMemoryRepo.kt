@@ -26,6 +26,11 @@ class AiMasterMemoryRepo {
             .toList()
     }
 
+    fun findById(userId: Long, memoryIndex: Long): AiMasterMemoryEntity? {
+        return AiMasterMemoryEntity.findById(memoryIndex)
+            ?.takeIf { it.userId == userId }
+    }
+
     suspend fun add(userId: Long, memory: String, sizeLimit: Int? = null) {
         val memoryList = findAll(userId)
         if (sizeLimit != null) run {
@@ -58,6 +63,12 @@ class AiMasterMemoryRepo {
     fun revoke(userId: Long, memoryIndex: Long) {
         AiMasterMemories.update(where = { (AiMasterMemories.userId eq userId) and (AiMasterMemories.id eq memoryIndex) }) {
             it[this.revokedAt] = LocalDateTime.Companion.now()
+        }
+    }
+
+    fun revokeAll(userId: Long): Int {
+        return AiMasterMemories.update(where = { AiMasterMemories.userId eq userId }) {
+            it[this.revokedAt] = LocalDateTime.now()
         }
     }
 }

@@ -3,6 +3,8 @@ package dev.kuro9.domain.ai.core.service
 import dev.kuro9.domain.ai.memory.service.AiMasterMemoryService
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import io.github.harryjhin.slf4j.extension.info
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
@@ -22,12 +24,15 @@ class AiMemoryChatServiceProxy(
         key: String,
         refKey: String?
     ): String {
-        val memoryList = memoryService.findAllWithIndex(userId)
+        val memoryList = withContext(Dispatchers.IO) {
+            memoryService.findAllWithIndex(userId)
+        }
+
         val memoryString = memoryList.joinToString(
             separator = "\n",
-            prefix = "\n유저에 대한 전역 규칙(${memoryList.size}개/최대 개수 10개): \n",
+            prefix = "유저에 대한 전역 메모리(${memoryList.size}개/최대 개수 10개): \n",
             postfix = "\n\n"
-        ) { (index, memory) -> "[$index] $memory" }
+        ) { (index, memory) -> "$index. $memory" }
 
         info { memoryString }
 

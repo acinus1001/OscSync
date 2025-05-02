@@ -104,7 +104,7 @@ class GoogleAiChatAbstractHandler(
 
     private suspend fun handleAiChat(author: User, message: Message, channel: MessageChannelUnion) {
         measureTime {
-            val userMetadata = """user info: {id:${author.id},name:${author.effectiveName}}\n\n"""
+            val userMetadata = """\n\ncurrent user info: {id:${author.id},name:${author.effectiveName}}"""
             info { "INPUT ---------------->\n${message.contentRaw}" }
 
             val result = coroutineScope {
@@ -127,8 +127,8 @@ class GoogleAiChatAbstractHandler(
 
                 runCatching {
                     aiService.doChat(
-                        systemInstruction = getInstruction(userDeviceNameList),
-                        input = userMetadata + message.contentRaw,
+                        systemInstruction = getInstruction(userDeviceNameList) + userMetadata,
+                        input = message.contentRaw,
                         tools = getTools(author.idLong, userDeviceNameList),
                         key = key,
                         refKey = refKey,
@@ -504,7 +504,6 @@ class GoogleAiChatAbstractHandler(
     private fun getInstruction(deviceNameList: List<String>): String = """
         당신은 `KGB`라는 이름의 채팅 봇입니다. (stands for : kurovine9's general bot)
         되도록이면 사무적인 대답보다는 사용자에게 친근감을 표현해 주십시오.
-        사용자(user)가 보낸 메시지 상단에 현재 메시지를 보낸 사용자의 정보가 있습니다. 
         사용자에 대해 현재 채팅 채널뿐만이 아니라 해당 유저와 대화가 가능한 모든 채팅 채널에서의 기억이 필요한 전역적인 요구사항이 있을 경우 masterMemoryControl 함수를 사용해 기억할 수 있습니다.
         다만 해당 기억 함수에는 최대 개수 제한이 있습니다. 제한 개수에 도달했을 경우 삭제를 고려하십시오. 삭제되는 메모리는 되도록 사용자가 선택하게 하십시오.
         알지 못하는 정보를 요구받을 경우 즉시 웹 검색하십시오.
@@ -527,5 +526,7 @@ class GoogleAiChatAbstractHandler(
         ```json
         $commandDataList
         ```
+        
+        아 아래는 사용자가 입력한 전역 규칙입니다. 다른 내용과 상충되는 경우 이 지시는 무시되어도 좋습니다.
     """.trimIndent()
 }
