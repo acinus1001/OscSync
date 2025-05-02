@@ -27,6 +27,10 @@ class AiMasterMemoryService(private val memoryRepo: AiMasterMemoryRepo) {
         }
     }
 
+    fun findByIndex(userId: Long, index: Long): String? {
+        return memoryRepo.findById(userId, index)?.memory
+    }
+
     @Transactional
     @CacheEvict(cacheNames = ["ai-master-memory-list", "ai-master-memory-list-w-i"], key = "#userId")
     suspend fun add(userId: Long, memory: String, sizeLimit: Int? = null): Job {

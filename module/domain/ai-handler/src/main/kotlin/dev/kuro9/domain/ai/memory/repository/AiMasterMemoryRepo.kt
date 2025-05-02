@@ -26,6 +26,11 @@ class AiMasterMemoryRepo {
             .toList()
     }
 
+    fun findById(userId: Long, memoryIndex: Long): AiMasterMemoryEntity? {
+        return AiMasterMemoryEntity.findById(memoryIndex)
+            ?.takeIf { it.userId == userId }
+    }
+
     suspend fun add(userId: Long, memory: String, sizeLimit: Int? = null) {
         val memoryList = findAll(userId)
         if (sizeLimit != null) run {
