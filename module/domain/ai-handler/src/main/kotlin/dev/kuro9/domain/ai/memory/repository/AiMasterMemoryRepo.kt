@@ -60,4 +60,10 @@ class AiMasterMemoryRepo {
             it[this.revokedAt] = LocalDateTime.Companion.now()
         }
     }
+
+    fun revokeAll(userId: Long): Int {
+        return AiMasterMemories.update(where = { AiMasterMemories.userId eq userId }) {
+            it[this.revokedAt] = LocalDateTime.now()
+        }
+    }
 }

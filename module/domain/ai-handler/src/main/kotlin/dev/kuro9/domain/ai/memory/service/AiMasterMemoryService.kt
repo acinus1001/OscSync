@@ -3,9 +3,7 @@ package dev.kuro9.domain.ai.memory.service
 import dev.kuro9.domain.ai.memory.repository.AiMasterMemoryRepo
 import dev.kuro9.domain.ai.memory.table.AiMasterMemoryEntity
 import io.github.harryjhin.slf4j.extension.info
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
@@ -45,6 +43,16 @@ class AiMasterMemoryService(private val memoryRepo: AiMasterMemoryRepo) {
         return coroutineScope {
             launch {
                 memoryRepo.revoke(userId, memoryIndex)
+            }
+        }
+    }
+
+    @Transactional
+    @CacheEvict(cacheNames = ["ai-master-memory-list", "ai-master-memory-list-w-i"], key = "#userId")
+    suspend fun revokeAll(userId: Long): Deferred<Int> {
+        return coroutineScope {
+            async {
+                memoryRepo.revokeAll(userId)
             }
         }
     }

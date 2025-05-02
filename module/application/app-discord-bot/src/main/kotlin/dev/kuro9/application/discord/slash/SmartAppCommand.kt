@@ -1,5 +1,6 @@
 package dev.kuro9.application.discord.slash
 
+import dev.kuro9.application.discord.util.asyncDeferReply
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.DuplicatedRegisterException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.NotSupportException
@@ -12,11 +13,11 @@ import dev.minn.jda.ktx.interactions.commands.group
 import dev.minn.jda.ktx.interactions.commands.option
 import dev.minn.jda.ktx.interactions.commands.subcommand
 import dev.minn.jda.ktx.messages.Embed
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -261,11 +262,5 @@ class SmartAppCommand(
 
             else -> throw t
         }
-
-    private suspend fun SlashCommandInteractionEvent.asyncDeferReply(isEphemeral: Boolean = false): Deferred<InteractionHook> {
-        return coroutineScope {
-            async { deferReply(isEphemeral).await() }
-        }
-    }
 
 }
