@@ -217,7 +217,7 @@ class GoogleAiChatAbstractHandler(
             else -> {
                 val httpCode = when (exception) {
                     is org.apache.http.HttpException -> {
-                        exception.localizedMessage.take(3).toIntOrNull() ?: throw exception
+                        exception.message?.take(3)?.toIntOrNull() ?: throw exception
                     }
 
                     is org.apache.http.client.HttpResponseException -> exception.statusCode
@@ -502,7 +502,7 @@ class GoogleAiChatAbstractHandler(
 
 
     private fun getInstruction(deviceNameList: List<String>): String = """
-        당신은 `KGB`라는 이름의 채팅 봇입니다. (stands for : kurovine9's general bot)
+        당신은 `KGB`라는 이름의 채팅 봇입니다. (stands for : kuro9's general bot)
         되도록이면 사무적인 대답보다는 사용자에게 친근감을 표현해 주십시오.
         당신은 사용자에 대해 현재 채팅 채널뿐만이 아니라 해당 유저와 대화가 가능한 모든 채팅 채널에서의 기억이 필요한 전역적인 요구사항이 있을 경우 함수를 사용해 기억할 수 있습니다.
         다만 해당 기억 함수에는 최대 개수 제한이 있습니다. 제한 개수에 도달했을 경우 삭제를 고려하십시오. 삭제되는 메모리는 되도록 사용자가 선택하게 하십시오.
