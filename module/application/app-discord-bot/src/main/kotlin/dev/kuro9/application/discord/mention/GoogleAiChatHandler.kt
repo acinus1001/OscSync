@@ -2,8 +2,10 @@ package dev.kuro9.application.discord.mention
 
 import com.google.genai.types.FunctionDeclaration
 import com.google.genai.types.Schema
+import dev.kuro9.application.discord.exception.NotSupportedChannel
 import dev.kuro9.domain.ai.core.service.AiChatService
 import dev.kuro9.domain.ai.core.service.AiSearchService
+import dev.kuro9.domain.ai.log.dto.AiChatLogConfigDto
 import dev.kuro9.domain.ai.memory.service.AiMasterMemoryService
 import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
@@ -28,6 +30,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.concrete.GroupChannel
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -133,6 +139,13 @@ class GoogleAiChatAbstractHandler(
                         key = key,
                         refKey = refKey,
                         userId = author.idLong,
+                        logConfig = when (channel) {
+                            is PrivateChannel -> AiChatLogConfigDto(350, 50)
+                            is ThreadChannel -> null
+                            is GroupChannel -> AiChatLogConfigDto(350, 50)
+                            is TextChannel -> AiChatLogConfigDto(350, 50)
+                            else -> throw NotSupportedChannel()
+                        }
                     )
                 }
             }
@@ -212,6 +225,14 @@ class GoogleAiChatAbstractHandler(
                     description = "서버와의 연결이 끊어졌습니다.  다시 시도해 주세요."
                     color = Color.ORANGE.rgb
                 } to true
+            }
+
+            is NotSupportedChannel -> {
+                Embed {
+                    title = "미지원 채널"
+                    description = "해당 채널은 해당 동작을 지원하지 않습니다."
+                    color = Color.RED.rgb
+                } to false
             }
 
             else -> {

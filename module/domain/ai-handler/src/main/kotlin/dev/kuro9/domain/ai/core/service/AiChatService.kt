@@ -1,5 +1,6 @@
 package dev.kuro9.domain.ai.core.service
 
+import dev.kuro9.domain.ai.log.dto.AiChatLogConfigDto
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 
 interface AiChatService {
@@ -11,6 +12,7 @@ interface AiChatService {
      * @param userId 유저 식별자
      * @param key 현재 채팅 메시지 식별자
      * @param refKey 이전 채팅 메시지 식별자. 없다면 null
+     * @param logConfig 유지할 로그 개수에 대한 config. 무제한 시 null
      *
      * @return AI의 응답
      */
@@ -21,5 +23,6 @@ interface AiChatService {
         userId: Long,
         key: String,
         refKey: String? = null,
+        logConfig: AiChatLogConfigDto? = null,
     ): String
 }
