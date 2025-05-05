@@ -1,6 +1,7 @@
 package dev.kuro9.domain.ai.log.service
 
 import com.google.genai.types.Content
+import dev.kuro9.domain.ai.log.dto.AiChatLogConfigDto
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.springframework.stereotype.Service
@@ -13,7 +14,7 @@ class GoogleAiChatKeychainStorageService(
     private val keyChainStorage: GoogleAiKeychainStorage,
 ) {
 
-    suspend fun get(refKey: String?, nowKey: String): List<Content> {
+    suspend fun get(refKey: String?, nowKey: String, logConfig: AiChatLogConfigDto?): List<Content> {
         val rootKey = refKey?.let(keyChainStorage::getRootKey)
 
         coroutineScope {
@@ -26,8 +27,8 @@ class GoogleAiChatKeychainStorageService(
         }
 
         val list = storage[rootKey ?: nowKey] ?: emptyList()
-        if (list.size > 350) {
-            val result = list.takeLast(300)
+        if (logConfig != null && list.size > logConfig.limitChatCount) {
+            val result = list.takeLast(logConfig.limitChatCount - logConfig.deboundCount)
             val toDrop = result.indexOfFirst { it.hasValidUserText() }
                 .takeIf { it >= 0 }
                 ?: 0

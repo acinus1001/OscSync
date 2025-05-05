@@ -1,5 +1,6 @@
 package dev.kuro9.domain.ai.core.service
 
+import dev.kuro9.domain.ai.log.dto.AiChatLogConfigDto
 import dev.kuro9.domain.ai.log.service.GoogleAiChatKeychainStorageService
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import dev.kuro9.internal.google.ai.service.GoogleAiService
@@ -18,9 +19,10 @@ class GoogleLoggedAiChatService(
         tools: List<GoogleAiToolDto>,
         userId: Long,
         key: String,
-        refKey: String?
+        refKey: String?,
+        logConfig: AiChatLogConfigDto?,
     ): String {
-        val log = logStorage.get(refKey, key)
+        val log = logStorage.get(refKey, key, logConfig)
         info { "log count: ${log.size}" }
 
         val (result, sessionLog) = aiService.chat(

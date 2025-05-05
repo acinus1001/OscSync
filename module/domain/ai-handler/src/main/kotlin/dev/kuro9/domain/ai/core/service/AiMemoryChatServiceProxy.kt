@@ -1,5 +1,6 @@
 package dev.kuro9.domain.ai.core.service
 
+import dev.kuro9.domain.ai.log.dto.AiChatLogConfigDto
 import dev.kuro9.domain.ai.memory.service.AiMasterMemoryService
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import io.github.harryjhin.slf4j.extension.info
@@ -22,7 +23,8 @@ class AiMemoryChatServiceProxy(
         tools: List<GoogleAiToolDto>,
         userId: Long,
         key: String,
-        refKey: String?
+        refKey: String?,
+        logConfig: AiChatLogConfigDto?,
     ): String {
         val memoryList = withContext(Dispatchers.IO) {
             memoryService.findAllWithIndex(userId)
