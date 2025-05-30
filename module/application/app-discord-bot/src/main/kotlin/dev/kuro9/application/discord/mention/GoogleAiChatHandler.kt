@@ -140,10 +140,10 @@ class GoogleAiChatAbstractHandler(
                         refKey = refKey,
                         userId = author.idLong,
                         logConfig = when (channel) {
-                            is PrivateChannel -> AiChatLogConfigDto(350, 50)
-                            is ThreadChannel -> null
-                            is GroupChannel -> AiChatLogConfigDto(350, 50)
-                            is TextChannel -> AiChatLogConfigDto(350, 50)
+                            is PrivateChannel -> AiChatLogConfigDto(250, 50)
+                            is ThreadChannel -> AiChatLogConfigDto(250, 50)
+                            is GroupChannel -> AiChatLogConfigDto(250, 50)
+                            is TextChannel -> AiChatLogConfigDto(250, 50)
                             else -> throw NotSupportedChannel()
                         }
                     )
