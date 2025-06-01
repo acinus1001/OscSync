@@ -75,7 +75,9 @@ class SlashAiControlCommand(
     }
 
     private suspend fun clearMemory(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
-        val affected: Int = memoryService.revokeAll(event.user.idLong).await()
+        val affected: Int = newSuspendedTransaction(db = database) {
+            memoryService.revokeAll(event.user.idLong).await()
+        }
 
         Embed {
             title = "200 OK"
@@ -85,9 +87,9 @@ class SlashAiControlCommand(
 
     private suspend fun deleteMemory(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
         val memoryIndex = event.getOption("memory-index")!!.asLong
-        val memory = withContext(Dispatchers.IO) {
+        val memory: String = withContext(Dispatchers.IO) {
             newSuspendedTransaction(db = database) {
-                memoryService.findByIndex(event.user.idLong, memoryIndex)?.let {
+                memoryService.findByIndex(event.user.idLong, memoryIndex)?.also {
                     memoryService.revoke(event.user.idLong, memoryIndex)
                 }
             }
