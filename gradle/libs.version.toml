@@ -81,7 +81,7 @@ java-osc = { module = "com.illposed.osc:javaosc-core", version = "0.9" }
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions", version = "1.2.3" }
 
 jda-core = { module = "net.dv8tion:JDA", version = "5.5.1" }
-#jda-core-hotfix = { module = "com.github.freya022:JDA", version = "8905a41" }
+jda-core-hotfix = { module = "com.github.freya022:JDA", version = "8905a41" }
 jda-kotlin-extension = { module = "club.minnced:jda-ktx", version = "0.12.0" }
 
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
@@ -120,7 +120,7 @@ slf4j-api-extensions = { module = "io.github.harryjhin:slf4j-api-extensions", ve
 
 [bundles]
 exposed = ["exposed-core", "exposed-dao", "exposed-kotlin-datetime", "exposed-json", "exposed-spring-boot-starter", "kotlinx-datetime"]
-jda = ["jda-core", "jda-kotlin-extension"]
+jda = ["jda-core-hotfix", "jda-kotlin-extension"]
 koin = ["koin-core", "koin-compose", "koin-compose-viewmodel", "koin-compose-navigation"]
 orbit-mvi = ["orbit-mvi-core", "orbit-mvi-compose", "orbit-mvi-viewmodel"]
 mvi-kotlin-decomposed = [
