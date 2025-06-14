@@ -76,6 +76,7 @@ class SmartAppUserService(
         NotSupportException::class,
         SmartAppDeviceException.NotFoundException::class,
     )
+    @CacheEvict(cacheNames = ["smartapp-registered-devices"])
     suspend fun registerDeviceWithId(userId: Long, deviceId: String, deviceName: String?): String {
         val deviceInfo = runCatching { getUserDevice(userId, deviceId) }
             .getOrElse { e ->
