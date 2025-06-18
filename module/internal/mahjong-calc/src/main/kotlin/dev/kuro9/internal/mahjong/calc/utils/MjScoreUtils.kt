@@ -121,9 +121,11 @@ object MjScoreUtil {
             MjScore.HANEMAN -> 12000
             MjScore.MANKAN -> 8000
             MjScore.ELSE -> {
-                val (ronScore, _) = scoreTable[fuu]?.get(han - 1)
-                    ?: throw IllegalStateException("Unsupport fuu: han=$han to fuu=$fuu")
+                val scoreTableData =
+                    scoreTable[fuu]?.get(han - 1) ?: throw IllegalStateException("Unsupport fuu: han=$han to fuu=$fuu")
+                val (ronScore, _) = scoreTableData
                 val (koScore, oyaScore) = ronScore
+                val scoreEnum = if (scoreTableData == MANKAN) MjScore.MANKAN else MjScore.ELSE
                 return (if (isOya) oyaScore else koScore).toRonScoreVo().toScoreVo(scoreEnum, fuu, han, yakuSet)
             }
         }.let { if (isOya) it * 3 / 2 else it }.toRonScoreVo().toScoreVo(scoreEnum, fuu, han, yakuSet)

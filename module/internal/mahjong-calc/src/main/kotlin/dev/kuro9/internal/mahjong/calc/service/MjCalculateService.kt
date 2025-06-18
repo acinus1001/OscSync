@@ -35,7 +35,7 @@ class MjCalculateService {
 }
 
 fun main() {
-    val result = MjCalculateService().parseTeHai("12345789m456p11s", "6m", true)
+    val result = MjCalculateService().parseTeHai("2234455m234p234s", "6m", true)
     println(result)
     println(result.getTopFuuHan())
 }
