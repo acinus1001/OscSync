@@ -6,7 +6,7 @@ import dev.kuro9.internal.mahjong.calc.model.MjTeHai
 object MjScoreUtil {
 
     private val MANKAN = (8000 to 12000) to MjScoreI.Tsumo.MANKAN
-    private val scoreTable: Map<Int, List<Pair<Pair<Int, Int>, MjScoreI.Tsumo>>> = buildMap {
+    val scoreTable: Map<Int, List<Pair<Pair<Int, Int>, MjScoreI.Tsumo>>> = buildMap {
         put {
             20 to listOf(
                 (700 to 1000) to (200 mjTo 400),
@@ -200,10 +200,15 @@ data class MjScoreVo<T : MjScoreI>(
 
 sealed interface MjScoreI {
     @JvmInline
-    value class Ron(val score: Int) : MjScoreI
+    value class Ron(val score: Int) : MjScoreI {
+        override fun toString(): String = "$score"
+    }
+
     data class Tsumo(val koScore: Int, val oyaScore: Int) : MjScoreI {
 
         operator fun times(times: Int) = Tsumo(koScore * times, oyaScore * times)
+
+        override fun toString(): String = "$koScore / $oyaScore"
 
         companion object {
             val YAKUMAN = Tsumo(8000, 16000)

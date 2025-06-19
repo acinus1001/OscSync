@@ -13,6 +13,10 @@ data class MjTeHai(
         check(body.size == 4)
     }
 
+    override fun toString(): String {
+        return "$head " + body.joinToString(" ") + " $agariHai"
+    }
+
     val isHuro: Boolean by lazy { body.any { it.isHuro() } }
     val isMenzen: Boolean = !isHuro
     fun getDoraCount(doraPaiList: List<MjPai>): Int {

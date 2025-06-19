@@ -1,7 +1,12 @@
 package dev.kuro9.application.discord.slash
 
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
+import dev.kuro9.internal.mahjong.calc.enums.MjYaku
+import dev.kuro9.internal.mahjong.calc.model.MjTeHai
 import dev.kuro9.internal.mahjong.calc.service.MjCalculateService
+import dev.kuro9.internal.mahjong.calc.utils.MjScoreI
+import dev.kuro9.internal.mahjong.calc.utils.MjScoreUtil
+import dev.kuro9.internal.mahjong.calc.utils.MjScoreVo
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.Command
 import dev.minn.jda.ktx.interactions.commands.option
@@ -56,14 +61,126 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
 
         val huroBody = huro?.removeSurrounding(" ")?.split(" ")?.toTypedArray()
 
-        val parsedTeHai = mjCalculateService.parseTeHai(
+        val parsedTeHai: MjTeHai = mjCalculateService.parseTeHai(
             teHaiStr = tehai,
             agariHaiStr = ron ?: tsumo!!,
             isRon = ron != null,
             huroBody = huroBody ?: emptyArray()
         )
 
-        val score = parsedTeHai.getTopFuuHan()
+        val score: MjScoreVo<out MjScoreI> = parsedTeHai.getTopFuuHan()
+
+        val resultEmbed = Embed {
+            title = "Result"
+            description = parsedTeHai.toString()
+
+            field {
+                name = "점수"
+                value = "[${
+                    when (score.score) {
+                        is MjScoreI.Ron -> "론"
+                        is MjScoreI.Tsumo -> "쯔모"
+                    }
+                }] `${score.score}`"
+                inline = false
+            }
+
+            field {
+                name = "부수 / 판수"
+                value = "${score.han}판 / ${score.fuu}부"
+                inline = false
+            }
+
+            field {
+                name = "손역"
+                value = score.yakuSet.joinToString(
+                    "\n",
+                    prefix = "```\n",
+                    postfix = "\n```"
+                ) { yaku -> "[${if (parsedTeHai.isHuro && yaku.kuiSagari) yaku.han - 1 else yaku.han}] ${yaku.toKrString()}" }
+            }
+            color = Color.GREEN.rgb
+        }.let { mutableListOf(it) }
+
+        if (score.scoreEnum == MjScoreUtil.MjScore.ELSE) run {
+            val scoreTable = MjScoreUtil.scoreTable[score.fuu] ?: return@run
+
+            resultEmbed += Embed {
+                title = "부수/판수 테이블"
+                description = "${score.fuu}부 점수 표"
+                field {
+                    name = "자의 경우"
+                    value = """```
+                        ${
+                        scoreTable.mapIndexed { index, (ron, tsumo) ->
+                            "[${index + 1}] 론(${ron.first}) 쯔모(${tsumo.koScore} / ${tsumo.oyaScore})"
+                        }.joinToString("\n")
+                    }
+                    ```""".trimIndent()
+                    inline = false
+                }
+                field {
+                    name = "오야의 경우"
+                    value = """```
+                        ${
+                        scoreTable.mapIndexed { index, (ron, tsumo) ->
+                            "[${index + 1}] 론(${ron.second}) 쯔모(${tsumo.oyaScore} ALL)"
+                        }.joinToString("\n")
+                    }
+                    ```""".trimIndent()
+                    inline = false
+                }
+            }
+        }
+
+        deferReply.await().editOriginalEmbeds(resultEmbed).await()
+    }
+
+    private fun MjYaku.toKrString(): String = when (this) {
+        MjYaku.RIICHI -> "리치"
+        MjYaku.IPPATSU -> "일발"
+        MjYaku.TSUMO -> "쯔모"
+        MjYaku.YAKU_BAKASE -> "역패: 장풍"
+        MjYaku.YAKU_ZIKASE -> "역패: 자풍"
+        MjYaku.YAKU_HAKU -> "역패: 백"
+        MjYaku.YAKU_HATSU -> "역패: 발"
+        MjYaku.YAKU_CHUU -> "역패: 중"
+        MjYaku.TANYAO -> "탕야오"
+        MjYaku.PINFU -> "핑후"
+        MjYaku.IPECO -> "이페코"
+        MjYaku.CHANKAN -> "창깡"
+        MjYaku.HAITEI -> "해저로월"
+        MjYaku.HOUTEI -> "하저로어"
+        MjYaku.DOUBLE_RIICHI -> "더블 리치"
+        MjYaku.CHANTA -> "찬타"
+        MjYaku.HONROUTOU -> "혼노두"
+        MjYaku.SANSHOKU_DOUJUU -> "삼색동순"
+        MjYaku.SANSHOKU_DOUKOU -> "삼색동각"
+        MjYaku.ITTKITSUKAN -> "일기통관"
+        MjYaku.TOITOI -> "또이또이"
+        MjYaku.SANANKOU -> "산안커"
+        MjYaku.SANKANTSU -> "산깡쯔"
+        MjYaku.CHITOITSU -> "치또이"
+        MjYaku.SHOUSANGEN -> "소삼원"
+        MjYaku.JUNCHANTA -> "준찬타"
+        MjYaku.HONITSU -> "혼일색"
+        MjYaku.RYANPEKO -> "량페코"
+        MjYaku.CHINITSU -> "청일색"
+        MjYaku.TENHOU -> "천화"
+        MjYaku.CHIHOU -> "지화"
+        MjYaku.SUANKOU -> "사암각"
+        MjYaku.KOKUSHI -> "국사무쌍"
+        MjYaku.DAISANGEN -> "대삼원"
+        MjYaku.TSUISO -> "자일색"
+        MjYaku.RYUISO -> "녹일색"
+        MjYaku.CHINROTO -> "청노두"
+        MjYaku.SYOUSUSI -> "소사희"
+        MjYaku.CHUREN -> "구련보등"
+        MjYaku.SUKANTSU -> "스깡쯔"
+        MjYaku.DAISUSI -> "대사희"
+        MjYaku.SUANKOU_TANKI -> "사암각 단기"
+        MjYaku.KOKUSHI_13MEN -> "국사무쌍 13면대기"
+        MjYaku.CHUREN_9MEN -> "순정구련보등"
     }
 
     private fun getDefaultExceptionEmbed(t: Throwable): MessageEmbed =
