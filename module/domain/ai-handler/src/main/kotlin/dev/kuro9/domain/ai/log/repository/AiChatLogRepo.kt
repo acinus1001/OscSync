@@ -1,13 +1,14 @@
-package dev.kuro9.domain.ai.repository
+package dev.kuro9.domain.ai.log.repository
 
-import dev.kuro9.domain.ai.table.AiChatLog
-import dev.kuro9.domain.ai.table.AiChatLogEntity
-import dev.kuro9.domain.ai.table.AiChatLogs
+import dev.kuro9.domain.ai.log.table.AiChatLog
+import dev.kuro9.domain.ai.log.table.AiChatLogEntity
+import dev.kuro9.domain.ai.log.table.AiChatLogs
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.BatchUpdateStatement
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -47,22 +48,24 @@ class AiChatLogRepo {
             .map { it[AiChatLogs.id].value }
     }
 
-    fun saveAll(logs: Iterable<AiChatLog>) {
+    fun saveAll(logs: List<AiChatLog>) {
         AiChatLogs.batchInsert(logs) { log ->
             this[AiChatLogs.key] = log.key
             this[AiChatLogs.rootKey] = log.rootKey
             this[AiChatLogs.payload] = log.payload
             this[AiChatLogs.createdAt] = LocalDateTime.now()
             this[AiChatLogs.revokeAt] = null
+            this[AiChatLogs.userId] = log.userId
         }
     }
 
-    fun revokeAll(idSet: Iterable<Long>) {
+    fun revokeAll(idSet: List<Long>) {
+        if (idSet.isEmpty()) return
         BatchUpdateStatement(AiChatLogs).apply {
             idSet.forEach { id ->
                 addBatch(EntityID(id, AiChatLogs))
                 this[AiChatLogs.revokeAt] = LocalDateTime.now()
             }
-        }
+        }.execute(TransactionManager.current())
     }
 }

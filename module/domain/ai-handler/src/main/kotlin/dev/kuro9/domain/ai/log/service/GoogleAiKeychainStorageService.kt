@@ -1,6 +1,6 @@
-package dev.kuro9.domain.ai.service
+package dev.kuro9.domain.ai.log.service
 
-import dev.kuro9.domain.ai.repository.AiChatKeychainRepo
+import dev.kuro9.domain.ai.log.repository.AiChatKeychainRepo
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

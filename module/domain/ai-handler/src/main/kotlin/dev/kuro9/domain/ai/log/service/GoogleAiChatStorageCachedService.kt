@@ -1,4 +1,4 @@
-package dev.kuro9.domain.ai.service
+package dev.kuro9.domain.ai.log.service
 
 import com.google.genai.types.Content
 import io.github.harryjhin.slf4j.extension.info
@@ -15,6 +15,7 @@ class GoogleAiChatStorageCachedService(
 
     override fun get(rootKey: String): List<Content>? {
 
+        @Suppress("UNCHECKED_CAST")
         return (cacheManager.getCache("ai-chat-log")
             ?.get(rootKey, List::class.java) as? List<Content>)
             ?.also { info { "chatStorage#get cache hit for $rootKey" } }
@@ -22,13 +23,14 @@ class GoogleAiChatStorageCachedService(
                 .also { info { "chatStorage#get cache miss for $rootKey" } }
     }
 
-    override fun append(key: String, rootKey: String, log: List<Content>) {
+    override fun append(userId: Long, key: String, rootKey: String, log: List<Content>) {
 
+        @Suppress("UNCHECKED_CAST")
         val cachedData = cacheManager.getCache("ai-chat-log")
             ?.get(rootKey, List::class.java) as? List<Content>? ?: origin[rootKey] ?: emptyList()
 
         cacheManager.getCache("ai-chat-log")?.put(rootKey, cachedData + log)
-        origin.append(key, rootKey, log)
+        origin.append(userId, key, rootKey, log)
     }
 
     override fun remove(rootKey: String) {

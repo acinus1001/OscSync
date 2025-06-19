@@ -1,24 +1,28 @@
-package dev.kuro9.domain.ai.service
+package dev.kuro9.domain.ai.core.service
 
+import dev.kuro9.domain.ai.log.dto.AiChatLogConfigDto
+import dev.kuro9.domain.ai.log.service.GoogleAiChatKeychainStorageService
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import dev.kuro9.internal.google.ai.service.GoogleAiService
 import io.github.harryjhin.slf4j.extension.info
 import org.springframework.stereotype.Service
 
 @Service
-class GoogleAiChatService(
+class GoogleLoggedAiChatService(
     private val aiService: GoogleAiService,
-    private val logStorage: GoogleAiChatKeychainStorageService
-) {
+    private val logStorage: GoogleAiChatKeychainStorageService,
+) : AiChatService {
 
-    suspend fun chatWithLog(
+    override suspend fun doChat(
         systemInstruction: String,
         input: String,
         tools: List<GoogleAiToolDto>,
+        userId: Long,
         key: String,
-        refKey: String? = null,
+        refKey: String?,
+        logConfig: AiChatLogConfigDto?,
     ): String {
-        val log = logStorage.get(refKey, key)
+        val log = logStorage.get(refKey, key, logConfig)
         info { "log count: ${log.size}" }
 
         val (result, sessionLog) = aiService.chat(
@@ -27,11 +31,7 @@ class GoogleAiChatService(
             tools = tools,
             chatLog = log
         )
-        logStorage.append(key, sessionLog)
+        logStorage.append(userId, key, sessionLog)
         return result
     }
-
-    suspend fun search(
-        input: String,
-    ) = aiService.search(input)
 }

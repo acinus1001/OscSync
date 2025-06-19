@@ -1,4 +1,4 @@
-package dev.kuro9.domain.ai.table
+package dev.kuro9.domain.ai.log.table
 
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
@@ -14,6 +14,7 @@ object AiChatLogs : LongIdTable("ai_chat_log") {
     val payload = text("payload")
     val createdAt = datetime("created_at").clientDefault { LocalDateTime.now() }
     val revokeAt = datetime("revoke_at").nullable()
+    val userId = long("user_id").nullable().index()
 }
 
 class AiChatLogEntity(id: EntityID<Long>) : LongEntity(id) {
@@ -24,10 +25,12 @@ class AiChatLogEntity(id: EntityID<Long>) : LongEntity(id) {
     var payload by AiChatLogs.payload
     var createdAt by AiChatLogs.createdAt
     var revokeAt by AiChatLogs.revokeAt
+    var userId by AiChatLogs.userId
 }
 
 data class AiChatLog(
     val key: String,
     val rootKey: String,
     val payload: String,
+    val userId: Long,
 )

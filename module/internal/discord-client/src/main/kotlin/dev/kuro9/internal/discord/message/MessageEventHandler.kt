@@ -28,17 +28,11 @@ internal class MessageEventHandler(
         val message = event.message.contentRaw
         infoLog(message)
         when {
-            event.message.isFromGuild && message.startsWith(mentionString) -> handler.handleMention(
-                event, message.removePrefix(mentionString)
-            )
+            event.message.isFromGuild && message.startsWith(mentionString) -> handler.handleMention(event)
 
-            event.message.isFromGuild && event.message.type == MessageType.INLINE_REPLY -> handler.handleMention(
-                event, message.removePrefix(mentionString)
-            )
+            event.message.isFromGuild && event.message.type == MessageType.INLINE_REPLY -> handler.handleMention(event)
 
-            !event.message.isFromGuild -> handler.handleMention(
-                event, message.removePrefix(mentionString)
-            )
+            !event.message.isFromGuild -> handler.handleMention(event)
         }
     }
 }

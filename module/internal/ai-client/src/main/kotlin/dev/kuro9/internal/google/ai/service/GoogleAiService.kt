@@ -12,7 +12,8 @@ import kotlin.jvm.optionals.getOrNull
 @Service
 class GoogleAiService(token: GoogleAiToken) {
 
-    private val modelVersion = "gemini-2.0-flash"
+    private val chatModelVersion = "gemini-2.5-flash-preview-04-17"
+    private val searchModelVersion = "gemini-2.0-flash"
 
     private val client = Client.builder()
         .apiKey(token.token)
@@ -30,7 +31,7 @@ class GoogleAiService(token: GoogleAiToken) {
         nowSessionChatLog += input.toUserChatContent()
 
         val response = client.models.generateContent(
-            modelVersion,
+            chatModelVersion,
             chatLog + nowSessionChatLog,
             GenerateContentConfig.builder()
                 .candidateCount(1)
@@ -64,7 +65,7 @@ class GoogleAiService(token: GoogleAiToken) {
 
             nowSessionChatLog += response.toTextResponseContent()
             return GoogleAiChatResponse(
-                result = response.text()!!,
+                result = response.text() ?: "",
                 sessionChatLog = nowSessionChatLog,
             )
         }
@@ -89,7 +90,7 @@ class GoogleAiService(token: GoogleAiToken) {
         nowSessionChatLog += toolResponse.toFunctionResponseContent()
 
         val responseWithTool = client.models.generateContent(
-            modelVersion,
+            chatModelVersion,
             chatLog + nowSessionChatLog,
             GenerateContentConfig.builder()
                 .candidateCount(1)
@@ -99,20 +100,15 @@ class GoogleAiService(token: GoogleAiToken) {
         )
         nowSessionChatLog += responseWithTool.toTextResponseContent()
         return GoogleAiChatResponse(
-            result = responseWithTool.text()!!,
+            result = responseWithTool.text() ?: "",
             sessionChatLog = nowSessionChatLog,
         )
     }
 
-    suspend fun search(query: String): String {
-
-        val systemInstruction = """
-            당신은 다른 자동화된 봇을 위한 검색 결과 제공 서비스입니다. 
-            최대한 짧고 간결하게 응답을 요약해 제공하십시오.
-        """.trimIndent()
+    suspend fun search(systemInstruction: String, query: String): String {
 
         return client.models.generateContent(
-            modelVersion,
+            searchModelVersion,
             query.toUserChatContent(),
             GenerateContentConfig.builder()
                 .candidateCount(1)
@@ -137,7 +133,7 @@ class GoogleAiService(token: GoogleAiToken) {
     private fun GenerateContentResponse.toTextResponseContent(): Content {
         return Content.builder()
             .role("model")
-            .parts(listOf(Part.fromText(this.text()!!)))
+            .parts(listOf(Part.fromText(this.text() ?: "")))
             .build()
     }
 
