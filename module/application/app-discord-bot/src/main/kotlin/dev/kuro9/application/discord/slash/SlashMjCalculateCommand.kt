@@ -29,7 +29,7 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
             option<String>("tehai", "손패. 123m123s12333t77z 과 같은 형식으로 입력하세요.", required = true)
             option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
             option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
-            option<String>("huro", "론한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+            option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
         }
     }
 
