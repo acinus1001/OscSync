@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.1.20"
 kotlinx-coroutines = "1.10.1"
-spring = "3.4.5"
+spring = "3.5.0"
 retrofit2 = "2.11.0"
 exposed = "0.60.0"
 ktor = "3.1.1"
@@ -66,7 +66,7 @@ exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datet
 exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
 exposed-spring-boot-starter = { module = "org.jetbrains.exposed:exposed-spring-boot-starter", version.ref = "exposed" }
 
-jdbc-postgres = { module = "org.postgresql:postgresql", version = "42.7.5" }
+jdbc-postgres = { module = "org.postgresql:postgresql", version = "42.7.7" }
 
 aspectj-runtime = { module = "org.aspectj:aspectjrt", version.ref = "aspectj" }
 aspectj-weaver = { module = "org.aspectj:aspectjweaver", version.ref = "aspectj" }

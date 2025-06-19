@@ -30,6 +30,7 @@ dependencies {
     implementation(projects.module.internal.discordClient)
     implementation(projects.module.internal.aiClient)
     implementation(projects.module.internal.errorHandler)
+    implementation(projects.module.internal.mahjongCalc)
     implementation(projects.module.domain.errorHandlerDiscord)
 
     implementation(projects.module.domain.database)
