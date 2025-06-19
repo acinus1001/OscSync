@@ -111,7 +111,7 @@ object MjScoreUtil {
     /**
      * @param fuuToHan 부수 to 판수
      */
-    fun getRonScore(fuuToHan: MjFuuToHanVo, isOya: Boolean): MjScoreVo<MjScoreI.Ron> {
+    fun getRonScore(fuuToHan: MjFuuToHanVo, isOya: Boolean): MjScoreVo<MjScoreI> {
         val (fuu, han, yakuSet) = fuuToHan
         val scoreEnum = MjScore.ofHan(han)
         return when (MjScore.ofHan(han)) {
@@ -121,6 +121,8 @@ object MjScoreUtil {
             MjScore.HANEMAN -> 12000
             MjScore.MANKAN -> 8000
             MjScore.ELSE -> {
+                if (han <= 0) return MjScoreI.NoYaku(true).toScoreVo(scoreEnum, fuu, han, yakuSet)
+
                 val scoreTableData =
                     scoreTable[fuu]?.get(han - 1) ?: throw IllegalStateException("Unsupport fuu: han=$han to fuu=$fuu")
                 val (ronScore, _) = scoreTableData
@@ -134,7 +136,7 @@ object MjScoreUtil {
     /**
      * @param fuuToHan 부수 to 판수
      */
-    fun getTsumoScore(fuuToHan: MjFuuToHanVo): MjScoreVo<MjScoreI.Tsumo> {
+    fun getTsumoScore(fuuToHan: MjFuuToHanVo): MjScoreVo<MjScoreI> {
         val (fuu, han, yakuSet) = fuuToHan
         val scoreEnum = MjScore.ofHan(han)
         return when (scoreEnum) {
@@ -144,6 +146,7 @@ object MjScoreUtil {
             MjScore.HANEMAN -> MjScoreI.Tsumo.HANEMAN
             MjScore.MANKAN -> MjScoreI.Tsumo.MANKAN
             MjScore.ELSE -> {
+                if (han <= 0) return MjScoreI.NoYaku(false).toScoreVo(scoreEnum, fuu, han, yakuSet)
                 val (_, tsumoScore) = scoreTable[fuu]?.get(han - 1)
                     ?: throw IllegalStateException("Unsupport fuu: han=$han to fuu=$fuu")
                 tsumoScore
@@ -199,6 +202,11 @@ data class MjScoreVo<T : MjScoreI>(
 }
 
 sealed interface MjScoreI {
+
+    data class NoYaku(val isRon: Boolean) : MjScoreI {
+        override fun toString(): String = "역 없음"
+    }
+
     @JvmInline
     value class Ron(val score: Int) : MjScoreI {
         override fun toString(): String = "$score"

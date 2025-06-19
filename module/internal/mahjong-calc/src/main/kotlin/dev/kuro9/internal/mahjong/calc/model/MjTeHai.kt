@@ -112,12 +112,12 @@ data class MjTeHai(
                 fuu,
                 yakuSet.sumOf { if (it.kuiSagari && !this.isMenzen) it.han - 1 else it.han },
                 yakuSet
-            ).takeIf { it.han > 0 } ?: return@map null
+            )
             when (this.agariHai) {
                 is MjAgariHai.Ron -> MjScoreUtil.getRonScore(fuuToHanVo, isOya = gameInfo.isOya)
                 is MjAgariHai.Tsumo -> MjScoreUtil.getTsumoScore(fuuToHanVo)
             }
-        }.filterNotNull().toSet()
+        }.toSet()
     }
 
     fun getTopFuuHan(

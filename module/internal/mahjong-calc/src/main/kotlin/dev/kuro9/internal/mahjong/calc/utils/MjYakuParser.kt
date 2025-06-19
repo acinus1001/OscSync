@@ -170,7 +170,7 @@ object MjYakuParser {
                 MjYaku.CHIHOU -> false
                 MjYaku.SUANKOU -> {
                     agariHai.isTsumo() &&
-                            blocks.filterIsInstance<MjBody>()
+                            componentList.filterIsInstance<MjBody>()
                                 .takeIf { it.isNotEmpty() }
                                 ?.all { it !is ShunzuBody && it.isMenzen() } ?: false
                 }
@@ -186,7 +186,7 @@ object MjYakuParser {
 //                MjYaku.DAISUSI -> TODO()
                 MjYaku.SUANKOU_TANKI -> {
                     agariBlock is MjHead &&
-                            blocks.filterIsInstance<MjBody>()
+                            componentList.filterIsInstance<MjBody>()
                                 .takeIf { it.isNotEmpty() }
                                 ?.all { it !is ShunzuBody && it.isMenzen() } ?: false
                 }

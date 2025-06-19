@@ -72,32 +72,35 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
 
         val resultEmbed = Embed {
             title = "Result"
-            description = parsedTeHai.toString()
+            description = "`$parsedTeHai`"
 
             field {
                 name = "점수"
-                value = "[${
-                    when (score.score) {
+                value = "`[${
+                    when (val scoreType = score.score) {
                         is MjScoreI.Ron -> "론"
                         is MjScoreI.Tsumo -> "쯔모"
+                        is MjScoreI.NoYaku -> if (scoreType.isRon) "론" else "쯔모"
                     }
-                }] `${score.score}`"
+                }] ${score.score}`"
                 inline = false
             }
 
             field {
                 name = "부수 / 판수"
-                value = "${score.han}판 / ${score.fuu}부"
+                value = (score.scoreEnum.toKrString()?.let { "`[${it}]" } ?: "`") + " ${score.han}판 / ${score.fuu}부`"
                 inline = false
             }
 
-            field {
-                name = "손역"
-                value = score.yakuSet.joinToString(
-                    "\n",
-                    prefix = "```\n",
-                    postfix = "\n```"
-                ) { yaku -> "[${if (parsedTeHai.isHuro && yaku.kuiSagari) yaku.han - 1 else yaku.han}] ${yaku.toKrString()}" }
+            if (score.yakuSet.isNotEmpty()) {
+                field {
+                    name = "손역"
+                    value = score.yakuSet.joinToString(
+                        "\n",
+                        prefix = "```\n",
+                        postfix = "\n```"
+                    ) { yaku -> "[${if (parsedTeHai.isHuro && yaku.kuiSagari) yaku.han - 1 else yaku.han}] ${yaku.toKrString()}" }
+                }
             }
             color = Color.GREEN.rgb
         }.let { mutableListOf(it) }
@@ -110,30 +113,31 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
                 description = "${score.fuu}부 점수 표"
                 field {
                     name = "자의 경우"
-                    value = """```
-                        ${
-                        scoreTable.mapIndexed { index, (ron, tsumo) ->
-                            "[${index + 1}] 론(${ron.first}) 쯔모(${tsumo.koScore} / ${tsumo.oyaScore})"
-                        }.joinToString("\n")
-                    }
-                    ```""".trimIndent()
+                    value = scoreTable.mapIndexed { index, (ron, tsumo) ->
+                        "[${index + 1}판] 론(${ron.first}) 쯔모(${tsumo.koScore} / ${tsumo.oyaScore})"
+                    }.joinToString("\n", prefix = "```\n", postfix = "\n```")
                     inline = false
                 }
                 field {
                     name = "오야의 경우"
-                    value = """```
-                        ${
-                        scoreTable.mapIndexed { index, (ron, tsumo) ->
-                            "[${index + 1}] 론(${ron.second}) 쯔모(${tsumo.oyaScore} ALL)"
-                        }.joinToString("\n")
-                    }
-                    ```""".trimIndent()
+                    value = scoreTable.mapIndexed { index, (ron, tsumo) ->
+                        "[${index + 1}판] 론(${ron.second}) 쯔모(${tsumo.oyaScore} ALL)"
+                    }.joinToString("\n", prefix = "```\n", postfix = "\n```")
                     inline = false
                 }
             }
         }
 
         deferReply.await().editOriginalEmbeds(resultEmbed).await()
+    }
+
+    private fun MjScoreUtil.MjScore.toKrString(): String? = when (this) {
+        MjScoreUtil.MjScore.YAKUMAN -> "역만"
+        MjScoreUtil.MjScore.SANBAIMAN -> "삼배만"
+        MjScoreUtil.MjScore.BAIMAN -> "배만"
+        MjScoreUtil.MjScore.HANEMAN -> "하네만"
+        MjScoreUtil.MjScore.MANKAN -> "만관"
+        MjScoreUtil.MjScore.ELSE -> null
     }
 
     private fun MjYaku.toKrString(): String = when (this) {
@@ -168,7 +172,7 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
         MjYaku.CHINITSU -> "청일색"
         MjYaku.TENHOU -> "천화"
         MjYaku.CHIHOU -> "지화"
-        MjYaku.SUANKOU -> "사암각"
+        MjYaku.SUANKOU -> "스안커"
         MjYaku.KOKUSHI -> "국사무쌍"
         MjYaku.DAISANGEN -> "대삼원"
         MjYaku.TSUISO -> "자일색"

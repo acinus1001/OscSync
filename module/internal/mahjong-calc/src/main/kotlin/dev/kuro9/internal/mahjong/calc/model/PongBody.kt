@@ -39,10 +39,9 @@ class PongBody internal constructor(
     override fun equals(other: Any?): Boolean {
         when (other) {
             null -> return false
-            (other !is PongBody) -> return false
+            !is PongBody -> return false
         }
 
-        other as PongBody
         return (other.isHuroBody == isHuroBody) and (other.paiList.first() == paiList.first())
     }
 
