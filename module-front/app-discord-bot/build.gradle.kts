@@ -13,7 +13,8 @@ plugins {
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = project.name
+//        moduleName = project.name
+        outputModuleName = project.name
         browser {
             val rootDirPath = project.rootDir.path
             val projectDirPath = project.projectDir.path
