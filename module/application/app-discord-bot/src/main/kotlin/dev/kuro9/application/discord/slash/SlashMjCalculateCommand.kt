@@ -30,29 +30,33 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
             option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
             option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
             option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+            option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
         }
     }
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
+        val deferReply: Deferred<InteractionHook> = event.asyncDeferReply(
+
+        )
         runCatching {
             when (event.subcommandName) {
-                "score" -> calculateScore(event)
+                "score" -> calculateScore(event, deferReply)
 
                 else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
             }
         }.onFailure { t ->
-            event.replyEmbeds(getDefaultExceptionEmbed(t)).await()
+            deferReply.await().editOriginalEmbeds(getDefaultExceptionEmbed(t)).await()
             return
         }
     }
 
-    private suspend fun calculateScore(event: SlashCommandInteractionEvent) {
-        val deferReply = event.asyncDeferReply()
+    private suspend fun calculateScore(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
 
         val tehai = event.getOption("tehai")!!.asString
         val tsumo = event.getOption("tsumo")?.asString
         val ron = event.getOption("ron")?.asString
         val huro = event.getOption("huro")?.asString
+        val ankang = event.getOption("ankang")?.asString
 
         // validate input
         if (!((tsumo != null) xor (ron != null))) {
@@ -60,13 +64,17 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
         }
 
         val huroBody = huro?.removeSurrounding(" ")?.split(" ")?.toTypedArray()
+        val ankangBody = ankang?.removeSurrounding(" ")?.split(" ")?.toTypedArray()
 
-        val parsedTeHai: MjTeHai = mjCalculateService.parseTeHai(
+        val parsedTeHai: MjTeHai? = mjCalculateService.parseTeHai(
             teHaiStr = tehai,
             agariHaiStr = ron ?: tsumo!!,
             isRon = ron != null,
-            huroBody = huroBody ?: emptyArray()
+            huroBody = huroBody ?: emptyArray(),
+            anKanBody = ankangBody ?: emptyArray()
         )
+
+        requireNotNull(parsedTeHai) { "완성된 손패가 아닙니다." }
 
         val score: MjScoreVo<out MjScoreI> = parsedTeHai.getTopFuuHan()
 
@@ -77,8 +85,8 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
             field {
                 name = "점수"
                 value = when (val scoreType = score.score) {
-                    is MjScoreI.Ron -> "[론]\n- 자: ${score.getKoRonScore()}\n- 오야: ${score.getOyaRonScore()}"
-                    is MjScoreI.Tsumo -> "[쯔모]\n- 자: ${score.score}\n- 오야: ${(score.score as MjScoreI.Tsumo).oyaScore} ALL"
+                    is MjScoreI.Ron -> "[론]\n자: ${score.getKoRonScore()}\n오야: ${score.getOyaRonScore()}"
+                    is MjScoreI.Tsumo -> "[쯔모]\n자: ${score.score}\n오야: ${(score.score as MjScoreI.Tsumo).oyaScore} ALL"
                     is MjScoreI.NoYaku -> (if (scoreType.isRon) "[론]" else "[쯔모]") + " 역 없음"
                 }.let { "```$it```" }
                 inline = false

@@ -149,6 +149,11 @@ data class MjTeHai(
                 PaiType.Z to mutableListOf(),
             )
 
+            require(
+                huroBody.filterIsInstance<KanBody>().count() + 13 == teHai.size + huroBody.sumOf { it.paiList.size }) {
+                "패 개수가 부족합니다."
+            }
+
             (teHai + agariHai.pai).forEach { paiMap[it.type]!!.add(it) }
             paiMap.values.forEach { it.sort() }
 
@@ -255,20 +260,20 @@ data class MjTeHai(
                     }
                 )
             }
-
-            // 깡쯔일 때
-            if (samePai.size == 4) {
-                val body = MjBody.of(samePai, false)
-                resultList += separateBodyR(
-                    nowPai = nowPai.toMutableList().also { it.add(body) },
-                    leftPai = leftPai.toMutableList().also {
-                        it.remove(samePai[0])
-                        it.remove(samePai[1])
-                        it.remove(samePai[2])
-                        it.remove(samePai[3])
-                    }
-                )
-            }
+//            깡은 따로 처리
+//            // 깡쯔일 때
+//            if (samePai.size == 4) {
+//                val body = MjBody.of(samePai, false)
+//                resultList += separateBodyR(
+//                    nowPai = nowPai.toMutableList().also { it.add(body) },
+//                    leftPai = leftPai.toMutableList().also {
+//                        it.remove(samePai[0])
+//                        it.remove(samePai[1])
+//                        it.remove(samePai[2])
+//                        it.remove(samePai[3])
+//                    }
+//                )
+//            }
 
             return resultList
         }
