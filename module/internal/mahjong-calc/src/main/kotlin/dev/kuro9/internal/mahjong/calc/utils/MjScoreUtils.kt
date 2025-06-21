@@ -199,6 +199,14 @@ data class MjScoreVo<T : MjScoreI>(
     override fun compareTo(other: MjScoreVo<T>): Int {
         return (han * 1000 + fuu) - (other.han * 1000 + other.fuu)
     }
+
+    fun getKoRonScore(): MjScoreI {
+        return MjScoreUtil.getRonScore(MjFuuToHanVo(fuu = fuu, han = han, yakuSet = yakuSet), isOya = false).score
+    }
+
+    fun getOyaRonScore(): MjScoreI {
+        return MjScoreUtil.getRonScore(MjFuuToHanVo(fuu = fuu, han = han, yakuSet = yakuSet), isOya = true).score
+    }
 }
 
 sealed interface MjScoreI {

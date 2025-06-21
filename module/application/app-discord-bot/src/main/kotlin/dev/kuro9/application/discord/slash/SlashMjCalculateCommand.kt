@@ -76,19 +76,17 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
 
             field {
                 name = "점수"
-                value = "`[${
-                    when (val scoreType = score.score) {
-                        is MjScoreI.Ron -> "론"
-                        is MjScoreI.Tsumo -> "쯔모"
-                        is MjScoreI.NoYaku -> if (scoreType.isRon) "론" else "쯔모"
-                    }
-                }] ${score.score}`"
+                value = when (val scoreType = score.score) {
+                    is MjScoreI.Ron -> "[론]\n- 자: ${score.getKoRonScore()}\n- 오야: ${score.getOyaRonScore()}"
+                    is MjScoreI.Tsumo -> "[쯔모]\n- 자: ${score.score}\n- 오야: ${(score.score as MjScoreI.Tsumo).oyaScore} ALL"
+                    is MjScoreI.NoYaku -> (if (scoreType.isRon) "[론]" else "[쯔모]") + " 역 없음"
+                }.let { "```$it```" }
                 inline = false
             }
 
             field {
                 name = "부수 / 판수"
-                value = (score.scoreEnum.toKrString()?.let { "`[${it}]" } ?: "`") + " ${score.han}판 / ${score.fuu}부`"
+                value = (score.scoreEnum.toKrString()?.let { "`[${it}] " } ?: "`") + "${score.han}판 / ${score.fuu}부`"
                 inline = false
             }
 
