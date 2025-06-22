@@ -34,6 +34,7 @@ class MjHead(val paiList: List<MjPai>) : MjComponent, MjFuuProvider {
 
         if (isZikazeAtama(ziKaze)) basicFuu += 2
         if (isBakazeAtama(baKaze)) basicFuu += 2
+        if (isSanGenAtama()) basicFuu += 2
 
         return basicFuu
     }
