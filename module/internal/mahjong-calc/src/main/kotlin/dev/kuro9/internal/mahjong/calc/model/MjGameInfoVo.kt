@@ -36,5 +36,25 @@ data class MjGameInfoVo(
             dora = emptyList(),
             uraDora = emptyList(),
         )
+
+        fun of(
+            zikaze: MjKaze,
+            bakaze: MjKaze,
+            honba: Int = 0,
+            tenhouCount: Int = 0,
+            dora: List<MjPai> = emptyList(),
+            uraDora: List<MjPai> = emptyList(),
+        ): MjGameInfoVo {
+            val num = (5 - zikaze.toMjPaiNotationNum()) % 4 + 1
+            println("num: $num")
+            return MjGameInfoVo(
+                firstOya = MjSeki.ZIKA,
+                gameSeq = MjGameSeq(bakaze, num = num),
+                honba = honba,
+                tenhouCount = tenhouCount,
+                dora = dora,
+                uraDora = uraDora,
+            )
+        }
     }
 }
