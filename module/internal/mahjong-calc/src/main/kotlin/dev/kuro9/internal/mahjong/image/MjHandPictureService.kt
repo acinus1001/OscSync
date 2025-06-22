@@ -6,12 +6,24 @@ import dev.kuro9.internal.mahjong.calc.model.*
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
 import java.awt.Color
+import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 
 @Service
 class MjHandPictureService {
+
+    private fun getKoreanFont(size: Int): Font {
+        val fontNames = arrayOf("궁서", "맑은 고딕", "나눔고딕", "굴림", "돋움")
+        for (fontName in fontNames) {
+            val font = Font(fontName, Font.PLAIN, size)
+            if (font.canDisplay('한')) {  // 한글 표시 가능 여부 확인
+                return font
+            }
+        }
+        return Font.getFont(Font.SANS_SERIF)  // 기본 폰트로 폴백
+    }
 
     fun getHandPicture(teHai: MjTeHai, gameInfo: MjGameInfoVo): BufferedImage {
         val contentImage = teHai.getImage()
@@ -32,7 +44,7 @@ class MjHandPictureService {
 
         // 텍스트 설정 및 그리기
         graphics.color = Color.WHITE
-        graphics.font = graphics.font.deriveFont(36f)  // 폰트 크기 설정
+        graphics.font = getKoreanFont(36)
 
         // 텍스트 중앙 정렬을 위한 계산
         val text = "${gameInfo.gameSeq} ${gameInfo.honba}본장 ${gameInfo.zikaze.toKrString()}가, 25000"
