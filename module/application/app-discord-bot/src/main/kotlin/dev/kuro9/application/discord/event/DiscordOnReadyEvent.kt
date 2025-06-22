@@ -25,7 +25,7 @@ class DiscordOnReadyEvent(private val database: Database) : DiscordEventHandler<
 
         }
 
-        event.jda.presence.setPresence(Activity.customStatus("멘션을 통해 대화를 시작하세요"), true)
+        event.jda.presence.setPresence(Activity.customStatus("마작 관련 기능 마이그레이션 중. 문의 => @kurovine9"), true)
         event.jda.selfUser.manager.setName("KGB").await()
     }
 }
