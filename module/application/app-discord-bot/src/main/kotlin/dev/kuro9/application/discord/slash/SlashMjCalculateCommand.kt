@@ -15,6 +15,7 @@ import dev.minn.jda.ktx.interactions.commands.Command
 import dev.minn.jda.ktx.interactions.commands.option
 import dev.minn.jda.ktx.interactions.commands.subcommand
 import dev.minn.jda.ktx.messages.Embed
+import io.github.harryjhin.slf4j.extension.error
 import kotlinx.coroutines.*
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
@@ -257,7 +258,7 @@ class SlashMjCalculateCommand(
             }
 
             else -> throw t
-        }
+        }.also { error(t) { "handled err" } }
 
     private suspend fun SlashCommandInteractionEvent.asyncDeferReply(isEphemeral: Boolean = false): Deferred<InteractionHook> {
         return coroutineScope {
