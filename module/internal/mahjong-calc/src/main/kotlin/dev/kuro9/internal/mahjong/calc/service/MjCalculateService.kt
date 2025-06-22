@@ -48,6 +48,6 @@ class MjCalculateService {
             }
         }
 
-        return resultList
+        return resultList.sorted()
     }
 }

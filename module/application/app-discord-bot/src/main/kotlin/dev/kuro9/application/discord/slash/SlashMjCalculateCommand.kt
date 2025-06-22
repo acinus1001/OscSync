@@ -34,13 +34,13 @@ class SlashMjCalculateCommand(
 ) : SlashCommandComponent {
     override val commandData: SlashCommandData = Command("mj", "마작 관련 명령어") {
         subcommand("calculate", "부수/판수, 역 계산.") {
-            option<String>("tehai", "손패. 123m123s12333t77z 과 같은 형식으로 입력하세요.", required = true)
+            option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
             option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
             option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
             option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
             option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
-            option<String>("bakaze", "장풍패. 동/남/서/북 중 하나", required = false, autocomplete = true)
-            option<String>("zikaze", "자풍패. 동/남/서/북 중 하나", required = false, autocomplete = true)
+            option<String>("bakaze", "장풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+            option<String>("zikaze", "자풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
         }
     }
 

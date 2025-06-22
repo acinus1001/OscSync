@@ -106,7 +106,7 @@ data class MjTeHai(
 
                     blockFuu / 10 * 10 + if (blockFuu % 10 > 0) 10 else 0
                 }
-            }
+            }.takeUnless { finalFuu -> finalFuu == 20 && agariHai.isRon() } ?: 30 // 쿠이핑후 형태 핸들링
 
             val fuuToHanVo = MjFuuToHanVo(
                 fuu,
