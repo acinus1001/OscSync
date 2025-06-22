@@ -32,17 +32,16 @@ class KanBody internal constructor(
     override fun toString(): String {
         return paiList.joinToString(separator = "", postfix = paiList.first().type.toString()) { it.num.toString() }
             .let {
-                if (isHuroBody) "KANG($it)" else it
+                if (isHuroBody) "KAN($it)" else "ANKAN($it)"
             }
     }
 
     override fun equals(other: Any?): Boolean {
         when (other) {
             null -> return false
-            (other !is KanBody) -> return false
+            !is KanBody -> return false
         }
 
-        other as KanBody
         return (other.isHuroBody == isHuroBody) and (other.paiList.first() == paiList.first())
     }
 

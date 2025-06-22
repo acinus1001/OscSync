@@ -106,6 +106,60 @@ object MjScoreUtil {
                 MANKAN
             )
         }
+        put {
+            120 to listOf(
+                (3900 to 5800) to (1000 mjTo 2000),
+                (7700 to 11600) to (2000 mjTo 3900),
+                MANKAN,
+                MANKAN,
+                MANKAN
+            )
+        }
+        put {
+            130 to listOf(
+                (4200 to 6300) to (1100 mjTo 2100),
+                MANKAN,
+                MANKAN,
+                MANKAN,
+                MANKAN
+            )
+        }
+        put {
+            140 to listOf(
+                (4500 to 6800) to (1200 mjTo 2300),
+                MANKAN,
+                MANKAN,
+                MANKAN,
+                MANKAN
+            )
+        }
+        put {
+            150 to listOf(
+                (4800 to 7200) to (1200 mjTo 2400),
+                MANKAN,
+                MANKAN,
+                MANKAN,
+                MANKAN
+            )
+        }
+        put {
+            160 to listOf(
+                (5200 to 7700) to (1300 mjTo 2600),
+                MANKAN,
+                MANKAN,
+                MANKAN,
+                MANKAN
+            )
+        }
+        put {
+            170 to listOf(
+                (5500 to 8300) to (1400 mjTo 2800),
+                MANKAN,
+                MANKAN,
+                MANKAN,
+                MANKAN
+            )
+        }
     }
 
     /**
@@ -198,6 +252,14 @@ data class MjScoreVo<T : MjScoreI>(
 ) : Comparable<MjScoreVo<T>> {
     override fun compareTo(other: MjScoreVo<T>): Int {
         return (han * 1000 + fuu) - (other.han * 1000 + other.fuu)
+    }
+
+    fun getKoRonScore(): MjScoreI {
+        return MjScoreUtil.getRonScore(MjFuuToHanVo(fuu = fuu, han = han, yakuSet = yakuSet), isOya = false).score
+    }
+
+    fun getOyaRonScore(): MjScoreI {
+        return MjScoreUtil.getRonScore(MjFuuToHanVo(fuu = fuu, han = han, yakuSet = yakuSet), isOya = true).score
     }
 }
 

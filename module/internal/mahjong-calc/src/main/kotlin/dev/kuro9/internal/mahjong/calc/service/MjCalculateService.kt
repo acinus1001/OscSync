@@ -2,21 +2,32 @@ package dev.kuro9.internal.mahjong.calc.service
 
 import dev.kuro9.internal.mahjong.calc.enums.PaiType
 import dev.kuro9.internal.mahjong.calc.enums.PaiType.Companion.isPaiType
-import dev.kuro9.internal.mahjong.calc.model.MjAgariHai
-import dev.kuro9.internal.mahjong.calc.model.MjBody
-import dev.kuro9.internal.mahjong.calc.model.MjPai
-import dev.kuro9.internal.mahjong.calc.model.MjTeHai
+import dev.kuro9.internal.mahjong.calc.model.*
 import org.springframework.stereotype.Service
 
 @Service
 class MjCalculateService {
 
-    fun parseTeHai(teHaiStr: String, agariHaiStr: String, isRon: Boolean, vararg huroBody: String): MjTeHai {
+    fun parseTeHai(
+        teHaiStr: String,
+        agariHaiStr: String,
+        isRon: Boolean,
+        huroBody: Array<String> = emptyArray(),
+        anKanBody: Array<String> = emptyArray(),
+        gameInfo: MjGameInfoVo = MjGameInfoVo.Default,
+    ): MjTeHai? {
         val parsedHuro = huroBody.map { MjBody.of(parse(it), isHuro = true) }.toTypedArray()
+        val parsedAnKang: Array<MjBody> = anKanBody.map { MjBody.of(parse(it), isHuro = false) }.toTypedArray()
 
-        val teHai = MjTeHai.parse(parse(teHaiStr), MjAgariHai.of(parse(agariHaiStr).single(), isRon), *parsedHuro)
+        require(parsedAnKang.all { it is KanBody }) {
+            "입력된 값이 깡이 아닙니다."
+        }
 
-        val result = teHai.maxBy { it.getTopFuuHan() }
+        val outerBody = (parsedHuro + parsedAnKang)
+
+        val teHai = MjTeHai.parse(parse(teHaiStr), MjAgariHai.of(parse(agariHaiStr).single(), isRon), *outerBody)
+
+        val result = teHai.maxByOrNull { it.getTopFuuHan(gameInfo = gameInfo) }
 
         return result
     }
@@ -37,12 +48,6 @@ class MjCalculateService {
             }
         }
 
-        return resultList
+        return resultList.sorted()
     }
-}
-
-fun main() {
-    val result = MjCalculateService().parseTeHai("2234455m234p234s", "6m", true)
-    println(result)
-    println(result.getTopFuuHan())
 }

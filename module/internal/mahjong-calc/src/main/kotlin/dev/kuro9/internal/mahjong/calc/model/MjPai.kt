@@ -51,8 +51,7 @@ data class MjPai internal constructor(
     }
 
     override fun compareTo(other: MjPai): Int {
-        check(type == other.type) { "type not matches" }
-        return num.compareTo(other.num)
+        return (num + getTypeSeqNumToCompare()).compareTo(other.num + other.getTypeSeqNumToCompare())
     }
 
     override fun toString(): String {
@@ -73,5 +72,12 @@ data class MjPai internal constructor(
         result = 31 * result + type.hashCode()
         result = 31 * result + isAkaDora.hashCode()
         return result
+    }
+
+    private fun getTypeSeqNumToCompare(): Int = when (this.type) {
+        PaiType.M -> 10
+        PaiType.P -> 20
+        PaiType.S -> 30
+        PaiType.Z -> 40
     }
 }

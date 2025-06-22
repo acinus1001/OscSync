@@ -5,9 +5,9 @@ import dev.kuro9.internal.mahjong.calc.enums.PaiType
 import dev.kuro9.internal.mahjong.calc.utils.*
 
 data class MjTeHai(
-    private val head: MjHead,
-    private val body: List<MjBody>,
-    private val agariHai: MjAgariHai,
+    val head: MjHead,
+    val body: List<MjBody>,
+    val agariHai: MjAgariHai,
 ) {
     init {
         check(body.size == 4)
@@ -106,7 +106,7 @@ data class MjTeHai(
 
                     blockFuu / 10 * 10 + if (blockFuu % 10 > 0) 10 else 0
                 }
-            }
+            }.takeUnless { finalFuu -> finalFuu == 20 && agariHai.isRon() } ?: 30 // 쿠이핑후 형태 핸들링
 
             val fuuToHanVo = MjFuuToHanVo(
                 fuu,
@@ -148,6 +148,11 @@ data class MjTeHai(
                 PaiType.S to mutableListOf(),
                 PaiType.Z to mutableListOf(),
             )
+
+            require(
+                huroBody.filterIsInstance<KanBody>().count() + 13 == teHai.size + huroBody.sumOf { it.paiList.size }) {
+                "패 개수가 부족합니다."
+            }
 
             (teHai + agariHai.pai).forEach { paiMap[it.type]!!.add(it) }
             paiMap.values.forEach { it.sort() }
@@ -255,20 +260,20 @@ data class MjTeHai(
                     }
                 )
             }
-
-            // 깡쯔일 때
-            if (samePai.size == 4) {
-                val body = MjBody.of(samePai, false)
-                resultList += separateBodyR(
-                    nowPai = nowPai.toMutableList().also { it.add(body) },
-                    leftPai = leftPai.toMutableList().also {
-                        it.remove(samePai[0])
-                        it.remove(samePai[1])
-                        it.remove(samePai[2])
-                        it.remove(samePai[3])
-                    }
-                )
-            }
+//            깡은 따로 처리
+//            // 깡쯔일 때
+//            if (samePai.size == 4) {
+//                val body = MjBody.of(samePai, false)
+//                resultList += separateBodyR(
+//                    nowPai = nowPai.toMutableList().also { it.add(body) },
+//                    leftPai = leftPai.toMutableList().also {
+//                        it.remove(samePai[0])
+//                        it.remove(samePai[1])
+//                        it.remove(samePai[2])
+//                        it.remove(samePai[3])
+//                    }
+//                )
+//            }
 
             return resultList
         }

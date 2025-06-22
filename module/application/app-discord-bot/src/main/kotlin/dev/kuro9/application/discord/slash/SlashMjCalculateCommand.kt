@@ -1,58 +1,97 @@
 package dev.kuro9.application.discord.slash
 
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
+import dev.kuro9.internal.mahjong.calc.enums.MjKaze
 import dev.kuro9.internal.mahjong.calc.enums.MjYaku
+import dev.kuro9.internal.mahjong.calc.model.MjGameInfoVo
 import dev.kuro9.internal.mahjong.calc.model.MjTeHai
 import dev.kuro9.internal.mahjong.calc.service.MjCalculateService
 import dev.kuro9.internal.mahjong.calc.utils.MjScoreI
 import dev.kuro9.internal.mahjong.calc.utils.MjScoreUtil
 import dev.kuro9.internal.mahjong.calc.utils.MjScoreVo
+import dev.kuro9.internal.mahjong.image.MjHandPictureService
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.Command
 import dev.minn.jda.ktx.interactions.commands.option
 import dev.minn.jda.ktx.interactions.commands.subcommand
 import dev.minn.jda.ktx.messages.Embed
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.utils.FileUpload
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.io.ByteArrayOutputStream
+import javax.imageio.ImageIO
 
 @Component
-class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService) : SlashCommandComponent {
-    override val commandData: SlashCommandData = Command("mjc", "마작 패 계산기") {
-        subcommand("score", "부수/판수 계산.") {
-            option<String>("tehai", "손패. 123m123s12333t77z 과 같은 형식으로 입력하세요.", required = true)
+class SlashMjCalculateCommand(
+    private val mjCalculateService: MjCalculateService,
+    private val mjImageService: MjHandPictureService,
+) : SlashCommandComponent {
+    override val commandData: SlashCommandData = Command("mj", "마작 관련 명령어") {
+        subcommand("calculate", "부수/판수, 역 계산.") {
+            option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
             option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
             option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
             option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+            option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+            option<String>("bakaze", "장풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+            option<String>("zikaze", "자풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
         }
     }
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
+        val deferReply: Deferred<InteractionHook> = event.asyncDeferReply()
+
         runCatching {
             when (event.subcommandName) {
-                "score" -> calculateScore(event)
+                "calculate" -> calculateScore(event, deferReply)
 
                 else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
             }
         }.onFailure { t ->
-            event.replyEmbeds(getDefaultExceptionEmbed(t)).await()
+            deferReply.await().editOriginalEmbeds(getDefaultExceptionEmbed(t)).await()
             return
         }
     }
 
-    private suspend fun calculateScore(event: SlashCommandInteractionEvent) {
-        val deferReply = event.asyncDeferReply()
+    override suspend fun handleAutoComplete(event: CommandAutoCompleteInteractionEvent) {
+        when (event.subcommandName) {
+            "calculate" -> handlePaiAutoComplete(event)
+            else -> return
+        }
+    }
+
+    private suspend fun handlePaiAutoComplete(event: CommandAutoCompleteInteractionEvent) {
+        if (event.focusedOption.name != "bakaze" && event.focusedOption.name != "zikaze") return
+
+        val choices = listOf(
+            "東(동 / 1z)",
+            "南(남 / 2z)",
+            "西(서 / 3z)",
+            "北(북 / 4z)"
+        )
+
+        val filtered = choices.filter { it.contains(event.focusedOption.value) }
+            .takeIf { it.isNotEmpty() }
+            ?: choices
+
+        event.replyChoiceStrings(filtered).await()
+    }
+
+    private suspend fun calculateScore(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
 
         val tehai = event.getOption("tehai")!!.asString
         val tsumo = event.getOption("tsumo")?.asString
         val ron = event.getOption("ron")?.asString
         val huro = event.getOption("huro")?.asString
+        val ankang = event.getOption("ankang")?.asString
+        val bakaze = (event.getOption("bakaze")?.asString ?: "동").let(::toKaze)
+        val zikaze = (event.getOption("zikaze")?.asString ?: "동").let(::toKaze)
 
         // validate input
         if (!((tsumo != null) xor (ron != null))) {
@@ -60,15 +99,31 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
         }
 
         val huroBody = huro?.removeSurrounding(" ")?.split(" ")?.toTypedArray()
+        val ankangBody = ankang?.removeSurrounding(" ")?.split(" ")?.toTypedArray()
 
-        val parsedTeHai: MjTeHai = mjCalculateService.parseTeHai(
+        val gameInfo = MjGameInfoVo.of(zikaze = zikaze, bakaze = bakaze)
+        val parsedTeHai: MjTeHai? = mjCalculateService.parseTeHai(
             teHaiStr = tehai,
             agariHaiStr = ron ?: tsumo!!,
             isRon = ron != null,
-            huroBody = huroBody ?: emptyArray()
+            huroBody = huroBody ?: emptyArray(),
+            anKanBody = ankangBody ?: emptyArray(),
+            gameInfo = gameInfo
         )
 
-        val score: MjScoreVo<out MjScoreI> = parsedTeHai.getTopFuuHan()
+        requireNotNull(parsedTeHai) { "완성된 손패가 아닙니다." }
+
+        val handImage = withContext(Dispatchers.Default) {
+            async {
+                val image = mjImageService.getHandPicture(parsedTeHai, gameInfo)
+                ByteArrayOutputStream().use { baos ->
+                    ImageIO.write(image, "png", baos)
+                    baos.toByteArray()
+                }
+            }
+        }
+
+        val score: MjScoreVo<out MjScoreI> = parsedTeHai.getTopFuuHan(gameInfo = gameInfo)
 
         val resultEmbed = Embed {
             title = "Result"
@@ -76,19 +131,18 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
 
             field {
                 name = "점수"
-                value = "`[${
-                    when (val scoreType = score.score) {
-                        is MjScoreI.Ron -> "론"
-                        is MjScoreI.Tsumo -> "쯔모"
-                        is MjScoreI.NoYaku -> if (scoreType.isRon) "론" else "쯔모"
-                    }
-                }] ${score.score}`"
+                value = when (val scoreType = score.score) {
+                    is MjScoreI.Ron -> "[론]\n자: ${score.getKoRonScore()}\n오야: ${score.getOyaRonScore()}"
+                    is MjScoreI.Tsumo -> "[쯔모]\n자: ${score.score}\n오야: ${(score.score as MjScoreI.Tsumo).oyaScore} ALL"
+                    is MjScoreI.NoYaku -> (if (scoreType.isRon) "[론]" else "[쯔모]") + " 역 없음"
+                }.let { "```$it```" }
                 inline = false
             }
 
             field {
                 name = "부수 / 판수"
-                value = (score.scoreEnum.toKrString()?.let { "`[${it}]" } ?: "`") + " ${score.han}판 / ${score.fuu}부`"
+                value =
+                    """```${score.scoreEnum.toKrString()?.let { "[${it}] " } ?: ""}${score.han}판 / ${score.fuu}부```"""
                 inline = false
             }
 
@@ -99,7 +153,7 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
                         "\n",
                         prefix = "```\n",
                         postfix = "\n```"
-                    ) { yaku -> "[${if (parsedTeHai.isHuro && yaku.kuiSagari) yaku.han - 1 else yaku.han}] ${yaku.toKrString()}" }
+                    ) { yaku -> "[${if (parsedTeHai.isHuro && yaku.kuiSagari) yaku.han - 1 else yaku.han}판] ${yaku.toKrString()}" }
                 }
             }
             color = Color.GREEN.rgb
@@ -127,7 +181,7 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
                 }
             }
         }
-
+        deferReply.await().sendFiles(FileUpload.fromData(handImage.await(), "hand.png")).await()
         deferReply.await().editOriginalEmbeds(resultEmbed).await()
     }
 
@@ -143,9 +197,9 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
     private fun MjYaku.toKrString(): String = when (this) {
         MjYaku.RIICHI -> "리치"
         MjYaku.IPPATSU -> "일발"
-        MjYaku.TSUMO -> "쯔모"
-        MjYaku.YAKU_BAKASE -> "역패: 장풍"
-        MjYaku.YAKU_ZIKASE -> "역패: 자풍"
+        MjYaku.TSUMO -> "멘젠 쯔모"
+        MjYaku.YAKU_BAKASE -> "역패: 장풍패"
+        MjYaku.YAKU_ZIKASE -> "역패: 자풍패"
         MjYaku.YAKU_HAKU -> "역패: 백"
         MjYaku.YAKU_HATSU -> "역패: 발"
         MjYaku.YAKU_CHUU -> "역패: 중"
@@ -192,7 +246,7 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
 
             is IllegalArgumentException -> Embed {
                 title = "Invalid Input"
-                description = "잘못된 입력입니다. ${t.message ?: ""}"
+                description = "잘못된 입력입니다. ${t.message?.take(2500) ?: ""}"
                 color = Color.RED.rgb
             }
 
@@ -208,6 +262,26 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
     private suspend fun SlashCommandInteractionEvent.asyncDeferReply(isEphemeral: Boolean = false): Deferred<InteractionHook> {
         return coroutineScope {
             async { deferReply(isEphemeral).await() }
+        }
+    }
+
+    private fun toKaze(str: String): MjKaze {
+        return when {
+            str.contains("동") -> MjKaze.TOU
+            str.contains("남") -> MjKaze.NAN
+            str.contains("서") -> MjKaze.SHA
+            str.contains("북") -> MjKaze.PEI
+
+            str.contains("東") -> MjKaze.TOU
+            str.contains("南") -> MjKaze.NAN
+            str.contains("西") -> MjKaze.SHA
+            str.contains("北") -> MjKaze.PEI
+
+            str.contains("1z") -> MjKaze.TOU
+            str.contains("2z") -> MjKaze.NAN
+            str.contains("3z") -> MjKaze.SHA
+            str.contains("4z") -> MjKaze.PEI
+            else -> throw IllegalArgumentException("알 수 없는 풍패입니다. 입력값: $str")
         }
     }
 }
