@@ -152,7 +152,7 @@ class SlashMjCalculateCommand(
                         "\n",
                         prefix = "```\n",
                         postfix = "\n```"
-                    ) { yaku -> "[${if (parsedTeHai.isHuro && yaku.kuiSagari) yaku.han - 1 else yaku.han}] ${yaku.toKrString()}" }
+                    ) { yaku -> "[${if (parsedTeHai.isHuro && yaku.kuiSagari) yaku.han - 1 else yaku.han}판] ${yaku.toKrString()}" }
                 }
             }
             color = Color.GREEN.rgb
