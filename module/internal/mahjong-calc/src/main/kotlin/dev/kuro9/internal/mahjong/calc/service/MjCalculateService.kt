@@ -14,6 +14,7 @@ class MjCalculateService {
         isRon: Boolean,
         huroBody: Array<String> = emptyArray(),
         anKanBody: Array<String> = emptyArray(),
+        gameInfo: MjGameInfoVo = MjGameInfoVo.Default,
     ): MjTeHai? {
         val parsedHuro = huroBody.map { MjBody.of(parse(it), isHuro = true) }.toTypedArray()
         val parsedAnKang: Array<MjBody> = anKanBody.map { MjBody.of(parse(it), isHuro = false) }.toTypedArray()
@@ -26,7 +27,7 @@ class MjCalculateService {
 
         val teHai = MjTeHai.parse(parse(teHaiStr), MjAgariHai.of(parse(agariHaiStr).single(), isRon), *outerBody)
 
-        val result = teHai.maxByOrNull { it.getTopFuuHan() }
+        val result = teHai.maxByOrNull { it.getTopFuuHan(gameInfo = gameInfo) }
 
         return result
     }
