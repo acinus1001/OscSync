@@ -3,6 +3,7 @@ package dev.kuro9.internal.mahjong.image
 import dev.kuro9.internal.mahjong.calc.enums.MjKaze
 import dev.kuro9.internal.mahjong.calc.enums.PaiType
 import dev.kuro9.internal.mahjong.calc.model.*
+import io.github.harryjhin.slf4j.extension.info
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
 import java.awt.Color
@@ -15,15 +16,30 @@ import javax.imageio.ImageIO
 class MjHandPictureService {
 
     private fun getKoreanFont(size: Int): Font {
-        val fontNames = arrayOf("궁서", "맑은 고딕", "나눔고딕", "굴림", "돋움")
+        return try {
+            // 프로젝트 리소스에서 폰트 파일 로드
+            val fontResource = ClassPathResource("fonts/NanumGothic.ttf")
+            val customFont = Font.createFont(Font.TRUETYPE_FONT, fontResource.inputStream)
+            customFont.deriveFont(Font.PLAIN, size.toFloat())
+        } catch (e: Exception) {
+            // 폰트 로드 실패 시 시스템 폰트로 폴백
+            info { "커스텀 폰트 로드 실패, 시스템 폰트 사용: ${e.message}" }
+            getSystemKoreanFont(size)
+        }
+    }
+
+    private fun getSystemKoreanFont(size: Int): Font {
+        val fontNames = arrayOf("NanumGothic", "맑은 고딕", "나눔고딕", "굴림", "돋움", "Dialog")
         for (fontName in fontNames) {
             val font = Font(fontName, Font.PLAIN, size)
-            if (font.canDisplay('한')) {  // 한글 표시 가능 여부 확인
+            if (font.canDisplay('한')) {
                 return font
             }
         }
-        return Font.getFont(Font.SANS_SERIF)  // 기본 폰트로 폴백
+        // 마지막 폴백
+        return Font(Font.SANS_SERIF, Font.PLAIN, size)
     }
+
 
     fun getHandPicture(teHai: MjTeHai, gameInfo: MjGameInfoVo): BufferedImage {
         val contentImage = teHai.getImage()
