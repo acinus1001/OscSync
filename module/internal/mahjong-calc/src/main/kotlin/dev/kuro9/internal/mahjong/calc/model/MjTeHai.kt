@@ -5,9 +5,9 @@ import dev.kuro9.internal.mahjong.calc.enums.PaiType
 import dev.kuro9.internal.mahjong.calc.utils.*
 
 data class MjTeHai(
-    private val head: MjHead,
-    private val body: List<MjBody>,
-    private val agariHai: MjAgariHai,
+    val head: MjHead,
+    val body: List<MjBody>,
+    val agariHai: MjAgariHai,
 ) {
     init {
         check(body.size == 4)

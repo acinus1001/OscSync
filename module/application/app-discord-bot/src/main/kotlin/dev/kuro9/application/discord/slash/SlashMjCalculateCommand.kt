@@ -9,24 +9,29 @@ import dev.kuro9.internal.mahjong.calc.service.MjCalculateService
 import dev.kuro9.internal.mahjong.calc.utils.MjScoreI
 import dev.kuro9.internal.mahjong.calc.utils.MjScoreUtil
 import dev.kuro9.internal.mahjong.calc.utils.MjScoreVo
+import dev.kuro9.internal.mahjong.image.MjHandPictureService
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.Command
 import dev.minn.jda.ktx.interactions.commands.option
 import dev.minn.jda.ktx.interactions.commands.subcommand
 import dev.minn.jda.ktx.messages.Embed
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.utils.FileUpload
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.io.ByteArrayOutputStream
+import javax.imageio.ImageIO
 
 @Component
-class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService) : SlashCommandComponent {
+class SlashMjCalculateCommand(
+    private val mjCalculateService: MjCalculateService,
+    private val mjImageService: MjHandPictureService,
+) : SlashCommandComponent {
     override val commandData: SlashCommandData = Command("mj", "마작 관련 명령어") {
         subcommand("calculate", "부수/판수, 역 계산.") {
             option<String>("tehai", "손패. 123m123s12333t77z 과 같은 형식으로 입력하세요.", required = true)
@@ -40,9 +45,8 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
     }
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
-        val deferReply: Deferred<InteractionHook> = event.asyncDeferReply(
+        val deferReply: Deferred<InteractionHook> = event.asyncDeferReply()
 
-        )
         runCatching {
             when (event.subcommandName) {
                 "calculate" -> calculateScore(event, deferReply)
@@ -109,6 +113,16 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
 
         requireNotNull(parsedTeHai) { "완성된 손패가 아닙니다." }
 
+        val handImage = withContext(Dispatchers.Default) {
+            async {
+                val image = mjImageService.getHandPicture(parsedTeHai, gameInfo)
+                ByteArrayOutputStream().use { baos ->
+                    ImageIO.write(image, "png", baos)
+                    baos.toByteArray()
+                }
+            }
+        }
+
         val score: MjScoreVo<out MjScoreI> = parsedTeHai.getTopFuuHan(gameInfo = gameInfo)
 
         val resultEmbed = Embed {
@@ -166,7 +180,7 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
                 }
             }
         }
-
+        deferReply.await().sendFiles(FileUpload.fromData(handImage.await(), "hand.png")).await()
         deferReply.await().editOriginalEmbeds(resultEmbed).await()
     }
 
@@ -182,9 +196,9 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
     private fun MjYaku.toKrString(): String = when (this) {
         MjYaku.RIICHI -> "리치"
         MjYaku.IPPATSU -> "일발"
-        MjYaku.TSUMO -> "쯔모"
-        MjYaku.YAKU_BAKASE -> "역패: 장풍"
-        MjYaku.YAKU_ZIKASE -> "역패: 자풍"
+        MjYaku.TSUMO -> "멘젠 쯔모"
+        MjYaku.YAKU_BAKASE -> "역패: 장풍패"
+        MjYaku.YAKU_ZIKASE -> "역패: 자풍패"
         MjYaku.YAKU_HAKU -> "역패: 백"
         MjYaku.YAKU_HATSU -> "역패: 발"
         MjYaku.YAKU_CHUU -> "역패: 중"
@@ -231,7 +245,7 @@ class SlashMjCalculateCommand(private val mjCalculateService: MjCalculateService
 
             is IllegalArgumentException -> Embed {
                 title = "Invalid Input"
-                description = "잘못된 입력입니다. ${t.message ?: ""}"
+                description = "잘못된 입력입니다. ${t.message?.take(2500) ?: ""}"
                 color = Color.RED.rgb
             }
 
