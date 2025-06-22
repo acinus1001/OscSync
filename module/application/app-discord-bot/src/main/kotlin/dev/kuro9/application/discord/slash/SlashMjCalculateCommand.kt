@@ -141,7 +141,8 @@ class SlashMjCalculateCommand(
 
             field {
                 name = "부수 / 판수"
-                value = (score.scoreEnum.toKrString()?.let { "`[${it}] " } ?: "`") + "${score.han}판 / ${score.fuu}부`"
+                value =
+                    """```${score.scoreEnum.toKrString()?.let { "[${it}] " } ?: ""}${score.han}판 / ${score.fuu}부```"""
                 inline = false
             }
 
