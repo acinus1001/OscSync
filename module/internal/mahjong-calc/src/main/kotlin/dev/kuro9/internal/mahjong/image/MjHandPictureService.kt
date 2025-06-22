@@ -122,7 +122,7 @@ class MjHandPictureService {
         }
 
         // 후로 몸통들을 개별적으로 추가
-        body.filter { it.isHuro() xor (it is KanBody) }.forEach { mjBody ->
+        body.filter { it.isHuro() || (it is KanBody) }.forEach { mjBody ->
             val huroImages = mjBody.getHuroImage()
             if (huroImages.isNotEmpty()) {
                 groupImageLists.add(huroImages)
