@@ -17,6 +17,10 @@ class MjHead(val paiList: List<MjPai>) : MjComponent, MjFuuProvider {
         return (paiList.first() == MjPai(baKaze.toMjPaiNotationNum(), PaiType.Z))
     }
 
+    fun isSanGenAtama(): Boolean {
+        return (paiList.first().num in 5..7)
+    }
+
     override fun hasAgariHai(agariHai: MjPai): Boolean {
         return agariHai in paiList
     }
@@ -39,6 +43,7 @@ class MjHead(val paiList: List<MjPai>) : MjComponent, MjFuuProvider {
 
         if (isZikazeAtama(ziKaze)) basicFuu += 2
         if (isBakazeAtama(baKaze)) basicFuu += 2
+        if (isSanGenAtama()) basicFuu += 2
 
         return basicFuu
     }
