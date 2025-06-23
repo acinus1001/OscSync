@@ -176,11 +176,48 @@ object MjYakuParser {
                 }
 
 //                MjYaku.KOKUSHI -> TODO()
-//                MjYaku.DAISANGEN -> TODO()
-//                MjYaku.TSUISO -> TODO()
-//                MjYaku.RYUISO -> TODO()
-//                MjYaku.CHINROTO -> TODO()
-//                MjYaku.SYOUSUSI -> TODO()
+                MjYaku.DAISANGEN -> {
+
+                    val kutsuPaiList: Set<MjPai> = componentList
+                        .filterIsInstance<MjBody.Kutsu>()
+                        .map { it.paiList.first() }.toSet()
+
+                    hakuHai in kutsuPaiList && hatsuHai in kutsuPaiList && chuuHai in kutsuPaiList
+                }
+
+                MjYaku.TSUISO -> {
+                    val paiTypes = componentList.map { it.getPaiType() }.distinct()
+                    PaiType.Z in paiTypes && paiTypes.size == 1
+                }
+
+                MjYaku.RYUISO -> {
+                    componentList.all {
+                        it.all { pai ->
+                            pai in listOf(
+                                hatsuHai,
+                                MjPai.of(2, PaiType.S),
+                                MjPai.of(3, PaiType.S),
+                                MjPai.of(4, PaiType.S),
+                                MjPai.of(6, PaiType.S),
+                                MjPai.of(8, PaiType.S),
+                            )
+                        }
+                    }
+                }
+
+                MjYaku.CHINROTO -> {
+                    componentList.all { it.isAllNoduPai() }
+                }
+
+                MjYaku.SYOUSUSI -> {
+                    val kazeComponentList =
+                        componentList.filter { it.all { pai -> pai.type == PaiType.Z && pai.num in 1..4 } }
+
+                    kazeComponentList.size == 4
+                            && kazeComponentList.filterIsInstance<MjBody.Kutsu>().size == 3
+                            && kazeComponentList.filterIsInstance<MjHead>().size == 1
+                            && kazeComponentList.map { it.paiList.first().num }.containsAll(listOf(1, 2, 3, 4))
+                }
 //                MjYaku.CHUREN -> TODO()
 //                MjYaku.SUKANTSU -> TODO()
 //                MjYaku.DAISUSI -> TODO()
