@@ -237,7 +237,7 @@ class SlashMjCalculateCommand(
         MjYaku.CHUREN -> "구련보등"
         MjYaku.SUKANTSU -> "스깡쯔"
         MjYaku.DAISUSI -> "대사희"
-        MjYaku.SUANKOU_TANKI -> "사암각 단기"
+        MjYaku.SUANKOU_TANKI -> "스안커 단기"
         MjYaku.KOKUSHI_13MEN -> "국사무쌍 13면대기"
         MjYaku.CHUREN_9MEN -> "순정구련보등"
     }
