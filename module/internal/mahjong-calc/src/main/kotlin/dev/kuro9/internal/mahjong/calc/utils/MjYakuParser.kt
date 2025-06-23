@@ -218,7 +218,17 @@ object MjYakuParser {
                             && kazeComponentList.filterIsInstance<MjHead>().size == 1
                             && kazeComponentList.map { it.paiList.first().num }.containsAll(listOf(1, 2, 3, 4))
                 }
-//                MjYaku.CHUREN -> TODO()
+
+                MjYaku.CHUREN -> run {
+                    val paiList = componentList.flatMap { it.paiList }
+                    if (paiList.groupBy { it.type }.size >= 2) return@run false
+
+                    val numMap = paiList.groupingBy { it.num }.eachCount()
+
+                    numMap.getOrDefault(1, 0) >= 3
+                            && numMap.getOrDefault(9, 0) >= 3
+                            && (2..8).all { numMap.getOrDefault(it, 0) >= 1 }
+                }
 //                MjYaku.SUKANTSU -> TODO()
 //                MjYaku.DAISUSI -> TODO()
                 MjYaku.SUANKOU_TANKI -> {
@@ -229,7 +239,20 @@ object MjYakuParser {
                 }
 
 //                MjYaku.KOKUSHI_13MEN -> TODO()
-//                MjYaku.CHUREN_9MEN -> TODO()
+                MjYaku.CHUREN_9MEN -> run {
+                    val paiList = componentList.flatMap { it.paiList }
+                    if (paiList.groupBy { it.type }.size >= 2) return@run false
+
+                    val numMap = paiList.groupingBy { it.num }.eachCount()
+                        .toMutableMap()
+                        .apply {
+                            this.computeIfPresent(agariHai.pai.num) { _, v -> v - 1 }
+                        }
+                        .toMap()
+
+                    numMap[1] == 3 && numMap[9] == 3 && (2..8).all { numMap[it] == 1 }
+                }
+
                 else -> false
             }
         }
