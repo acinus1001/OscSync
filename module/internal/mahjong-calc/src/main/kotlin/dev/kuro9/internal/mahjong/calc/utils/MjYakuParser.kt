@@ -229,8 +229,20 @@ object MjYakuParser {
                             && numMap.getOrDefault(9, 0) >= 3
                             && (2..8).all { numMap.getOrDefault(it, 0) >= 1 }
                 }
-//                MjYaku.SUKANTSU -> TODO()
-//                MjYaku.DAISUSI -> TODO()
+
+                MjYaku.SUKANTSU -> {
+                    componentList.filterIsInstance<KanBody>().size == 4
+                }
+
+                MjYaku.DAISUSI -> {
+                    val kazeComponentList =
+                        componentList.filter { it.all { pai -> pai.type == PaiType.Z && pai.num in 1..4 } }
+
+                    kazeComponentList.size == 4
+                            && kazeComponentList.filterIsInstance<MjBody.Kutsu>().size == 4
+                            && kazeComponentList.map { it.paiList.first().num }.containsAll(listOf(1, 2, 3, 4))
+                }
+
                 MjYaku.SUANKOU_TANKI -> {
                     agariBlock is MjHead &&
                             componentList.filterIsInstance<MjBody>()
