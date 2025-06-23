@@ -3,6 +3,8 @@ package dev.kuro9.internal.mahjong.calc.model
 import dev.kuro9.internal.mahjong.calc.enums.PaiType
 
 sealed interface MjComponent {
+    val paiList: List<MjPai>
+
     /** 만, 통, 삭, 자패 구별 */
     fun getPaiType(): PaiType
 

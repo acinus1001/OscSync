@@ -176,14 +176,73 @@ object MjYakuParser {
                 }
 
 //                MjYaku.KOKUSHI -> TODO()
-//                MjYaku.DAISANGEN -> TODO()
-//                MjYaku.TSUISO -> TODO()
-//                MjYaku.RYUISO -> TODO()
-//                MjYaku.CHINROTO -> TODO()
-//                MjYaku.SYOUSUSI -> TODO()
-//                MjYaku.CHUREN -> TODO()
-//                MjYaku.SUKANTSU -> TODO()
-//                MjYaku.DAISUSI -> TODO()
+                MjYaku.DAISANGEN -> {
+
+                    val kutsuPaiList: Set<MjPai> = componentList
+                        .filterIsInstance<MjBody.Kutsu>()
+                        .map { it.paiList.first() }.toSet()
+
+                    hakuHai in kutsuPaiList && hatsuHai in kutsuPaiList && chuuHai in kutsuPaiList
+                }
+
+                MjYaku.TSUISO -> {
+                    val paiTypes = componentList.map { it.getPaiType() }.distinct()
+                    PaiType.Z in paiTypes && paiTypes.size == 1
+                }
+
+                MjYaku.RYUISO -> {
+                    componentList.all {
+                        it.all { pai ->
+                            pai in listOf(
+                                hatsuHai,
+                                MjPai.of(2, PaiType.S),
+                                MjPai.of(3, PaiType.S),
+                                MjPai.of(4, PaiType.S),
+                                MjPai.of(6, PaiType.S),
+                                MjPai.of(8, PaiType.S),
+                            )
+                        }
+                    }
+                }
+
+                MjYaku.CHINROTO -> {
+                    componentList.all { it.isAllNoduPai() }
+                }
+
+                MjYaku.SYOUSUSI -> {
+                    val kazeComponentList =
+                        componentList.filter { it.all { pai -> pai.type == PaiType.Z && pai.num in 1..4 } }
+
+                    kazeComponentList.size == 4
+                            && kazeComponentList.filterIsInstance<MjBody.Kutsu>().size == 3
+                            && kazeComponentList.filterIsInstance<MjHead>().size == 1
+                            && kazeComponentList.map { it.paiList.first().num }.containsAll(listOf(1, 2, 3, 4))
+                }
+
+                MjYaku.CHUREN -> run {
+                    val paiList = componentList.flatMap { it.paiList }
+                    if (paiList.groupBy { it.type }.size >= 2) return@run false
+
+                    val numMap = paiList.groupingBy { it.num }.eachCount()
+
+                    numMap.getOrDefault(1, 0) >= 3
+                            && numMap.getOrDefault(9, 0) >= 3
+                            && (2..8).all { numMap.getOrDefault(it, 0) >= 1 }
+                }
+
+                MjYaku.SUKANTSU -> {
+                    componentList.filterIsInstance<KanBody>().size == 4
+                }
+
+                MjYaku.DAISUSI -> {
+                    val kazeComponentList =
+                        componentList.filter { it.all { pai -> pai.type == PaiType.Z && pai.num in 1..4 } }
+
+                    kazeComponentList.size == 4
+                            && kazeComponentList.filterIsInstance<MjBody.Kutsu>().size == 4
+                            && kazeComponentList.map { it.paiList.first().num }.containsAll(listOf(1, 2, 3, 4))
+                }
+
                 MjYaku.SUANKOU_TANKI -> {
                     agariBlock is MjHead &&
                             componentList.filterIsInstance<MjBody>()
@@ -192,7 +251,20 @@ object MjYakuParser {
                 }
 
 //                MjYaku.KOKUSHI_13MEN -> TODO()
-//                MjYaku.CHUREN_9MEN -> TODO()
+                MjYaku.CHUREN_9MEN -> run {
+                    val paiList = componentList.flatMap { it.paiList }
+                    if (paiList.groupBy { it.type }.size >= 2) return@run false
+
+                    val numMap = paiList.groupingBy { it.num }.eachCount()
+                        .toMutableMap()
+                        .apply {
+                            this.computeIfPresent(agariHai.pai.num) { _, v -> v - 1 }
+                        }
+                        .toMap()
+
+                    numMap[1] == 3 && numMap[9] == 3 && (2..8).all { numMap[it] == 1 }
+                }
+
                 else -> false
             }
         }
@@ -207,10 +279,16 @@ object MjYakuParser {
     private fun Collection<MjYaku>.deleteIllegalStateYaku(): Set<MjYaku> {
         val mutableResultSet = this.toMutableSet()
 
-        // TODO 역만 추가
         if (MjYaku.CHINITSU in mutableResultSet) mutableResultSet.remove(MjYaku.HONITSU)
         if (MjYaku.RYANPEKO in mutableResultSet) mutableResultSet.remove(MjYaku.IPECO)
         if (MjYaku.JUNCHANTA in mutableResultSet) mutableResultSet.remove(MjYaku.CHANTA)
+
+        // 역만 역 존재할 경우 비역만 역 모두 삭제
+        if (mutableResultSet.any { it.isYakuman }) mutableResultSet.removeIf { it.isYakuman.not() }
+        // 특수대기 형태의 역만 존재 시 비특수대기 역만 삭제
+        if (MjYaku.SUANKOU_TANKI in mutableResultSet) mutableResultSet.remove(MjYaku.SUANKOU)
+        if (MjYaku.CHUREN_9MEN in mutableResultSet) mutableResultSet.remove(MjYaku.CHUREN)
+        if (MjYaku.DAISUSI in mutableResultSet) mutableResultSet.remove(MjYaku.SYOUSUSI)
 
         return mutableResultSet
     }

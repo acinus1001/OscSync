@@ -4,7 +4,7 @@ import dev.kuro9.internal.mahjong.calc.enums.PaiType
 
 
 sealed interface MjBody : MjComponent, MjFuuProvider {
-    val paiList: List<MjPai>
+    override val paiList: List<MjPai>
     val isHuroBody: Boolean
 
     override fun getPaiType(): PaiType = paiList.first().type

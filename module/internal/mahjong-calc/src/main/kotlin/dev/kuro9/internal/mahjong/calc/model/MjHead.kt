@@ -3,7 +3,7 @@ package dev.kuro9.internal.mahjong.calc.model
 import dev.kuro9.internal.mahjong.calc.enums.MjKaze
 import dev.kuro9.internal.mahjong.calc.enums.PaiType
 
-class MjHead(val paiList: List<MjPai>) : MjComponent, MjFuuProvider {
+class MjHead(override val paiList: List<MjPai>) : MjComponent, MjFuuProvider {
     init {
         check(paiList.size == 2)
         check(paiList.first() == paiList.last())

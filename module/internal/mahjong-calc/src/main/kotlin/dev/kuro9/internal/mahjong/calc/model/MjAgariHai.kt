@@ -32,9 +32,11 @@ sealed interface MjAgariHai : MjComponent {
 
     data class Ron(override val pai: MjPai) : MjAgariHai {
         override fun toString() = "RON($pai)"
+        override val paiList: List<MjPai> = listOf(pai)
     }
 
     data class Tsumo(override val pai: MjPai) : MjAgariHai {
         override fun toString() = "TSUMO($pai)"
+        override val paiList: List<MjPai> = listOf(pai)
     }
 }
