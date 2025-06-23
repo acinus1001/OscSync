@@ -279,10 +279,16 @@ object MjYakuParser {
     private fun Collection<MjYaku>.deleteIllegalStateYaku(): Set<MjYaku> {
         val mutableResultSet = this.toMutableSet()
 
-        // TODO 역만 추가
         if (MjYaku.CHINITSU in mutableResultSet) mutableResultSet.remove(MjYaku.HONITSU)
         if (MjYaku.RYANPEKO in mutableResultSet) mutableResultSet.remove(MjYaku.IPECO)
         if (MjYaku.JUNCHANTA in mutableResultSet) mutableResultSet.remove(MjYaku.CHANTA)
+
+        // 역만 역 존재할 경우 비역만 역 모두 삭제
+        if (mutableResultSet.any { it.isYakuman }) mutableResultSet.removeIf { it.isYakuman.not() }
+        // 특수대기 형태의 역만 존재 시 비특수대기 역만 삭제
+        if (MjYaku.SUANKOU_TANKI in mutableResultSet) mutableResultSet.remove(MjYaku.SUANKOU)
+        if (MjYaku.CHUREN_9MEN in mutableResultSet) mutableResultSet.remove(MjYaku.CHUREN)
+        if (MjYaku.DAISUSI in mutableResultSet) mutableResultSet.remove(MjYaku.SYOUSUSI)
 
         return mutableResultSet
     }
