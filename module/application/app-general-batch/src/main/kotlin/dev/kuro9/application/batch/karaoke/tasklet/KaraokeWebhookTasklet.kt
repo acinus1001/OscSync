@@ -81,7 +81,7 @@ class KaraokeWebhookTasklet(
 
 
         return DiscordWebhookPayload(
-            username = "AGB: Karaoke Notify",
+            username = "KGB: Karaoke Notify",
             embeds = embedList
         )
     }
