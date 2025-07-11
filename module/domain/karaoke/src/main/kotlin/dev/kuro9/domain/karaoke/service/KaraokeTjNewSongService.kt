@@ -44,7 +44,7 @@ class KaraokeTjNewSongService(
         val songs = response.body<TjNewSongResponseDto>()
 
         return songs.resultData.items
-            .filter { it.pro in 52565..53000 }
+            .filter { it.pro in 52894..53000 }
             .map {
                 KaraokeSongDto(
                     brand = supportBrand,
