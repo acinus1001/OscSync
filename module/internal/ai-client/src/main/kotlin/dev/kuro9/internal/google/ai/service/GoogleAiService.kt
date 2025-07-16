@@ -12,7 +12,7 @@ import kotlin.jvm.optionals.getOrNull
 @Service
 class GoogleAiService(token: GoogleAiToken) {
 
-    private val chatModelVersion = "gemini-2.5-flash-preview-04-17"
+    private val chatModelVersion = "gemini-2.5-flash"
     private val searchModelVersion = "gemini-2.0-flash"
 
     private val client = Client.builder()
