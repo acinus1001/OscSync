@@ -8,12 +8,20 @@ import dev.kuro9.multiplatform.common.types.testapp.request.SmartAppSwitchContro
 import org.springframework.web.bind.annotation.*
 
 @[RestController RequestMapping("/test")]
-class TestEndpointController(private val smartAppApiClient: SmartAppApiClient) {
+class TestEndpointController(
+    private val smartAppApiClient: SmartAppApiClient,
+    private val testService: TestService,
+) {
 
     @GetMapping
     suspend fun test(): SmartAppDeviceListResponse? {
-        val t = smartAppApiClient.listDevices()
+        val t = smartAppApiClient.listDevices(SmartAppToken.of(""))
         return t
+    }
+
+    @GetMapping("/db")
+    suspend fun testDb() {
+        testService.test()
     }
 
     @PostMapping("/switch")

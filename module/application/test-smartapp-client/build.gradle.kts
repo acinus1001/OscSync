@@ -16,6 +16,7 @@ dependencies {
 
     implementation(projects.module.common.network)
     implementation(projects.module.internal.smartappClient)
+    implementation(projects.module.domain.database)
     implementation(projects.multiplatformCommon.types.testSmartappClient)
 }
 
