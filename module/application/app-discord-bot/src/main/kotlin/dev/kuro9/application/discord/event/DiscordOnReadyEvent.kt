@@ -5,10 +5,11 @@ import dev.kuro9.internal.discord.model.DiscordEventHandler
 import dev.minn.jda.ktx.coroutines.await
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.events.session.ReadyEvent
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.stringLiteral
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.stringLiteral
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Component
 
 @Component

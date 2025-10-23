@@ -6,8 +6,8 @@ import com.illposed.osc.OSCPacketEvent
 import com.illposed.osc.OSCPacketListener
 import com.illposed.osc.transport.OSCPortIn
 import com.illposed.osc.transport.OSCPortOut
-import dev.kuro9.common.util.errorLog
-import dev.kuro9.common.util.infoLog
+import dev.kuro9.common.logger.errorLog
+import dev.kuro9.common.logger.infoLog
 import dev.kuro9.internal.osc.model.VrcOscReceiveEvent
 import dev.kuro9.internal.osc.model.VrcOscSendEvent
 import jakarta.annotation.PostConstruct

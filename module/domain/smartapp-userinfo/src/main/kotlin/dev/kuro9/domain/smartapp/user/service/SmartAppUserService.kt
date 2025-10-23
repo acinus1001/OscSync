@@ -10,8 +10,12 @@ import dev.kuro9.internal.smartapp.api.dto.response.SmartAppDeviceListResponse
 import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponseObject.DeviceInfo
 import dev.kuro9.internal.smartapp.api.exception.ApiNotSuccessException
 import dev.kuro9.internal.smartapp.api.service.SmartAppApiService
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.upsert
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
@@ -167,7 +171,7 @@ class SmartAppUserService(
     @CacheEvict(cacheNames = ["smartapp-registered-devices"])
     suspend fun deleteDeviceByName(userId: Long, deviceName: String): Boolean {
         return transaction(database) {
-            Op.build { SmartAppUserDevices.userId eq userId }
+            (SmartAppUserDevices.userId eq userId)
                 .and { SmartAppUserDevices.deviceName eq deviceName }
                 .let { op -> SmartAppUserDevices.deleteWhere { op } } != 0
         }
@@ -178,7 +182,7 @@ class SmartAppUserService(
         deviceName: String,
     ): SmartAppUserDeviceEntity? {
         return transaction(database) {
-            Op.build { SmartAppUserDevices.userId eq userId }
+            (SmartAppUserDevices.userId eq userId)
                 .and { SmartAppUserDevices.deviceName eq deviceName }
                 .and { SmartAppUserDevices.deviceComponent eq "main" }
                 .and { SmartAppUserDevices.deviceCapability eq "switch" }

@@ -6,23 +6,26 @@ import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.statements.BatchUpdateStatement
-import org.jetbrains.exposed.sql.transactions.TransactionManager
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.core.statements.BatchUpdateStatement
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.stereotype.Repository
 
 @Repository
 class AiMasterMemoryRepo {
 
     fun findAll(userId: Long): List<AiMasterMemoryEntity> {
-        return Op.Companion.build { AiMasterMemories.userId eq userId }
+        return (AiMasterMemories.userId eq userId)
             .and { AiMasterMemories.revokedAt.isNull() }
             .let(AiMasterMemoryEntity.Companion::find)
-            .orderBy(AiMasterMemories.id to org.jetbrains.exposed.sql.SortOrder.ASC)
+            .orderBy(AiMasterMemories.id to SortOrder.ASC)
             .toList()
     }
 
@@ -47,7 +50,7 @@ class AiMasterMemoryRepo {
                             addBatch(EntityID(it.id.value, AiMasterMemories))
                             this[AiMasterMemories.revokedAt] = LocalDateTime.now()
                         }
-                    }.execute(TransactionManager.current())
+                    }.toExecutable().execute(TransactionManager.current())
                 }
             }
         }

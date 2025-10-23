@@ -2,11 +2,12 @@ package dev.kuro9.domain.karaoke.repository.table
 
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.dao.LongEntity
-import org.jetbrains.exposed.dao.LongEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.kotlin.datetime.datetime
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
+import org.jetbrains.exposed.v1.dao.LongEntity
+import org.jetbrains.exposed.v1.dao.LongEntityClass
+import org.jetbrains.exposed.v1.datetime.datetime
+
 
 object KaraokeNotifySendLogs : LongIdTable(name = "karaoke_notify_send_log", "seq") {
     val seq by ::id
