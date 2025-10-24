@@ -3,8 +3,8 @@ package dev.kuro9.application.batch.karaoke.job
 import com.navercorp.spring.batch.plus.kotlin.configuration.BatchDsl
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamReader
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamWriter
-import dev.kuro9.application.batch.discord.DiscordWebhookPayload
 import dev.kuro9.application.batch.discord.config.DiscordProperties
+import dev.kuro9.application.batch.discord.dto.DiscordWebhookPayload
 import dev.kuro9.application.batch.discord.dto.Embed
 import dev.kuro9.application.batch.discord.service.DiscordWebhookService
 import dev.kuro9.application.batch.karaoke.tasklet.KaraokeSongFetchTasklet

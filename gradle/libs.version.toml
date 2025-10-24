@@ -65,6 +65,7 @@ exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exp
 exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
 exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
 exposed-spring-boot-starter = { module = "org.jetbrains.exposed:exposed-spring-boot-starter", version.ref = "exposed" }
+exposed-crypt = { module = "org.jetbrains.exposed:exposed-crypt", version.ref = "exposed" }
 
 jdbc-postgres = { module = "org.postgresql:postgresql", version = "42.7.7" }
 
@@ -119,7 +120,7 @@ slf4j-api-extensions = { module = "io.github.harryjhin:slf4j-api-extensions", ve
 
 
 [bundles]
-exposed = ["exposed-core", "exposed-dao", "exposed-kotlin-datetime", "exposed-json", "exposed-spring-boot-starter", "kotlinx-datetime"]
+exposed = ["exposed-core", "exposed-dao", "exposed-crypt", "exposed-kotlin-datetime", "exposed-json", "exposed-spring-boot-starter", "kotlinx-datetime"]
 jda = ["jda-core", "jda-kotlin-extension"]
 koin = ["koin-core", "koin-compose", "koin-compose-viewmodel", "koin-compose-navigation"]
 orbit-mvi = ["orbit-mvi-core", "orbit-mvi-compose", "orbit-mvi-viewmodel"]

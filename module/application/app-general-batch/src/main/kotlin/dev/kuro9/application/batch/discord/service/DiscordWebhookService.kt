@@ -1,6 +1,6 @@
 package dev.kuro9.application.batch.discord.service
 
-import dev.kuro9.application.batch.discord.DiscordWebhookPayload
+import dev.kuro9.application.batch.discord.dto.DiscordWebhookPayload
 import dev.kuro9.multiplatform.common.network.httpClient
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import io.ktor.client.plugins.*

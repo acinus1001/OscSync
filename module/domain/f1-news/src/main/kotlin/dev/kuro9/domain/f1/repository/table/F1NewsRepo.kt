@@ -1,0 +1,88 @@
+package dev.kuro9.domain.f1.repository.table
+
+import dev.kuro9.domain.database.between
+import dev.kuro9.domain.f1.dto.F1NewsHtmlDto
+import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.date.util.toDateTimeRange
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNotNull
+import org.jetbrains.exposed.sql.and
+import org.springframework.stereotype.Repository
+
+@Repository
+class F1NewsRepo {
+
+    fun save(news: F1NewsHtmlDto): F1NewsEntity {
+        return F1NewsEntity.new {
+            this.classId = news.id
+            this.title = news.title
+            this.path = news.path
+            this.imageUrl = news.imageUrl
+            this.imageAlt = news.imageAlt
+            this.contentSummary = null
+            this.createdAt = LocalDateTime.now()
+        }
+    }
+
+    fun updateContentSummary(news: F1NewsEntity, contentSummary: String) {
+        news.contentSummary = contentSummary
+    }
+
+    fun findById(id: Long): F1NewsEntity? {
+        return F1NewsEntity.findById(id)
+    }
+
+    fun findByClassId(classId: String): F1NewsEntity? {
+        return F1NewsEntity.find(F1News.classId eq classId).limit(1).firstOrNull()
+    }
+
+    fun findAll(
+        size: Int,
+        page: Int,
+        dateRange: ClosedRange<LocalDate>? = null,
+        desc: Boolean = true
+    ): List<F1NewsEntity> {
+        return findAll(
+            size = size,
+            page = page,
+            desc = desc,
+            dateRange?.let { F1News.createdAt.between(it.toDateTimeRange()) } ?: Op.TRUE,
+        )
+    }
+
+    fun findAllWithSummary(
+        size: Int,
+        page: Int,
+        dateRange: ClosedRange<LocalDate>? = null,
+        desc: Boolean = true
+    ): List<F1NewsEntity> {
+        return findAll(
+            size = size,
+            page = page,
+            desc = desc,
+
+            dateRange?.let { F1News.createdAt.between(it.toDateTimeRange()) } ?: Op.TRUE,
+            F1News.contentSummary.isNotNull(),
+        )
+    }
+
+    private fun findAll(
+        size: Int,
+        page: Int,
+        desc: Boolean = true,
+        vararg op: Op<Boolean>,
+    ): List<F1NewsEntity> {
+        require(size > 0) { "size must be greater than 0" }
+        require(page > 0) { "page must be greater than 0" }
+
+        return F1NewsEntity.find(op.fold(Op.TRUE as Op<Boolean>) { acc, op2 -> acc.and(op2) })
+            .orderBy(F1News.createdAt to (if (desc) SortOrder.DESC else SortOrder.ASC))
+            .limit(size)
+            .offset((page - 1L) * size)
+            .toList()
+    }
+}
