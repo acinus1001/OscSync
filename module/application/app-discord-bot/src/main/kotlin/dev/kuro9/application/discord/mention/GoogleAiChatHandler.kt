@@ -28,6 +28,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
+import net.dv8tion.jda.api.components.actionrow.ActionRow
+import net.dv8tion.jda.api.components.buttons.Button
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.concrete.GroupChannel
@@ -38,9 +40,6 @@ import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
-import net.dv8tion.jda.api.interactions.components.buttons.Button
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
@@ -56,7 +55,6 @@ class GoogleAiChatAbstractHandler(
     private val smartAppUserService: SmartAppUserService,
     private val karaokeApiService: KaraokeApiService,
     private val aiMasterMemoryService: AiMasterMemoryService,
-    private val database: Database,
     slashCommands: List<SlashCommandComponent>
 ) : MentionedMessageHandler, ButtonInteractionHandler {
     private val commandDataList = slashCommands
@@ -264,9 +262,7 @@ class GoogleAiChatAbstractHandler(
 
         channel.sendMessageEmbeds(embed).let {
             if (isRetryable) {
-                it.addActionRow(
-                    Button.primary("${retryButtonIdPrefix}${message.id}", "재시도")
-                )
+                it.addComponents(ActionRow.of(Button.primary("${retryButtonIdPrefix}${message.id}", "재시도")))
             } else it
         }.await()
     }
@@ -504,15 +500,13 @@ class GoogleAiChatAbstractHandler(
                     val toAddMemoryString: String? by it.withDefault { null }
                     val toDeleteIndex: List<Long>? by it.withDefault { null }
 
-                    newSuspendedTransaction(db = database) {
-                        toDeleteIndex?.map { index ->
-                            aiMasterMemoryService.revoke(userId, index)
-                        }?.joinAll()
+                    toDeleteIndex?.map { index ->
+                        aiMasterMemoryService.revoke(userId, index)
+                    }?.joinAll()
 
-                        toAddMemoryString?.let { memory ->
-                            aiMasterMemoryService.add(userId, memory, 10)
-                        }?.join()
-                    }
+                    toAddMemoryString?.let { memory ->
+                        aiMasterMemoryService.add(userId, memory, 10)
+                    }?.join()
 
 
                     mapOf("result" to "ok")

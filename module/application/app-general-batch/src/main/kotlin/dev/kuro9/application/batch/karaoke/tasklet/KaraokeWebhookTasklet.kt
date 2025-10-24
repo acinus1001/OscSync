@@ -10,13 +10,13 @@ import dev.kuro9.domain.karaoke.service.KaraokeChannelService
 import dev.kuro9.domain.karaoke.service.KaraokeNewSongService
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.number
 import kotlinx.datetime.toKotlinLocalDate
 import org.springframework.batch.core.configuration.annotation.StepScope
 import org.springframework.batch.item.Chunk
 import org.springframework.batch.item.ExecutionContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import java.time.LocalDate
 
 @StepScope
 @Component
@@ -24,7 +24,7 @@ class KaraokeWebhookTasklet(
     private val webhookService: DiscordWebhookService,
     private val channelService: KaraokeChannelService,
     private val newSongService: KaraokeNewSongService,
-    @Value("#{jobParameters['executeDate']}") private val _executeDate: LocalDate,
+    @param:Value("#{jobParameters['executeDate']}") private val _executeDate: java.time.LocalDate,
 ) : ItemStreamIterableReaderWriter<KaraokeSubscribeChannelEntity> {
     private val executeDate = _executeDate.toKotlinLocalDate()
     private var lastChannelId: Long? = null
@@ -66,7 +66,7 @@ class KaraokeWebhookTasklet(
         // field 25개, embed 10개 제한
         val embedList = tjReleaseSongs.chunked(25).mapIndexed { i, songChunk ->
             Embed {
-                title = "TJ ${executeDate.monthNumber}/${executeDate.dayOfMonth} 신곡 알림"
+                title = "TJ ${executeDate.month.number}/${executeDate.day} 신곡 알림"
                 description =
                     "$executeDate 09:00 데이터 : " + if (tjReleaseSongs.size > 25) "${i + 1}/${((tjReleaseSongs.size - 1) / 25) + 1}" else ""
                 songChunk.forEach { song ->

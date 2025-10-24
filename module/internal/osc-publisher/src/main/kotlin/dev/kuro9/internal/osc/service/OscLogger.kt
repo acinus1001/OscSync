@@ -1,6 +1,6 @@
 package dev.kuro9.internal.osc.service
 
-import dev.kuro9.common.util.infoLog
+import dev.kuro9.common.logger.infoLog
 import dev.kuro9.internal.osc.model.VrcOscReceiveEvent
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async

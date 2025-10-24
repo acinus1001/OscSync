@@ -18,8 +18,6 @@ logging:
 
 dev:
   kuro9:
-    smartapp:
-      token: ${SMARTAPP_TOKEN}
     jwt:
       key: test123
     webhook:

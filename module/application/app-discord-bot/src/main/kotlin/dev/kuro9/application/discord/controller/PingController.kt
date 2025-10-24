@@ -1,7 +1,8 @@
 package dev.kuro9.application.discord.controller
 
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.intLiteral
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.intLiteral
+import org.jetbrains.exposed.v1.jdbc.select
 import org.springframework.http.ResponseEntity
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.GetMapping

@@ -1,7 +1,6 @@
 package dev.kuro9.application.discord.config
 
 import dev.kuro9.common.logger.infoLog
-import dev.kuro9.internal.smartapp.api.dto.SmartAppProperty
 import dev.kuro9.internal.smartapp.webhook.handler.SmartAppWebhookHandler
 import dev.kuro9.internal.smartapp.webhook.model.SmartAppWebhookResponse
 import dev.kuro9.multiplatform.common.network.httpClient
@@ -12,7 +11,6 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.delay
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import kotlin.time.Duration.Companion.seconds
@@ -20,11 +18,11 @@ import kotlin.time.Duration.Companion.seconds
 @Configuration
 class SmartAppConfig {
 
-    @Bean
-    fun smartAppProperty(@Value("\${dev.kuro9.smartapp.token}") token: String): SmartAppProperty =
-        object : SmartAppProperty {
-            override val token: String = token
-        }
+//    @Bean
+//    fun smartAppProperty(@Value("\${dev.kuro9.smartapp.token}") token: String): SmartAppProperty =
+//        object : SmartAppProperty {
+//            override val token: String = token
+//        }
 
     @Bean
     fun smartAppWebhookHandler(): SmartAppWebhookHandler = object : SmartAppWebhookHandler {

@@ -8,10 +8,10 @@ import dev.kuro9.domain.karaoke.repository.table.KaraokeSongs
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.insertIgnore
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -49,7 +49,7 @@ class KaraokeRepo {
         brand: KaraokeBrand,
         releaseDateRange: ClosedRange<LocalDate>,
     ): List<KaraokeSongEntity> {
-        return Op.build { KaraokeSongs.brand eq brand }
+        return (KaraokeSongs.brand eq brand)
             .and { KaraokeSongs.releaseDate between releaseDateRange }
             .let(KaraokeSongEntity::find)
             .toList()

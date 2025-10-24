@@ -10,8 +10,10 @@ import dev.kuro9.internal.smartapp.api.dto.response.SmartAppDeviceListResponse
 import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponseObject.DeviceInfo
 import dev.kuro9.internal.smartapp.api.exception.ApiNotSuccessException
 import dev.kuro9.internal.smartapp.api.service.SmartAppApiService
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.upsert
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
@@ -22,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional
 class SmartAppUserService(
     private val userCredentialService: SmartAppCredentialService,
     private val apiClient: SmartAppApiService,
-    private val database: Database,
 ) {
 
     @Throws(CredentialNotFoundException::class)
@@ -31,12 +32,10 @@ class SmartAppUserService(
     }
 
     fun getUserRegisteredDevices(userId: Long): List<SmartAppUserDeviceEntity> {
-        return transaction(database) {
-            SmartAppUserDeviceEntity
-                .find { SmartAppUserDevices.userId eq userId }
-                .notForUpdate()
-                .toList()
-        }
+        return SmartAppUserDeviceEntity
+            .find { SmartAppUserDevices.userId eq userId }
+            .notForUpdate()
+            .toList()
     }
 
     @Throws(CredentialNotFoundException::class)
@@ -56,14 +55,12 @@ class SmartAppUserService(
         deviceCapabilityId: String,
         deviceName: String,
     ) {
-        transaction(database) {
-            SmartAppUserDevices.upsert {
-                it[SmartAppUserDevices.userId] = userId
-                it[SmartAppUserDevices.deviceId] = deviceId
-                it[SmartAppUserDevices.deviceComponent] = deviceComponentId
-                it[SmartAppUserDevices.deviceCapability] = deviceCapabilityId
-                it[SmartAppUserDevices.deviceName] = deviceName
-            }
+        SmartAppUserDevices.upsert {
+            it[SmartAppUserDevices.userId] = userId
+            it[SmartAppUserDevices.deviceId] = deviceId
+            it[SmartAppUserDevices.deviceComponent] = deviceComponentId
+            it[SmartAppUserDevices.deviceCapability] = deviceCapabilityId
+            it[SmartAppUserDevices.deviceName] = deviceName
         }
     }
 
@@ -144,10 +141,8 @@ class SmartAppUserService(
         deviceName: String,
         desireState: Boolean,
     ) {
-        val device = transaction(database) {
-            getRegisteredDeviceByName(userId, deviceName)
-                ?: throw NotFoundException("device name $deviceName not found.")
-        }
+        val device = getRegisteredDeviceByName(userId, deviceName)
+            ?: throw NotFoundException("device name $deviceName not found.")
 
         executeDevice(
             userId = userId,
@@ -166,35 +161,30 @@ class SmartAppUserService(
     @Transactional
     @CacheEvict(cacheNames = ["smartapp-registered-devices"])
     suspend fun deleteDeviceByName(userId: Long, deviceName: String): Boolean {
-        return transaction(database) {
-            Op.build { SmartAppUserDevices.userId eq userId }
-                .and { SmartAppUserDevices.deviceName eq deviceName }
-                .let { op -> SmartAppUserDevices.deleteWhere { op } } != 0
-        }
+        return (SmartAppUserDevices.userId eq userId)
+            .and { SmartAppUserDevices.deviceName eq deviceName }
+            .let { op -> SmartAppUserDevices.deleteWhere { op } } != 0
+
     }
 
     fun getRegisteredDeviceByName(
         userId: Long,
         deviceName: String,
     ): SmartAppUserDeviceEntity? {
-        return transaction(database) {
-            Op.build { SmartAppUserDevices.userId eq userId }
-                .and { SmartAppUserDevices.deviceName eq deviceName }
-                .and { SmartAppUserDevices.deviceComponent eq "main" }
-                .and { SmartAppUserDevices.deviceCapability eq "switch" }
-                .let(SmartAppUserDeviceEntity::find)
-                .singleOrNull()
-        }
+        return (SmartAppUserDevices.userId eq userId)
+            .and { SmartAppUserDevices.deviceName eq deviceName }
+            .and { SmartAppUserDevices.deviceComponent eq "main" }
+            .and { SmartAppUserDevices.deviceCapability eq "switch" }
+            .let(SmartAppUserDeviceEntity::find)
+            .singleOrNull()
     }
 
     @Cacheable("smartapp-registered-devices")
     fun getRegisteredDevices(userId: Long): List<SmartAppUserDeviceEntity> {
-        return transaction(database) {
-            SmartAppUserDeviceEntity
-                .find { SmartAppUserDevices.userId eq userId }
-                .notForUpdate()
-                .toList()
-        }
+        return SmartAppUserDeviceEntity
+            .find { SmartAppUserDevices.userId eq userId }
+            .notForUpdate()
+            .toList()
     }
 
     fun saveUserCredential(userId: Long, smartAppToken: String) {

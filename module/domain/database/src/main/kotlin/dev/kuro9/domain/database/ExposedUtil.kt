@@ -1,7 +1,9 @@
 package dev.kuro9.domain.database
 
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.between
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.Query
+import org.jetbrains.exposed.v1.jdbc.select
+
 
 infix fun <T : Comparable<T>, S : T?> ExpressionWithColumnType<in S>.between(range: ClosedRange<T>): Between {
     return this.between(range.start, range.endInclusive)

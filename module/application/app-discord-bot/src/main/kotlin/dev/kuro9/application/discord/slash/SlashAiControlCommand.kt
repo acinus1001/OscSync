@@ -15,15 +15,12 @@ import kotlinx.coroutines.withContext
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.springframework.stereotype.Component
 import java.awt.Color
 
 @Component
 class SlashAiControlCommand(
     private val memoryService: AiMasterMemoryService,
-    private val database: Database,
 ) : SlashCommandComponent {
 
     override val commandData = Command("ai", "AI 관련 설정을 조작합니다.") {
@@ -75,9 +72,7 @@ class SlashAiControlCommand(
     }
 
     private suspend fun clearMemory(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
-        val affected: Int = newSuspendedTransaction(db = database) {
-            memoryService.revokeAll(event.user.idLong).await()
-        }
+        val affected: Int = memoryService.revokeAll(event.user.idLong).await()
 
         Embed {
             title = "200 OK"
@@ -88,10 +83,8 @@ class SlashAiControlCommand(
     private suspend fun deleteMemory(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
         val memoryIndex = event.getOption("memory-index")!!.asLong
         val memory: String = withContext(Dispatchers.IO) {
-            newSuspendedTransaction(db = database) {
-                memoryService.findByIndex(event.user.idLong, memoryIndex)?.also {
-                    memoryService.revoke(event.user.idLong, memoryIndex)
-                }
+            memoryService.findByIndex(event.user.idLong, memoryIndex)?.also {
+                memoryService.revoke(event.user.idLong, memoryIndex)
             }
         } ?: throw IllegalArgumentException("memory not found")
 
