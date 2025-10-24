@@ -15,14 +15,12 @@ import kotlinx.coroutines.withContext
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
-import org.jetbrains.exposed.v1.jdbc.Database
 import org.springframework.stereotype.Component
 import java.awt.Color
 
 @Component
 class SlashAiControlCommand(
     private val memoryService: AiMasterMemoryService,
-    private val database: Database,
 ) : SlashCommandComponent {
 
     override val commandData = Command("ai", "AI 관련 설정을 조작합니다.") {

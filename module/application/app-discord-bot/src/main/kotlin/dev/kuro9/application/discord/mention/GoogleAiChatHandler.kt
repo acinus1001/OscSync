@@ -40,7 +40,6 @@ import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
-import org.jetbrains.exposed.v1.jdbc.Database
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
@@ -56,7 +55,6 @@ class GoogleAiChatAbstractHandler(
     private val smartAppUserService: SmartAppUserService,
     private val karaokeApiService: KaraokeApiService,
     private val aiMasterMemoryService: AiMasterMemoryService,
-    private val database: Database,
     slashCommands: List<SlashCommandComponent>
 ) : MentionedMessageHandler, ButtonInteractionHandler {
     private val commandDataList = slashCommands
