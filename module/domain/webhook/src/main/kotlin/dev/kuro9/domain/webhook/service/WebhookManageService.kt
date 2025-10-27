@@ -94,6 +94,16 @@ class WebhookManageService {
             .toList()
     }
 
+    fun getLatestSendDataSeq(domainType: WebhookDomainType, channelId: Long): Long? {
+        return WebhookNotifySendLogs.select(WebhookNotifySendLogs.sendDataSeq)
+            .where { WebhookNotifySendLogs.domainType eq domainType }
+            .andWhere { WebhookNotifySendLogs.channelId eq channelId }
+            .orderBy(WebhookNotifySendLogs.sendDataSeq to SortOrder.DESC_NULLS_LAST)
+            .limit(1)
+            .firstOrNull()
+            ?.get(WebhookNotifySendLogs.sendDataSeq)
+    }
+
     /**
      * 커서 방식의 페이징 처리된 채널 반환
      * 오늘 한번 정상적으로 전송된 로그가 있다면 전송하지 않음 (exception is null)
@@ -127,8 +137,10 @@ class WebhookManageService {
     @Transactional(noRollbackFor = [Throwable::class])
     suspend fun executeWithLog(
         data: WebhookSubscribeChannelEntity,
-        action: suspend (WebhookSubscribeChannelEntity) -> Unit,
+        action: suspend (latestDataSeq: Long?, entity: WebhookSubscribeChannelEntity) -> Pair<String?, Long?>,
     ) {
+        val latestDataSeq = getLatestSendDataSeq(data.domainType, data.channelId)
+
         val seq = WebhookNotifySendLogs.insertAndGetId {
             it[WebhookNotifySendLogs.domainType] = data.domainType
             it[WebhookNotifySendLogs.channelId] = channelId
@@ -139,13 +151,15 @@ class WebhookManageService {
         }.value
 
         try {
-            action(data)
+            val (sendDataDescription, sendDataSeq) = action(latestDataSeq, data)
 
             // success update
             WebhookNotifySendLogs.update(
                 where = { WebhookNotifySendLogs.seq eq seq },
             ) {
                 it[WebhookNotifySendLogs.phase] = WebhookNotifyPhase.SUCCESS
+                it[WebhookNotifySendLogs.sendDataInfo] = sendDataDescription
+                it[WebhookNotifySendLogs.sendDataSeq] = sendDataSeq
             }
         } catch (t: Throwable) {
 
