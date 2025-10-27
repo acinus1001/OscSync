@@ -22,7 +22,6 @@ class F1NewsParseJobScheduler(
             job,
             JobParametersBuilder()
                 .addLocalDate("executeDate", java.time.LocalDate.now())
-                .addLocalTime("executeTime", currentTime)
                 .addLong("hourIndex", hourIndex)
                 .toJobParameters()
         )
