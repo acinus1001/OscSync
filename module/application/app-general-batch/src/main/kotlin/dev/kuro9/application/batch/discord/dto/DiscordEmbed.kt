@@ -9,7 +9,10 @@ data class DiscordEmbed(
     val description: String,
     val color: Int = 0x000000,
     val fields: List<Field> = emptyList(),
+    val image: Image? = null,
 ) {
+    @Serializable
+    data class Image(val url: String)
 
     @Serializable
     data class Field(
@@ -24,6 +27,7 @@ class DiscordEmbedBuilder {
     var title: String? = null
     var description: String? = null
     var color: Int = 0x000000
+    var image: String? = null
     private val fields: MutableList<Field> = mutableListOf()
 
     @Suppress("FunctionName")
@@ -36,6 +40,7 @@ class DiscordEmbedBuilder {
         description = description!!,
         color = color,
         fields = fields,
+        image = image?.let { DiscordEmbed.Image(it) }
     )
 
     @DiscordEmbedDsl

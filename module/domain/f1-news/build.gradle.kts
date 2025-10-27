@@ -6,26 +6,21 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.module.common.logger)
-
-    // implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.web)
+    implementation(libs.spring.boot.starter.aop)
     implementation(libs.spring.boot.starter.webflux)
-    implementation(libs.spring.boot.starter.batch)
-    implementation(libs.navercorp.spring.batch.plus)
-
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.reactor.kotlin.extensions)
+    implementation(libs.kotlin.serialization)
+    implementation(libs.jsoup)
 
     implementation(projects.multiplatformCommon.network)
     implementation(projects.multiplatformCommon.serialization)
     implementation(projects.multiplatformCommon.date)
-
     implementation(projects.module.common.logger)
+    implementation(projects.module.common)
     implementation(projects.module.domain.database)
-    implementation(projects.module.domain.webhook)
-
-    implementation(projects.module.domain.karaoke)
-    implementation(projects.module.domain.f1News)
     implementation(projects.module.internal.aiClient)
+    implementation("io.ktor:ktor-client-logging:3.1.1")
 }

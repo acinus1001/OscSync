@@ -1,7 +1,7 @@
 package dev.kuro9.application.batch.karaoke.tasklet
 
 import com.navercorp.spring.batch.plus.step.adapter.ItemStreamIterableReaderWriter
-import dev.kuro9.application.batch.discord.DiscordWebhookPayload
+import dev.kuro9.application.batch.discord.dto.DiscordWebhookPayload
 import dev.kuro9.application.batch.discord.dto.Embed
 import dev.kuro9.application.batch.discord.service.DiscordWebhookService
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand

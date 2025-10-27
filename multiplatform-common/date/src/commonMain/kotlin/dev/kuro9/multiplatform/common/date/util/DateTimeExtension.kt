@@ -9,3 +9,6 @@ fun LocalDate.Companion.now(timeZone: TimeZone = TimeZone.of("Asia/Seoul")): Loc
     LocalDateTime.now(timeZone).date
 
 fun LocalDate.toRangeOfDay(): ClosedRange<LocalDateTime> = atTime(0, 0)..atTime(23, 59, 59, 59)
+
+fun ClosedRange<LocalDate>.toDateTimeRange(): ClosedRange<LocalDateTime> =
+    start.atTime(0, 0)..endInclusive.atTime(23, 59, 59, 59)
