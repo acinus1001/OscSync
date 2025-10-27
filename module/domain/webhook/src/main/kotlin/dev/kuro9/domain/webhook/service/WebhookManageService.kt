@@ -1,0 +1,162 @@
+package dev.kuro9.domain.webhook.service
+
+import dev.kuro9.common.exception.DuplicatedInsertException
+import dev.kuro9.domain.database.between
+import dev.kuro9.domain.webhook.enums.WebhookDomainType
+import dev.kuro9.domain.webhook.enums.WebhookNotifyPhase
+import dev.kuro9.domain.webhook.repository.table.WebhookNotifySendLogs
+import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannelEntity
+import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannels
+import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.date.util.toRangeOfDay
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import org.jetbrains.exposed.dao.id.CompositeID
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+@Service
+@Transactional(readOnly = true)
+class WebhookManageService {
+
+    /**
+     * 이미 등록된 채널인지 체크합니다.
+     */
+    fun getRegisteredChannel(domainType: WebhookDomainType, channelId: Long): WebhookSubscribeChannelEntity? {
+        return WebhookSubscribeChannelEntity.findById(CompositeID {
+            it[WebhookSubscribeChannels.EntityId.domainType] = domainType
+            it[WebhookSubscribeChannels.EntityId.channelId] = channelId
+        })
+    }
+
+    /**
+     * 신곡 알림을 받을 채널을 등록합니다.
+     * @throws DuplicatedInsertException 이미 등록된 채널일 때
+     */
+    @Transactional
+    @Throws(DuplicatedInsertException::class)
+    fun registerChannel(
+        domainType: WebhookDomainType,
+        channelId: Long,
+        guildId: Long?,
+        registerUserId: Long,
+        webhookUrl: String,
+        webhookId: Long,
+    ) {
+        val isInserted = WebhookSubscribeChannels.insertIgnore {
+            it[WebhookSubscribeChannels.domainType] = domainType
+            it[WebhookSubscribeChannels.channelId] = channelId
+            it[WebhookSubscribeChannels.guildId] = guildId
+            it[WebhookSubscribeChannels.webhookUrl] = webhookUrl
+            it[WebhookSubscribeChannels.webhookId] = webhookId
+            it[WebhookSubscribeChannels.registeredUserId] = registerUserId
+            it[WebhookSubscribeChannels.createdAt] = LocalDateTime.now()
+        }.insertedCount == 1
+
+        if (!isInserted) throw DuplicatedInsertException()
+    }
+
+    /**
+     * 등록된 신곡 알림 채널을 삭제합니다.
+     * @return true 시 삭제 성공, false 시 삭제할 채널 없음
+     */
+    @Transactional
+    fun unregisterChannel(domainType: WebhookDomainType, channelId: Long): Boolean {
+        return WebhookSubscribeChannels
+            .deleteWhere {
+                (WebhookSubscribeChannels.domainType eq domainType)
+                    .and(WebhookSubscribeChannels.channelId eq channelId)
+            } == 1
+    }
+
+    /**
+     * 커서 방식의 페이징 처리된 채널 반환
+     * @param pageSize 페이지 사이즈
+     * @param lastChannelId 이전 요청의 마지막 entity 의 channelId
+     */
+    fun getAllSubscribedChannels(
+        domainType: WebhookDomainType,
+        pageSize: Int = 1000,
+        lastChannelId: Long? = null,
+    ): List<WebhookSubscribeChannelEntity> {
+        return when (lastChannelId) {
+            null -> WebhookSubscribeChannelEntity.find { (WebhookSubscribeChannels.domainType eq domainType) }
+            else -> WebhookSubscribeChannelEntity
+                .find {
+                    (WebhookSubscribeChannels.domainType eq domainType)
+                        .and(WebhookSubscribeChannels.channelId greater lastChannelId)
+                }
+        }
+            .orderBy(WebhookSubscribeChannels.channelId to SortOrder.ASC)
+            .limit(pageSize)
+            .toList()
+    }
+
+    /**
+     * 커서 방식의 페이징 처리된 채널 반환
+     * 오늘 한번 정상적으로 전송된 로그가 있다면 전송하지 않음 (exception is null)
+     *
+     * @param targetDate 전송하는 날짜
+     * @param pageSize 페이지 사이즈
+     * @param lastChannelId 이전 요청의 마지막 entity 의 channelId
+     */
+    fun getAllFilteredSubscribedChannels(
+        domainType: WebhookDomainType,
+        targetDate: LocalDate = LocalDate.now(),
+        pageSize: Int = 1000,
+        lastChannelId: Long? = null,
+    ): List<WebhookSubscribeChannelEntity> {
+        val op: Op<Boolean> = WebhookNotifySendLogs.select(intLiteral(1))
+            .where(WebhookNotifySendLogs.channelId eq WebhookSubscribeChannels.channelId)
+            .andWhere { WebhookNotifySendLogs.domainType eq domainType }
+            .andWhere { WebhookNotifySendLogs.sendDate between targetDate.toRangeOfDay() }
+            .andWhere { WebhookNotifySendLogs.exception.isNull() }
+            .let(::notExists)
+        return when (lastChannelId) {
+            null -> WebhookSubscribeChannelEntity.find { op }
+            else -> WebhookSubscribeChannelEntity
+                .find { WebhookSubscribeChannels.channelId greater lastChannelId and op }
+        }
+            .orderBy(WebhookSubscribeChannels.channelId to SortOrder.ASC)
+            .limit(pageSize)
+            .toList()
+    }
+
+    @Transactional(noRollbackFor = [Throwable::class])
+    suspend fun executeWithLog(
+        data: WebhookSubscribeChannelEntity,
+        action: suspend (WebhookSubscribeChannelEntity) -> Unit,
+    ) {
+        val seq = WebhookNotifySendLogs.insertAndGetId {
+            it[WebhookNotifySendLogs.domainType] = data.domainType
+            it[WebhookNotifySendLogs.channelId] = channelId
+            it[WebhookNotifySendLogs.guildId] = guildId
+            it[WebhookNotifySendLogs.phase] = WebhookNotifyPhase.INIT
+            it[WebhookNotifySendLogs.exception] = null
+            it[WebhookNotifySendLogs.sendDate] = LocalDateTime.now()
+        }.value
+
+        try {
+            action(data)
+
+            // success update
+            WebhookNotifySendLogs.update(
+                where = { WebhookNotifySendLogs.seq eq seq },
+            ) {
+                it[WebhookNotifySendLogs.phase] = WebhookNotifyPhase.SUCCESS
+            }
+        } catch (t: Throwable) {
+
+            // failure update
+            WebhookNotifySendLogs.update(
+                where = { WebhookNotifySendLogs.seq eq seq },
+            ) {
+                it[WebhookNotifySendLogs.phase] = WebhookNotifyPhase.FAILURE
+                it[WebhookNotifySendLogs.exception] = t.stackTraceToString().take(2500)
+            }
+        }
+    }
+
+}
