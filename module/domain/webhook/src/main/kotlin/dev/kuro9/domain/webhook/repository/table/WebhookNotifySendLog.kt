@@ -18,6 +18,13 @@ object WebhookNotifySendLogs : LongIdTable(name = "webhook_notify_send_log", "se
     val phase = enumerationByName<WebhookNotifyPhase>("phase", 10)
     val exception = text("exception").nullable()
     val sendDate = datetime("send_date")
+    val sendDataInfo = varchar("send_data_info", 100).nullable()
+    val sendDataSeq = long("send_data_seq").nullable()
+
+    init {
+        index(isUnique = false, domainType, channelId)
+        index(isUnique = false, domainType, channelId, sendDataSeq)
+    }
 }
 
 class WebhookNotifySendLogEntity(pk: EntityID<Long>) : LongEntity(pk) {
@@ -29,6 +36,8 @@ class WebhookNotifySendLogEntity(pk: EntityID<Long>) : LongEntity(pk) {
     var guildId by WebhookNotifySendLogs.guildId; private set
     var exception by WebhookNotifySendLogs.exception; private set
     var sendDate by WebhookNotifySendLogs.sendDate; private set
+    var sendDataInfo by WebhookNotifySendLogs.sendDataInfo; private set
+    var sendDataSeq by WebhookNotifySendLogs.sendDataSeq; private set
 }
 
 data class WebhookNotifySendLog(
@@ -37,4 +46,6 @@ data class WebhookNotifySendLog(
     val guildId: Long,
     val exception: Throwable? = null,
     val sendDate: LocalDateTime = LocalDateTime.now(),
+    val sendDataInfo: String? = null,
+    val sendDataSeq: Long? = null,
 )

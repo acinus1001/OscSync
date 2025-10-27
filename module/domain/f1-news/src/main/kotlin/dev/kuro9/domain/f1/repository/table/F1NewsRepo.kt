@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNotNull
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 import org.jetbrains.exposed.sql.and
 import org.springframework.stereotype.Repository
 
@@ -51,6 +52,15 @@ class F1NewsRepo {
             page = page,
             desc = desc,
             dateRange?.let { F1News.createdAt.between(it.toDateTimeRange()) } ?: Op.TRUE,
+        )
+    }
+
+    fun findAllWithNoSummary(): List<F1NewsEntity> {
+        return findAll(
+            size = 100,
+            page = 1,
+            desc = false,
+            F1News.contentSummary.isNull()
         )
     }
 

@@ -44,7 +44,7 @@ class F1NewsParseService {
         return cleanText
     }
 
-    suspend fun parseLatestNews(count: Int): List<F1NewsHtmlDto> {
+    suspend fun parseLatestNews(count: Int = 100): List<F1NewsHtmlDto> {
         require(count > 0) { "count는 1 이상이어야 합니다." }
 
         val url = URLBuilder(domain).apply { path("/en/latest") }.build()

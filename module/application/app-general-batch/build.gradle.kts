@@ -23,6 +23,9 @@ dependencies {
 
     implementation(projects.module.common.logger)
     implementation(projects.module.domain.database)
+    implementation(projects.module.domain.webhook)
 
     implementation(projects.module.domain.karaoke)
+    implementation(projects.module.domain.f1News)
+    implementation(projects.module.internal.aiClient)
 }

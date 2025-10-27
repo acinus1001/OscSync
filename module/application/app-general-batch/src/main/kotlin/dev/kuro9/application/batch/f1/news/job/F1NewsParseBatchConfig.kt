@@ -1,12 +1,13 @@
-package dev.kuro9.application.batch.karaoke.job
+package dev.kuro9.application.batch.f1.news.job
 
 import com.navercorp.spring.batch.plus.kotlin.configuration.BatchDsl
+import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemProcessor
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamReader
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamWriter
-import dev.kuro9.application.batch.karaoke.tasklet.KaraokeSongFetchTasklet
-import dev.kuro9.application.batch.karaoke.tasklet.KaraokeWebhookTasklet
-import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
-import dev.kuro9.domain.karaoke.repository.table.KaraokeSubscribeChannelEntity
+import dev.kuro9.application.batch.f1.news.tasklet.F1NewsFetchTasklet
+import dev.kuro9.application.batch.f1.news.tasklet.F1NewsSummaryTasklet
+import dev.kuro9.application.batch.f1.news.tasklet.dto.F1NewsTaskletDto
+import dev.kuro9.domain.f1.dto.F1NewsHtmlDto
 import org.springframework.batch.core.ChunkListener
 import org.springframework.batch.core.ExitStatus
 import org.springframework.batch.core.Job
@@ -17,20 +18,28 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
 
 @Configuration
-class KaraokeCrawlBatchConfig(
+class F1NewsParseBatchConfig(
     private val batch: BatchDsl,
     private val txManager: PlatformTransactionManager,
+    private val f1NewsFetchTasklet: F1NewsFetchTasklet,
+    private val f1NewsSummaryTasklet: F1NewsSummaryTasklet
 ) {
 
     @Bean
-    fun karaokeCrawlJob(
-        fetchTasklet: KaraokeSongFetchTasklet,
-    ): Job = batch {
-        job("karaokeCrawlJob") {
-            step(karaokeCrawlNewSongStep(fetchTasklet)) {
+    fun f1NewsParseJob(): Job = batch {
+        job("f1NewsParseJob") {
+            step(f1NewsFetchStep()) {
                 on(ExitStatus.COMPLETED.exitCode) {
-                    stepBean("karaokeNotifyNewSongStep")
-                    end()
+                    stepBean("f1NewsSummaryStep") {
+                        on(ExitStatus.COMPLETED.exitCode) {
+                            // todo step to webhook
+                            end()
+                        }
+                        on(ExitStatus.FAILED.exitCode) {
+                            stepBean("batchFailureNotifyStep")
+                            fail()
+                        }
+                    }
                 }
                 on(ExitStatus.FAILED.exitCode) {
                     stepBean("batchFailureNotifyStep")
@@ -41,12 +50,11 @@ class KaraokeCrawlBatchConfig(
     }
 
     @Bean
-    fun karaokeCrawlNewSongStep(fetchTasklet: KaraokeSongFetchTasklet): Step = batch {
-        step("karaokeCrawlNewSongStep") {
-            allowStartIfComplete(true)
-            chunk<KaraokeSongDto, KaraokeSongDto>(1000, txManager) {
-                reader(fetchTasklet.asItemStreamReader())
-                writer(fetchTasklet.asItemStreamWriter())
+    fun f1NewsFetchStep(): Step = batch {
+        step("f1NewsFetchStep") {
+            chunk<F1NewsHtmlDto, F1NewsHtmlDto>(1, txManager) {
+                reader(f1NewsFetchTasklet.asItemStreamReader())
+                writer(f1NewsFetchTasklet.asItemStreamWriter())
 
                 listener(object : ChunkListener {
                     override fun afterChunkError(context: ChunkContext) {
@@ -64,18 +72,16 @@ class KaraokeCrawlBatchConfig(
     }
 
     @Bean
-    fun karaokeNotifyNewSongStep(webhookTasklet: KaraokeWebhookTasklet): Step = batch {
-        step("karaokeNotifyNewSongStep") {
-            chunk<KaraokeSubscribeChannelEntity, KaraokeSubscribeChannelEntity>(1, txManager) {
-                reader(webhookTasklet.asItemStreamReader())
-                writer(webhookTasklet.asItemStreamWriter())
+    fun f1NewsSummaryStep(): Step = batch {
+        step("f1NewsSummaryStep") {
+            chunk<F1NewsTaskletDto, F1NewsTaskletDto>(1, txManager) {
+                reader(f1NewsSummaryTasklet.asItemStreamReader())
+                processor(f1NewsSummaryTasklet.asItemProcessor())
+                writer(f1NewsSummaryTasklet.asItemStreamWriter())
 
                 faultTolerant {
                     retry<Throwable>()
                     retryLimit(3)
-
-                    skip<Throwable>()
-                    skipLimit(5)
                 }
             }
         }
