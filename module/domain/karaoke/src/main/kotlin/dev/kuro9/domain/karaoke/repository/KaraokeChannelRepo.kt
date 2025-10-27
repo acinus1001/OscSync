@@ -9,8 +9,11 @@ import dev.kuro9.multiplatform.common.date.util.now
 import dev.kuro9.multiplatform.common.date.util.toRangeOfDay
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insertIgnore
+import org.jetbrains.exposed.v1.jdbc.select
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -94,7 +97,7 @@ class KaraokeChannelRepo {
         return when (lastChannelId) {
             null -> KaraokeSubscribeChannelEntity.find { op }
             else -> KaraokeSubscribeChannelEntity
-                .find { KaraokeSubscribeChannels.channelId greater lastChannelId and op }
+                .find { (KaraokeSubscribeChannels.channelId greater lastChannelId) and op }
         }
             .orderBy(KaraokeSubscribeChannels.channelId to SortOrder.ASC)
             .limit(pageSize)

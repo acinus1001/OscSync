@@ -1,9 +1,9 @@
 [versions]
-kotlin = "2.1.21"
+kotlin = "2.2.20"
 kotlinx-coroutines = "1.10.1"
-spring = "3.5.3"
+spring = "3.5.6"
 retrofit2 = "2.11.0"
-exposed = "0.60.0"
+exposed = "1.0.0-rc-2"
 ktor = "3.1.1"
 
 androidx-lifecycle = "2.8.4"
@@ -66,6 +66,7 @@ exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datet
 exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
 exposed-spring-boot-starter = { module = "org.jetbrains.exposed:exposed-spring-boot-starter", version.ref = "exposed" }
 exposed-crypt = { module = "org.jetbrains.exposed:exposed-crypt", version.ref = "exposed" }
+exposed-spring-transaction = { module = "org.jetbrains.exposed:spring-transaction", version.ref = "exposed" }
 
 jdbc-postgres = { module = "org.postgresql:postgresql", version = "42.7.7" }
 
@@ -81,9 +82,9 @@ retrofit2-kotlin-serialization-converter = { module = "com.squareup.retrofit2:co
 java-osc = { module = "com.illposed.osc:javaosc-core", version = "0.9" }
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions", version = "1.2.3" }
 
-jda-core = { module = "net.dv8tion:JDA", version = "5.6.1" }
+jda-core = { module = "net.dv8tion:JDA", version = "6.1.0" }
 jda-core-hotfix = { module = "com.github.freya022:JDA", version = "8905a41" }
-jda-kotlin-extension = { module = "club.minnced:jda-ktx", version = "0.12.0" }
+jda-kotlin-extension = { module = "club.minnced:jda-ktx", version = "0.13.0" }
 
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
@@ -120,7 +121,7 @@ slf4j-api-extensions = { module = "io.github.harryjhin:slf4j-api-extensions", ve
 
 
 [bundles]
-exposed = ["exposed-core", "exposed-dao", "exposed-crypt", "exposed-kotlin-datetime", "exposed-json", "exposed-spring-boot-starter", "kotlinx-datetime"]
+exposed = ["exposed-core", "exposed-dao", "exposed-kotlin-datetime", "exposed-json", "exposed-spring-boot-starter", "exposed-spring-transaction", "kotlinx-datetime"]
 jda = ["jda-core", "jda-kotlin-extension"]
 koin = ["koin-core", "koin-compose", "koin-compose-viewmodel", "koin-compose-navigation"]
 orbit-mvi = ["orbit-mvi-core", "orbit-mvi-compose", "orbit-mvi-viewmodel"]

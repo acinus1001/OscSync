@@ -5,25 +5,33 @@ import dev.kuro9.domain.ai.log.table.AiChatLogEntity
 import dev.kuro9.domain.ai.log.table.AiChatLogs
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.statements.BatchUpdateStatement
-import org.jetbrains.exposed.sql.transactions.TransactionManager
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.core.statements.BatchUpdateStatement
+import org.jetbrains.exposed.v1.jdbc.SizedIterable
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.springframework.stereotype.Repository
 
 @Repository
 class AiChatLogRepo {
 
     fun findAll(key: String, limit: Int? = null): SizedIterable<AiChatLogEntity> {
-        return Op.build { AiChatLogs.key eq key }
-            .and { AiChatLogs.revokeAt.isNull() }
+        return (AiChatLogs.key eq key)
+            .and(AiChatLogs.revokeAt.isNull())
             .let(AiChatLogEntity::find)
             .orderBy(AiChatLogs.id to SortOrder.ASC)
             .apply { if (limit != null) limit(limit) }
     }
 
     fun findAllByRootKey(rootKey: String, limit: Int? = null): SizedIterable<AiChatLogEntity> {
-        return Op.build { AiChatLogs.rootKey eq rootKey }
+        return (AiChatLogs.rootKey eq rootKey)
             .and { AiChatLogs.revokeAt.isNull() }
             .let(AiChatLogEntity::find)
             .orderBy(AiChatLogs.id to SortOrder.ASC)
@@ -66,6 +74,6 @@ class AiChatLogRepo {
                 addBatch(EntityID(id, AiChatLogs))
                 this[AiChatLogs.revokeAt] = LocalDateTime.now()
             }
-        }.execute(TransactionManager.current())
+        }.toExecutable().execute(TransactionManager.current())
     }
 }

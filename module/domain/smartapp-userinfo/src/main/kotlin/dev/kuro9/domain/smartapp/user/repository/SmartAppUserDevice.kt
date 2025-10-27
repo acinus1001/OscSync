@@ -2,12 +2,12 @@ package dev.kuro9.domain.smartapp.user.repository
 
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.dao.CompositeEntity
-import org.jetbrains.exposed.dao.CompositeEntityClass
-import org.jetbrains.exposed.dao.id.CompositeID
-import org.jetbrains.exposed.dao.id.CompositeIdTable
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.kotlin.datetime.datetime
+import org.jetbrains.exposed.v1.core.dao.id.CompositeID
+import org.jetbrains.exposed.v1.core.dao.id.CompositeIdTable
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.dao.CompositeEntity
+import org.jetbrains.exposed.v1.dao.CompositeEntityClass
+import org.jetbrains.exposed.v1.datetime.datetime
 
 object SmartAppUserDevices : CompositeIdTable("smartapp_user_device") {
     val userId = long("user_id")
