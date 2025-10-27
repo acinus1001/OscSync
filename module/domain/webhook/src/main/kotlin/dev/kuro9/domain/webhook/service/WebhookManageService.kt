@@ -8,9 +8,9 @@ import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannelEntity
 import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannels
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.dao.id.CompositeID
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.core.dao.id.CompositeID
+import org.jetbrains.exposed.v1.jdbc.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

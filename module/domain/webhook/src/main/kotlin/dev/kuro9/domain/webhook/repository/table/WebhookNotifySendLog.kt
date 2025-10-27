@@ -4,11 +4,11 @@ import dev.kuro9.domain.webhook.enums.WebhookDomainType
 import dev.kuro9.domain.webhook.enums.WebhookNotifyPhase
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.dao.LongEntity
-import org.jetbrains.exposed.dao.LongEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.kotlin.datetime.datetime
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
+import org.jetbrains.exposed.v1.dao.LongEntity
+import org.jetbrains.exposed.v1.dao.LongEntityClass
+import org.jetbrains.exposed.v1.datetime.datetime
 
 object WebhookNotifySendLogs : LongIdTable(name = "webhook_notify_send_log", "seq") {
     val seq by ::id
