@@ -21,16 +21,16 @@ class F1NewsSummaryTasklet(
 ) : ItemStreamIterableReaderProcessorWriter<F1NewsTaskletDto, F1NewsTaskletDto> {
     private val summaryInstruction = """
         당신은 뉴스를 요약하는 봇 입니다. 
-        제공된 텍스트를 한국어 1500자 이내로 요약해 제공하십시오.
+        제공된 텍스트를 한국어 700자 이내로 요약해 제공하십시오.
         <end prompt>
     """.trimIndent()
 
     override fun readIterable(p0: ExecutionContext): Iterable<F1NewsTaskletDto> {
         return f1NewsService.getNewsWithNoSummary().map {
             F1NewsTaskletDto(
-                id = it.id.value,
+                id = it.id,
                 path = it.path,
-                contentSummary = it.contentSummary
+                contentSummary = null
             )
         }
     }

@@ -6,6 +6,8 @@ import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamReader
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamWriter
 import dev.kuro9.application.batch.f1.news.tasklet.F1NewsFetchTasklet
 import dev.kuro9.application.batch.f1.news.tasklet.F1NewsSummaryTasklet
+import dev.kuro9.application.batch.f1.news.tasklet.F1NewsWebhookTesklet
+import dev.kuro9.application.batch.f1.news.tasklet.dto.F1NewsTargetWebhookDto
 import dev.kuro9.application.batch.f1.news.tasklet.dto.F1NewsTaskletDto
 import dev.kuro9.domain.f1.dto.F1NewsHtmlDto
 import org.springframework.batch.core.ChunkListener
@@ -22,7 +24,8 @@ class F1NewsParseBatchConfig(
     private val batch: BatchDsl,
     private val txManager: PlatformTransactionManager,
     private val f1NewsFetchTasklet: F1NewsFetchTasklet,
-    private val f1NewsSummaryTasklet: F1NewsSummaryTasklet
+    private val f1NewsSummaryTasklet: F1NewsSummaryTasklet,
+    private val f1NewsWebhookTasklet: F1NewsWebhookTesklet,
 ) {
 
     @Bean
@@ -32,7 +35,7 @@ class F1NewsParseBatchConfig(
                 on(ExitStatus.COMPLETED.exitCode) {
                     stepBean("f1NewsSummaryStep") {
                         on(ExitStatus.COMPLETED.exitCode) {
-                            // todo step to webhook
+                            stepBean("f1NewsWebhookStep")
                             end()
                         }
                         on(ExitStatus.FAILED.exitCode) {
@@ -56,17 +59,12 @@ class F1NewsParseBatchConfig(
                 reader(f1NewsFetchTasklet.asItemStreamReader())
                 writer(f1NewsFetchTasklet.asItemStreamWriter())
 
-                listener(object : ChunkListener {
-                    override fun afterChunkError(context: ChunkContext) {
-                        val exception = context.stepContext.stepExecution.failureExceptions.firstOrNull()
-                        if (exception != null) {
-                            context.stepContext.stepExecution.executionContext.put(
-                                "exception",
-                                exception
-                            )
-                        }
-                    }
-                })
+                faultTolerant {
+                    retry<Throwable>()
+                    retryLimit(3)
+                }
+
+                listener(errorListener)
             }
         }
     }
@@ -83,6 +81,37 @@ class F1NewsParseBatchConfig(
                     retry<Throwable>()
                     retryLimit(3)
                 }
+
+                listener(errorListener)
+            }
+        }
+    }
+
+    @Bean
+    fun f1NewsWebhookStep(): Step = batch {
+        step("f1NewsWebhookStep") {
+            chunk<F1NewsTargetWebhookDto, F1NewsTargetWebhookDto>(10, txManager) {
+                reader(f1NewsWebhookTasklet.asItemStreamReader())
+                writer(f1NewsWebhookTasklet.asItemStreamWriter())
+
+                faultTolerant {
+                    retry<Throwable>()
+                    retryLimit(3)
+                }
+
+                listener(errorListener)
+            }
+        }
+    }
+
+    private val errorListener = object : ChunkListener {
+        override fun afterChunkError(context: ChunkContext) {
+            val exception = context.stepContext.stepExecution.failureExceptions.firstOrNull()
+            if (exception != null) {
+                context.stepContext.stepExecution.executionContext.put(
+                    "exception",
+                    exception
+                )
             }
         }
     }

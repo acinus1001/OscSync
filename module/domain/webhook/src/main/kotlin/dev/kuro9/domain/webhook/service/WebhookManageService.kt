@@ -1,15 +1,12 @@
 package dev.kuro9.domain.webhook.service
 
 import dev.kuro9.common.exception.DuplicatedInsertException
-import dev.kuro9.domain.database.between
 import dev.kuro9.domain.webhook.enums.WebhookDomainType
 import dev.kuro9.domain.webhook.enums.WebhookNotifyPhase
 import dev.kuro9.domain.webhook.repository.table.WebhookNotifySendLogs
 import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannelEntity
 import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannels
 import dev.kuro9.multiplatform.common.date.util.now
-import dev.kuro9.multiplatform.common.date.util.toRangeOfDay
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.dao.id.CompositeID
 import org.jetbrains.exposed.sql.*
@@ -107,24 +104,16 @@ class WebhookManageService {
 
     /**
      * 커서 방식의 페이징 처리된 채널 반환
-     * 오늘 한번 정상적으로 전송된 로그가 있다면 전송하지 않음 (exception is null)
      *
-     * @param targetDate 전송하는 날짜
      * @param pageSize 페이지 사이즈
      * @param lastChannelId 이전 요청의 마지막 entity 의 channelId
      */
     fun getAllFilteredSubscribedChannels(
         domainType: WebhookDomainType,
-        targetDate: LocalDate = LocalDate.now(),
         pageSize: Int = 1000,
         lastChannelId: Long? = null,
     ): List<WebhookSubscribeChannelEntity> {
-        val op: Op<Boolean> = WebhookNotifySendLogs.select(intLiteral(1))
-            .where(WebhookNotifySendLogs.channelId eq WebhookSubscribeChannels.channelId)
-            .andWhere { WebhookNotifySendLogs.domainType eq domainType }
-            .andWhere { WebhookNotifySendLogs.sendDate between targetDate.toRangeOfDay() }
-            .andWhere { WebhookNotifySendLogs.exception.isNull() }
-            .let(::notExists)
+        val op: Op<Boolean> = WebhookSubscribeChannels.domainType eq domainType
         return when (lastChannelId) {
             null -> WebhookSubscribeChannelEntity.find { op }
             else -> WebhookSubscribeChannelEntity
@@ -135,6 +124,9 @@ class WebhookManageService {
             .toList()
     }
 
+    /**
+     * 람다 (sendDataDescription, sendDataSeq) 리턴
+     */
     @Transactional(noRollbackFor = [Throwable::class])
     suspend fun executeWithLog(
         data: WebhookSubscribeChannelEntity,
@@ -144,8 +136,8 @@ class WebhookManageService {
 
         val seq = WebhookNotifySendLogs.insertAndGetId {
             it[WebhookNotifySendLogs.domainType] = data.domainType
-            it[WebhookNotifySendLogs.channelId] = channelId
-            it[WebhookNotifySendLogs.guildId] = guildId
+            it[WebhookNotifySendLogs.channelId] = data.channelId
+            it[WebhookNotifySendLogs.guildId] = data.guildId
             it[WebhookNotifySendLogs.phase] = WebhookNotifyPhase.INIT
             it[WebhookNotifySendLogs.exception] = null
             it[WebhookNotifySendLogs.sendDate] = LocalDateTime.now()

@@ -9,6 +9,7 @@ import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNotNull
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 import org.jetbrains.exposed.sql.and
@@ -62,6 +63,17 @@ class F1NewsRepo {
             desc = false,
             F1News.contentSummary.isNull()
         )
+    }
+
+    fun findAllWithSummary(lastNewsId: Long?): List<F1NewsEntity> {
+        return findAll(
+            size = 10,
+            page = 1,
+            desc = true,
+
+            F1News.id.greater(lastNewsId ?: -1),
+            F1News.contentSummary.isNotNull(),
+        ).asReversed()
     }
 
     fun findAllWithSummary(
