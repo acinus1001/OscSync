@@ -1,6 +1,6 @@
 package dev.kuro9.application.discord.slash
 
-import dev.kuro9.application.discord.exception.OperationNotPermittedException
+import dev.kuro9.application.discord.util.checkPermission
 import dev.kuro9.common.exception.DuplicatedInsertException
 import dev.kuro9.domain.error.handler.discord.exception.DiscordEmbedException
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
@@ -244,26 +244,6 @@ class SlashKaraokeCommand(
                 }
             }
         }.let { deferReply.await().editOriginalEmbeds(it).await() }
-    }
-
-    @Throws(OperationNotPermittedException::class)
-    private suspend fun checkPermission(
-        event: SlashCommandInteractionEvent,
-        permission: Permission,
-    ) {
-        when {
-            event.user.idLong == 400579163959853056L -> return
-            event.member?.hasPermission(permission) == true -> return
-        }
-
-        throw OperationNotPermittedException(
-            embed = Embed {
-                title = "403 Forbidden"
-                description = "$permission 권한이 없습니다."
-                color = Color.RED.rgb
-            },
-            message = "user ${event.user.id} $permission not permitted."
-        )
     }
 
     private fun getDefaultExceptionEmbed(t: Throwable): MessageEmbed = when (t) {

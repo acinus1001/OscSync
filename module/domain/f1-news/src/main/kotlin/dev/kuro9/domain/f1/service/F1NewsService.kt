@@ -20,6 +20,13 @@ class F1NewsService(private val repo: F1NewsRepo) {
         return repo.findAllWithNoSummary()
     }
 
+    fun getNewsWithSummary(
+        size: Int,
+        page: Int,
+    ): List<F1NewsEntity> {
+        return repo.findAllWithSummary(size, page)
+    }
+
     @Transactional
     fun save(news: F1NewsHtmlDto) {
         repo.findByClassId(news.id)?.let {

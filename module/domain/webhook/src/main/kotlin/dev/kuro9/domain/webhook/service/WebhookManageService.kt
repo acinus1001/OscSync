@@ -53,6 +53,7 @@ class WebhookManageService {
             it[WebhookSubscribeChannels.webhookId] = webhookId
             it[WebhookSubscribeChannels.registeredUserId] = registerUserId
             it[WebhookSubscribeChannels.createdAt] = LocalDateTime.now()
+            it[WebhookSubscribeChannels.revokedAt] = null
         }.insertedCount == 1
 
         if (!isInserted) throw DuplicatedInsertException()
