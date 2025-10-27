@@ -1,12 +1,12 @@
 package dev.kuro9.domain.webhook.repository.table
 
 import dev.kuro9.domain.webhook.enums.WebhookDomainType
-import org.jetbrains.exposed.dao.CompositeEntity
-import org.jetbrains.exposed.dao.CompositeEntityClass
-import org.jetbrains.exposed.dao.id.CompositeID
-import org.jetbrains.exposed.dao.id.CompositeIdTable
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.kotlin.datetime.datetime
+import org.jetbrains.exposed.v1.core.dao.id.CompositeID
+import org.jetbrains.exposed.v1.core.dao.id.CompositeIdTable
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.dao.CompositeEntity
+import org.jetbrains.exposed.v1.dao.CompositeEntityClass
+import org.jetbrains.exposed.v1.datetime.datetime
 
 object WebhookSubscribeChannels : CompositeIdTable("webhook_subscribe_channel") {
     val domainType = enumerationByName<WebhookDomainType>("domain_type", 20)

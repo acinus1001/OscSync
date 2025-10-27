@@ -6,13 +6,7 @@ import dev.kuro9.multiplatform.common.date.util.now
 import dev.kuro9.multiplatform.common.date.util.toDateTimeRange
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNotNull
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
-import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.v1.core.*
 import org.springframework.stereotype.Repository
 
 @Repository
