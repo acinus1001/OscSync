@@ -1,6 +1,7 @@
 package dev.kuro9.application.batch.f1.news.job
 
 import com.navercorp.spring.batch.plus.kotlin.configuration.BatchDsl
+import com.navercorp.spring.batch.plus.kotlin.configuration.StepTransitionBuilderDsl
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemProcessor
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamReader
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamWriter
@@ -35,19 +36,17 @@ class F1NewsParseBatchConfig(
                 on(ExitStatus.COMPLETED.exitCode) {
                     stepBean("f1NewsSummaryStep") {
                         on(ExitStatus.COMPLETED.exitCode) {
-                            stepBean("f1NewsWebhookStep")
-                            end()
+                            stepBean("f1NewsWebhookStep") {
+                                on(ExitStatus.COMPLETED.exitCode) {
+                                    end()
+                                }
+                                handleError()
+                            }
                         }
-                        on(ExitStatus.FAILED.exitCode) {
-                            stepBean("batchFailureNotifyStep")
-                            fail()
-                        }
+                        handleError()
                     }
                 }
-                on(ExitStatus.FAILED.exitCode) {
-                    stepBean("batchFailureNotifyStep")
-                    fail()
-                }
+                handleError()
             }
         }
     }
@@ -113,6 +112,17 @@ class F1NewsParseBatchConfig(
                     exception
                 )
             }
+        }
+    }
+
+    private fun <T : Any> StepTransitionBuilderDsl<T>.handleError() {
+        on(ExitStatus.FAILED.exitCode) {
+            stepBean("batchFailureNotifyStep")
+            fail()
+        }
+        on(ExitStatus.UNKNOWN.exitCode) {
+            stepBean("batchFailureNotifyStep")
+            fail()
         }
     }
 }
