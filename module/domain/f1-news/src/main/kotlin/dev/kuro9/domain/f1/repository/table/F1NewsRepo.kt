@@ -1,12 +1,14 @@
 package dev.kuro9.domain.f1.repository.table
 
 import dev.kuro9.domain.database.between
+import dev.kuro9.domain.database.exists
 import dev.kuro9.domain.f1.dto.F1NewsHtmlDto
 import dev.kuro9.multiplatform.common.date.util.now
 import dev.kuro9.multiplatform.common.date.util.toDateTimeRange
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.select
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -32,8 +34,10 @@ class F1NewsRepo {
         return F1NewsEntity.findById(id)
     }
 
-    fun findByClassId(classId: String): F1NewsEntity? {
-        return F1NewsEntity.find(F1News.classId eq classId).limit(1).firstOrNull()
+    fun existsByTitle(title: String): Boolean {
+        return F1News.select(intLiteral(1))
+            .where { F1News.title eq title }
+            .exists()
     }
 
     fun findAll(
