@@ -1,6 +1,7 @@
 package dev.kuro9.application.batch.discord.dto
 
 import dev.kuro9.application.batch.discord.dto.DiscordEmbed.Field
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -12,6 +13,7 @@ data class DiscordEmbed(
     val fields: List<Field> = emptyList(),
     val image: Image? = null,
     val footer: Footer? = null,
+    val timestamp: String? = null,
 ) {
     @Serializable
     data class Image(val url: String)
@@ -36,6 +38,7 @@ class DiscordEmbedBuilder {
     var description: String? = null
     var color: Int = 0x000000
     var image: String? = null
+    var timestamp: LocalDateTime? = null
 
     private var footer: DiscordEmbed.Footer? = null
     private val fields: MutableList<Field> = mutableListOf()
@@ -57,6 +60,7 @@ class DiscordEmbedBuilder {
         fields = fields,
         image = image?.let { DiscordEmbed.Image(it) },
         footer = footer,
+        timestamp = timestamp?.toString()?.let { "$it+09:00" }
     )
 
     @DiscordEmbedDsl
