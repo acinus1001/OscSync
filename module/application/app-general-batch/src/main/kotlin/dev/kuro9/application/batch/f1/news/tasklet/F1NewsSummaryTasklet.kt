@@ -57,7 +57,12 @@ class F1NewsSummaryTasklet(
                     systemInstruction = summaryInstruction,
                     input = origContent,
                 )
-                return news.copy(contentSummary = response.result)
+                return news.copy(
+                    contentSummary = when (response.result.length) {
+                        in 0..700 -> response.result
+                        else -> response.result.take(700) + "..."
+                    }
+                )
             } catch (e: Exception) {
                 error(e) { "Failed to get AI response. attempt: $attempt, error: ${e.message}" }
                 lastException = e
