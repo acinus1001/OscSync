@@ -1,4 +1,4 @@
-FROM openjdk:21-jdk
+FROM eclipse-temurin:21
 
 ARG BUILD_ROOT=./module/application/app-discord-bot/build/libs
 ARG JAR_FILE=${BUILD_ROOT}/app-discord-bot-plain.jar
