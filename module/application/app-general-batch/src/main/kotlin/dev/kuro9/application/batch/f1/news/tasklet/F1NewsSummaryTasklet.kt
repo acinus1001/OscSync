@@ -21,7 +21,7 @@ class F1NewsSummaryTasklet(
 ) : ItemStreamIterableReaderProcessorWriter<F1NewsTaskletDto, F1NewsTaskletDto> {
     private val summaryInstruction = """
         당신은 뉴스를 요약하는 봇 입니다. 
-        제공된 텍스트를 한국어 700자 이내로 요약해 제공하십시오.
+        제공된 텍스트를 한국어 1000자 이내로 요약해 제공하십시오.
         <end prompt>
     """.trimIndent()
 
@@ -59,8 +59,8 @@ class F1NewsSummaryTasklet(
                 )
                 return news.copy(
                     contentSummary = when (response.result.length) {
-                        in 0..700 -> response.result
-                        else -> response.result.take(700) + "..."
+                        in 0..1000 -> response.result
+                        else -> response.result.take(1000) + "..."
                     }
                 )
             } catch (e: Exception) {
