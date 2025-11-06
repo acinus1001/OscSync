@@ -47,18 +47,20 @@ class F1NewsWebhookTesklet(
 
     override fun write(p0: Chunk<out F1NewsTargetWebhookDto>) {
         runBlocking {
-            for ((channel, newsList) in p0) {
-                webhookService.executeWithLog(channel) { _, _ ->
 
-                    for (payload in newsList.toWebhookPayload()) {
+            for ((channel, newsList) in p0) {
+
+                for (news in newsList) {
+                    webhookService.executeWithLog(channel) { _, _ ->
                         discordWebhookService.sendWebhookWithRetry(
                             channel.webhookUrl,
-                            payload
+                            news.toWebhookPayload()
                         )
+                        null to news.id
                     }
 
-                    null to newsList.last().id
                 }
+
             }
         }
 
@@ -86,5 +88,25 @@ class F1NewsWebhookTesklet(
                 embeds = listOf(embed),
             )
         }
+    }
+
+    private fun F1NewsDto.toWebhookPayload(): DiscordWebhookPayload {
+
+        val embed = Embed {
+            title = this@toWebhookPayload.title
+            description = this@toWebhookPayload.href
+            image = this@toWebhookPayload.imageUrl
+
+            Field {
+                name = "Content"
+                value = this@toWebhookPayload.contentSummary
+                inline = false
+            }
+        }
+
+        return DiscordWebhookPayload(
+            username = "KGB: F1 News Notify",
+            embeds = listOf(embed),
+        )
     }
 }
