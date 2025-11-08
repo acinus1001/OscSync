@@ -1,0 +1,19 @@
+spring:
+  profiles:
+    include:
+      - database
+
+management:
+  server:
+    port: 8080
+
+logging:
+  level:
+    root: info
+    com.zaxxer.hikari.pool.HikariPool: info
+    exposed: debug
+
+dev:
+  kuro9:
+    webhook:
+      url: ${DISCORD_ERROR_WEBHOOK}
