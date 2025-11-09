@@ -19,8 +19,8 @@ class StockFishService {
     suspend fun doMove(
         fen: String,
         move: String? = null,
-        afterUserMove: (suspend (move: String, nowFen: String) -> Unit)? = null,
-        afterEngineMove: suspend (move: String, nowFen: String) -> Unit = { _, _ -> },
+        afterUserMove: (suspend (move: String, prevFen: String, nowFen: String) -> Unit)? = null,
+        afterEngineMove: suspend (move: String, prevFen: String, nowFen: String) -> Unit = { _, _, _ -> },
         callbackFailureHandler: CoroutineExceptionHandler = CoroutineExceptionHandler { _, e -> error(e) { "exception in callback" } },
         movetimeMs: Int = 500,
         elo: Int = 200
@@ -75,7 +75,7 @@ class StockFishService {
                 info { "fenLine: $fenLine" }
 
                 CoroutineScope(callbackLaunchContext).launch(callbackFailureHandler) {
-                    afterUserMove?.invoke(move, fenLine)
+                    afterUserMove?.invoke(move, fen, fenLine)
                 }.let { jobs.add(it) }
 
 
@@ -121,7 +121,7 @@ class StockFishService {
         proc.waitFor(1, TimeUnit.SECONDS)
 
         CoroutineScope(callbackLaunchContext).launch(callbackFailureHandler) {
-            afterEngineMove(bestMove, fenLine)
+            afterEngineMove(bestMove, afterMoveFen, fenLine)
         }.let { jobs.add(it) }
 
         jobs.joinAll()
