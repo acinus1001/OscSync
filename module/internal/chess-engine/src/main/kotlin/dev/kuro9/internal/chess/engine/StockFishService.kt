@@ -3,6 +3,7 @@ package dev.kuro9.internal.chess.engine
 import io.github.harryjhin.slf4j.extension.error
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.*
+import org.springframework.core.io.ResourceLoader
 import org.springframework.stereotype.Service
 import java.io.InputStream
 import java.nio.file.Files
@@ -11,7 +12,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 
 @Service
-class StockFishService {
+class StockFishService(private val resourceLoader: ResourceLoader) {
 
     private val stockfishPath: String by lazy { extractStockfishBinary() }
     private val callbackLaunchContext = Dispatchers.IO + CoroutineName("StockfishCallback")
@@ -145,7 +146,9 @@ class StockFishService {
         val resourcePath = "engines/${os}-${arch}/" +
                 if (os == "windows") "stockfish.exe" else "stockfish"
 
-        val inputStream: InputStream = this::class.java.classLoader.getResourceAsStream(resourcePath)
+        resourceLoader.getResource("classpath:${resourcePath}")
+
+        val inputStream: InputStream = resourceLoader.getResource("classpath:${resourcePath}").inputStream
             ?: throw IllegalStateException("Stockfish binary not found in resources: $resourcePath")
 
         // 임시 파일 생성 (OS별로 실행 가능하도록)
