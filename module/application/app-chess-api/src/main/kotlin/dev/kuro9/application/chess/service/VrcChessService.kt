@@ -93,6 +93,25 @@ class VrcChessService(
         ).bestMove
     }
 
+    @Transactional(rollbackFor = [Exception::class])
+    suspend fun closeAllGame(userIp: String) {
+        chessStateService.endAllGame(ChessPlayerInfo.User.fromIp(userIp))
+    }
+
+    @Transactional(readOnly = true)
+    suspend fun getNowPgn(userIp: String): String? {
+        val nowGame = chessStateService.getPlaying(ChessPlayerInfo.User.fromIp(userIp)) ?: return null
+
+        val gameLogs = chessStateService.getAllGameLog(nowGame.id.value)
+
+        return gameLogs
+            .chunked(2)
+            .withIndex()
+            .joinToString(" ") { (index, logs) ->
+                "${index + 1}. ${logs.first().pgn}${logs.getOrNull(1)?.let { " ${it.pgn}" } ?: ""}"
+            }
+    }
+
     private fun getMoveSan(fenBefore: String, fenAfter: String): String {
         fun parseBoard(fen: String): Array<CharArray> {
             val board = Array(8) { CharArray(8) }
@@ -107,29 +126,58 @@ class VrcChessService(
             return board
         }
 
-        fun sqToStr(r: Int, c: Int): String = "${'a' + c}${8 - r}"
-
         val before = parseBoard(fenBefore)
         val after = parseBoard(fenAfter)
 
-        var from: Pair<Int, Int>? = null
-        var to: Pair<Int, Int>? = null
-        var movedPiece = ' '
-
-        // 1️⃣ 변경된 칸 탐색
+        val changes = mutableListOf<Triple<Int, Int, Char>>() // (row, col, piece)
         for (r in 0 until 8) {
             for (c in 0 until 8) {
                 val b = before[r][c]
                 val a = after[r][c]
-                if (b != a) {
-                    // 이동한 기물
-                    if (b != '.' && (a == '.' || b.isUpperCase() != a.isUpperCase())) {
-                        from = r to c
-                        movedPiece = b
+                if (b != a) changes.add(Triple(r, c, b))
+            }
+        }
+
+        // 🩵 Step 1: 킹 이동 우선 탐지
+        var from: Pair<Int, Int>? = null
+        var to: Pair<Int, Int>? = null
+        var movedPiece = ' '
+
+        // 먼저 킹 이동이 있는지 확인
+        run breaking@{
+            for ((r, c, b) in changes) {
+                if (b.uppercaseChar() == 'K') {
+                    from = r to c
+                    movedPiece = b
+                    // 이동 후 위치 찾기
+                    for (rr in 0 until 8) {
+                        for (cc in 0 until 8) {
+                            if (after[rr][cc] == b) {
+                                if (rr != r || cc != c) {
+                                    to = rr to cc
+                                    return@breaking
+                                }
+                            }
+                        }
                     }
-                    // 도착한 칸
-                    if (a != '.' && (b == '.' || b.isUpperCase() != a.isUpperCase())) {
-                        to = r to c
+                }
+            }
+        }
+
+        // 킹 이동이 없었다면 기존 방식으로 탐지
+        if (from == null || to == null) {
+            for (r in 0 until 8) {
+                for (c in 0 until 8) {
+                    val b = before[r][c]
+                    val a = after[r][c]
+                    if (b != a) {
+                        if (b != '.' && (a == '.' || b.isUpperCase() != a.isUpperCase())) {
+                            from = r to c
+                            movedPiece = b
+                        }
+                        if (a != '.' && (b == '.' || b.isUpperCase() != a.isUpperCase())) {
+                            to = r to c
+                        }
                     }
                 }
             }
@@ -155,26 +203,53 @@ class VrcChessService(
             else -> ""
         }
 
-        // 2️⃣ 캐슬링 감지
-        if (movedPiece.uppercaseChar() == 'K' && kotlin.math.abs(toC - fromC) == 2) {
-            return if (toC > fromC) "O-O" else "O-O-O"
+        // 2️⃣ 캐슬링 감지 (킹 기준으로만)
+        if (movedPiece.uppercaseChar() == 'K') {
+            val isWhite = movedPiece.isUpperCase()
+            val row = if (isWhite) 7 else 0
+
+            // 킹사이드 캐슬링
+            if (fromC == 4 && toC == 6 &&
+                before[row][7].uppercaseChar() == 'R' &&
+                after[row][5].uppercaseChar() == 'R'
+            ) return "O-O"
+
+            // 퀸사이드 캐슬링
+            if (fromC == 4 && toC == 2 &&
+                before[row][0].uppercaseChar() == 'R' &&
+                after[row][3].uppercaseChar() == 'R'
+            ) return "O-O-O"
         }
 
-        // 3️⃣ 캡처 감지
-        val isCapture = before[toR][toC] != '.' && before[toR][toC].isUpperCase() != movedPiece.isUpperCase()
-
-        // 4️⃣ 프로모션 감지
+        // 3️⃣ 캡처 / 앙파상 / 프로모션 등 (이전 버전 그대로)
         val isWhite = movedPiece.isUpperCase()
+        val dir = if (isWhite) -1 else 1
+
+        var isEnPassant = false
+        if (movedPiece.uppercaseChar() == 'P') {
+            if (before[toR][toC] == '.' && fromC != toC) {
+                val capturedR = toR - dir
+                if (capturedR in 0..7 &&
+                    before[capturedR][toC].uppercaseChar() == 'P' &&
+                    after[capturedR][toC] == '.'
+                ) {
+                    isEnPassant = true
+                }
+            }
+        }
+
+        val isCapture = isEnPassant ||
+                (before[toR][toC] != '.' && before[toR][toC].isUpperCase() != movedPiece.isUpperCase())
+
         val isPromotion = movedPiece.uppercaseChar() == 'P' &&
                 ((isWhite && toR == 0) || (!isWhite && toR == 7))
 
         val promotedPiece = if (isPromotion) {
             val bPieces = after[toR][toC]
             if (bPieces.uppercaseChar() != 'P') bPieces.uppercaseChar().toString()
-            else "Q" // 기본값
+            else "Q"
         } else ""
 
-        // 5️⃣ SAN 조합
         val san = buildString {
             append(pieceChar)
             if (isCapture && movedPiece.uppercaseChar() == 'P') append(fileFrom)
@@ -185,4 +260,6 @@ class VrcChessService(
 
         return san
     }
+
+
 }
