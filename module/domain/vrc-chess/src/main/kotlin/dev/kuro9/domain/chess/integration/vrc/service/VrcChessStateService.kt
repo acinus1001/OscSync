@@ -11,7 +11,6 @@ import dev.kuro9.domain.database.fetchFirstOrNull
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.*
-import org.jetbrains.exposed.v1.jdbc.SizedIterable
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
@@ -29,9 +28,11 @@ class VrcChessStateService {
             .exists()
     }
 
-    fun getPlaying(userIpHash: Int): SizedIterable<VrcChessGameEntity> {
+    fun getPlaying(user: ChessPlayerInfo.User): VrcChessGameEntity? {
 
-        return VrcChessGameEntity.find { getUserPlayingGameOp(userIpHash) }
+        return VrcChessGameEntity.find { getUserPlayingGameOp(user.ipHash) }
+            .limit(1)
+            .firstOrNull()
     }
 
     fun getPlayingFen(userIpHash: Int): String? {
@@ -51,10 +52,26 @@ class VrcChessStateService {
             .firstOrNull()
     }
 
+    fun getAllGameLog(gameId: Long): List<VrcChessGameLogEntity> {
+        return VrcChessGameLogEntity.find {
+            (VrcChessGameLogs.gameId eq gameId)
+                .and(VrcChessGameLogs.undoAt.isNull())
+        }
+            .orderBy(VrcChessGameLogs.id to SortOrder.ASC)
+            .toList()
+    }
+
     fun getBotGame(user: ChessPlayerInfo.User): VrcChessGameEntity? {
         return VrcChessGameEntity.find { getUserPlayingGameOp(user.ipHash) }
             .limit(1)
             .firstOrNull()
+    }
+
+    @Transactional(rollbackFor = [Exception::class])
+    fun endAllGame(user: ChessPlayerInfo.User) {
+        VrcChessGames.update(where = { getUserPlayingGameOp(user.ipHash) }) {
+            it[VrcChessGames.endedAt] = LocalDateTime.now()
+        }
     }
 
     /**

@@ -48,6 +48,21 @@ class VrcChessApiController(
         return ResponseEntity.ok(bestMove)
     }
 
+    @GetMapping("/pgn")
+    suspend fun getPgn(request: HttpServletRequest): ResponseEntity<String?> {
+        val ip = request.getRequestIp()
+
+        return ResponseEntity.ok(chessService.getNowPgn(ip))
+    }
+
+    @GetMapping("/end")
+    suspend fun endAllGame(
+        request: HttpServletRequest,
+    ) {
+        val ip = request.getRequestIp()
+        chessService.closeAllGame(ip)
+    }
+
     private fun HttpServletRequest.getRequestIp(): String {
         val request = this
         var ip: String? = request.getHeader("X-Forwarded-For")
