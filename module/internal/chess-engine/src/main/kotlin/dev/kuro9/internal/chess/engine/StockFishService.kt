@@ -1,5 +1,6 @@
 package dev.kuro9.internal.chess.engine
 
+import dev.kuro9.internal.chess.engine.utils.fenToBoardString
 import io.github.harryjhin.slf4j.extension.error
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.*
@@ -26,6 +27,8 @@ class StockFishService(private val resourceLoader: ResourceLoader) {
         movetimeMs: Int = 500,
         elo: Int = 200
     ): ChessMoveDto {
+        info { "initial Board\n${fenToBoardString(fen)}" }
+
         val proc = ProcessBuilder(stockfishPath)
             .redirectErrorStream(true)
             .start()
@@ -79,6 +82,7 @@ class StockFishService(private val resourceLoader: ResourceLoader) {
                     afterUserMove?.invoke(move, fen, fenLine)
                 }.let { jobs.add(it) }
 
+                info { "after user move Board\n${fenToBoardString(fenLine)}" }
 
                 fenLine
             }
@@ -124,6 +128,8 @@ class StockFishService(private val resourceLoader: ResourceLoader) {
         CoroutineScope(callbackLaunchContext).launch(callbackFailureHandler) {
             afterEngineMove(bestMove, afterMoveFen, fenLine)
         }.let { jobs.add(it) }
+
+        info { "after bot move Board\n${fenToBoardString(fenLine)}" }
 
         jobs.joinAll()
 
