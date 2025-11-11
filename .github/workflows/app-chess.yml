@@ -47,21 +47,21 @@ jobs:
         run: |
           wget -O stockfish-linux.tar https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-ubuntu-x86-64-avx2.tar
           tar -xf stockfish-linux.tar
-          mv stockfish*/stockfish $ENGINE_PATH_LINUX/stockfish
+          find . -type f -name "stockfish*" -executable | head -n 1 | xargs -I{} mv "{}" $ENGINE_PATH_LINUX/stockfish
 
       - name: Download Stockfish (Windows)
         if: ${{ github.event.inputs.invalidate_cache == 'true' || steps.cache-restore.outputs.cache-hit != 'true' }}
         run: |
           wget -O stockfish-windows.zip https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-windows-x86-64-avx2.zip
-          unzip stockfish-windows.zip
-          mv stockfish*/stockfish.exe $ENGINE_PATH_WINDOWS/stockfish.exe
+          unzip -q stockfish-windows.zip
+          find . -type f -name "stockfish*.exe" | head -n 1 | xargs -I{} mv "{}" $ENGINE_PATH_WINDOWS/stockfish.exe
 
       - name: Download Stockfish (Mac ARM)
         if: ${{ github.event.inputs.invalidate_cache == 'true' || steps.cache-restore.outputs.cache-hit != 'true' }}
         run: |
           wget -O stockfish-mac.tar https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-macos-m1-apple-silicon.tar
           tar -xf stockfish-mac.tar
-          mv stockfish*/stockfish $ENGINE_PATH_MAC/stockfish
+          find . -type f -name "stockfish*" -executable | head -n 1 | xargs -I{} mv "{}" $ENGINE_PATH_MAC/stockfish
 
       # ✅ invalidate_cache=true면 캐시 갱신
       - name: Save updated cache
