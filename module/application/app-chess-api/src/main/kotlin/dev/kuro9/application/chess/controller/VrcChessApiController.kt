@@ -2,6 +2,7 @@ package dev.kuro9.application.chess.controller
 
 import dev.kuro9.application.chess.service.VrcChessService
 import dev.kuro9.domain.chess.integration.vrc.enums.ChessTurn
+import io.github.harryjhin.slf4j.extension.info
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -42,6 +43,9 @@ class VrcChessApiController(
         @RequestParam move: String,
         request: HttpServletRequest,
     ): ResponseEntity<String> {
+        info { "move: $move" }
+        info { "userAgent: ${request.getHeader("User-Agent") ?: "null"}" }
+
         val ip = request.getRequestIp()
 
         val bestMove = chessService.doMove(
