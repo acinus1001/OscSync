@@ -17,8 +17,8 @@ object F1News : LongIdTable("f1_news") {
     val createdAt = datetime("created_at")
 
     init {
-        index(isUnique = false, classId) // 신뢰하기는 좀 그래서 non-unique로..
         index(isUnique = false, createdAt)
+        index(isUnique = false, path)
     }
 }
 
