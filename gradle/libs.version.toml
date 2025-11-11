@@ -121,7 +121,7 @@ slf4j-api-extensions = { module = "io.github.harryjhin:slf4j-api-extensions", ve
 
 
 [bundles]
-exposed = ["exposed-core", "exposed-dao", "exposed-kotlin-datetime", "exposed-json", "exposed-spring-boot-starter", "exposed-spring-transaction", "kotlinx-datetime"]
+exposed = ["exposed-core", "exposed-dao", "exposed-kotlin-datetime", "exposed-json", "exposed-spring-boot-starter", "exposed-spring-transaction", "exposed-crypt", "kotlinx-datetime"]
 jda = ["jda-core", "jda-kotlin-extension"]
 koin = ["koin-core", "koin-compose", "koin-compose-viewmodel", "koin-compose-navigation"]
 orbit-mvi = ["orbit-mvi-core", "orbit-mvi-compose", "orbit-mvi-viewmodel"]
