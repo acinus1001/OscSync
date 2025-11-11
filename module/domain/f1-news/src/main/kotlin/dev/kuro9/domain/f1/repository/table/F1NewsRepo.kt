@@ -34,9 +34,9 @@ class F1NewsRepo {
         return F1NewsEntity.findById(id)
     }
 
-    fun existsByTitle(title: String): Boolean {
+    fun existsByPath(path: String): Boolean {
         return F1News.select(intLiteral(1))
-            .where { F1News.title eq title }
+            .where { F1News.path eq path }
             .exists()
     }
 

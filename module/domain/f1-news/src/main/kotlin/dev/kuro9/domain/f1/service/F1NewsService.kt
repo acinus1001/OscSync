@@ -37,9 +37,9 @@ class F1NewsService(private val repo: F1NewsRepo) {
 
     @Transactional
     fun save(news: F1NewsHtmlDto) {
-        val isExists = repo.existsByTitle(news.title)
+        val isExists = repo.existsByPath(news.path)
         if (isExists) {
-            info { "news already exists: ${news.title}" }
+            info { "news already exists: ${news.path}" }
             return
         }
 
