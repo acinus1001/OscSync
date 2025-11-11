@@ -59,7 +59,7 @@ jobs:
         if: ${{ github.event.inputs.invalidate_cache == 'true' || steps.cache-restore.outputs.cache-hit != 'true' }}
         run: |
           wget -O .cache/stockfish/stockfish-windows.zip https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-windows-x86-64-avx2.zip
-          unzip -q .cache/stockfish/stockfish-windows.zip -d .cache/stockfish
+          unzip -o -q .cache/stockfish/stockfish-windows.zip -d .cache/stockfish
           FILE=$(find .cache/stockfish -type f -name "stockfish*.exe" | head -n 1)
           echo "Found Windows engine: $FILE"
           mv "$FILE" $ENGINE_PATH_WINDOWS/stockfish.exe
