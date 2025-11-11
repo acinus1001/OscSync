@@ -6,21 +6,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-               -
+
+    steps:
+
+
       # 7️⃣ JDK 설정
-               - name: Set up JDK 21
-               uses: actions/setup-java@v4
-               with:
-                 java-version: 21
-                 distribution: temurin
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
 
       # 8️⃣ Gradle 빌드
-               - name: Build bootJar
-                 run: ./gradlew :module:application:app-chess-api:bootJar
+      - name: Build bootJar
+        run: ./gradlew :module:application:app-chess-api:bootJar
 
       # 9️⃣ 아티팩트 업로드
-               - name: Upload artifact
-                 uses: actions/upload-artifact@v4
-                 with:
-                   name: app-chess-api
-                   path: module/application/app-chess-api/build/libs/*.jar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-chess-api
+          path: module/application/app-chess-api/build/libs/*.jar
