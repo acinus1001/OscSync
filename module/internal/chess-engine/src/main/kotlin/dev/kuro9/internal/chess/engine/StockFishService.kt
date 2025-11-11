@@ -15,7 +15,7 @@ import kotlin.properties.Delegates
 @Service
 class StockFishService(private val resourceLoader: ResourceLoader) {
 
-    private val stockfishPath: String by lazy { extractStockfishBinary() }
+    private val stockfishPath: String = extractStockfishBinary()
     private val callbackLaunchContext = Dispatchers.IO + CoroutineName("StockfishCallback")
 
     suspend fun doMove(
@@ -152,9 +152,8 @@ class StockFishService(private val resourceLoader: ResourceLoader) {
         val resourcePath = "engines/${os}-${arch}/" +
                 if (os == "windows") "stockfish.exe" else "stockfish"
 
-        resourceLoader.getResource("classpath:${resourcePath}")
-
-        val inputStream: InputStream = resourceLoader.getResource("classpath:${resourcePath}").inputStream
+        val inputStream: InputStream = resourceLoader.getResource("file:./").takeIf { it.exists() }?.inputStream
+            ?: resourceLoader.getResource("classpath:${resourcePath}").takeIf { it.exists() }?.inputStream
             ?: throw IllegalStateException("Stockfish binary not found in resources: $resourcePath")
 
         // 임시 파일 생성 (OS별로 실행 가능하도록)

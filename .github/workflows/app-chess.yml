@@ -2,89 +2,13 @@ name: app-chess-vrc
 
 on:
   workflow_dispatch:
-    inputs:
-      invalidate_cache:
-        description: "StockFish File Cache Invalidate"
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      ENGINE_PATH_LINUX: module/internal/chess-engine/src/main/resources/engines/linux-x64
-      ENGINE_PATH_WINDOWS: module/internal/chess-engine/src/main/resources/engines/windows-x64
-      ENGINE_PATH_MAC: module/internal/chess-engine/src/main/resources/engines/mac-arm
-      CACHE_KEY: stockfish-cache-stable
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      # 1️⃣ 캐시 복원 (invalidate=false일 때만)
-      - name: Restore Stockfish cache
-        id: cache-restore
-        if: ${{ github.event.inputs.invalidate_cache != 'true' }}
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.ENGINE_PATH_LINUX }}
-            ${{ env.ENGINE_PATH_WINDOWS }}
-            ${{ env.ENGINE_PATH_MAC }}
-          key: ${{ env.CACHE_KEY }}
-
-      # 2️⃣ 리소스 디렉토리 생성
-      - name: Create engine directories
-        run: |
-          mkdir -p $ENGINE_PATH_LINUX
-          mkdir -p $ENGINE_PATH_WINDOWS
-          mkdir -p $ENGINE_PATH_MAC
-          mkdir -p .cache/stockfish
-
-      # 3️⃣ Linux Stockfish 다운로드
-      - name: Download Stockfish (Linux x64)
-        if: ${{ github.event.inputs.invalidate_cache == 'true' || steps.cache-restore.outputs.cache-hit != 'true' }}
-        run: |
-          wget -O .cache/stockfish/stockfish-linux.tar https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-ubuntu-x86-64-avx2.tar
-          tar -xf .cache/stockfish/stockfish-linux.tar -C .cache/stockfish
-          FILE=$(find .cache/stockfish -type f -name "stockfish*" -executable | head -n 1)
-          echo "Found Linux engine: $FILE"
-          mv "$FILE" $ENGINE_PATH_LINUX/stockfish
-          chmod +x $ENGINE_PATH_LINUX/stockfish
-
-      # 4️⃣ Windows Stockfish 다운로드
-      - name: Download Stockfish (Windows x64)
-        if: ${{ github.event.inputs.invalidate_cache == 'true' || steps.cache-restore.outputs.cache-hit != 'true' }}
-        run: |
-          wget -O .cache/stockfish/stockfish-windows.zip https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-windows-x86-64-avx2.zip
-          unzip -o -q .cache/stockfish/stockfish-windows.zip -d .cache/stockfish
-          FILE=$(find .cache/stockfish -type f -name "stockfish*.exe" | head -n 1)
-          echo "Found Windows engine: $FILE"
-          mv "$FILE" $ENGINE_PATH_WINDOWS/stockfish.exe
-
-      # 5️⃣ macOS Stockfish 다운로드
-      - name: Download Stockfish (Mac ARM)
-        if: ${{ github.event.inputs.invalidate_cache == 'true' || steps.cache-restore.outputs.cache-hit != 'true' }}
-        run: |
-          wget -O .cache/stockfish/stockfish-mac.tar https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-macos-m1-apple-silicon.tar
-          tar -xf .cache/stockfish/stockfish-mac.tar -C .cache/stockfish
-          FILE=$(find .cache/stockfish -type f -name "stockfish*" -executable | head -n 1)
-          echo "Found macOS engine: $FILE"
-          mv "$FILE" $ENGINE_PATH_MAC/stockfish
-          chmod +x $ENGINE_PATH_MAC/stockfish
-
-      # 6️⃣ invalidate_cache=true 시 캐시 갱신
-      - name: Save updated Stockfish cache
-        if: ${{ github.event.inputs.invalidate_cache == 'true' }}
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.ENGINE_PATH_LINUX }}
-            ${{ env.ENGINE_PATH_WINDOWS }}
-            ${{ env.ENGINE_PATH_MAC }}
-          key: ${{ env.CACHE_KEY }}
 
       # 7️⃣ JDK 설정
       - name: Set up JDK 21
