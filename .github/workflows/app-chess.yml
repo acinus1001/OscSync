@@ -17,6 +17,9 @@ jobs:
           java-version: 21
           distribution: temurin
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
       # 8️⃣ Gradle 빌드
       - name: Build bootJar
         run: ./gradlew :module:application:app-chess-api:bootJar
