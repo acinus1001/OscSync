@@ -1,4 +1,4 @@
-name: chess-server-build
+name: app-chess-vrc
 
 on:
   workflow_dispatch:
@@ -17,16 +17,46 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Download Stockfish Engine
+      - name: Prepare resource directories
         run: |
           mkdir -p module/internal/chess-engine/src/main/resources/engines/linux-x64
-          curl -L -o stockfish.tar \
+          mkdir -p module/internal/chess-engine/src/main/resources/engines/windows-x64
+          mkdir -p module/internal/chess-engine/src/main/resources/engines/mac-arm
+
+      # --- Linux (tar) ---
+      - name: Download Stockfish (Linux x64)
+        run: |
+          curl -L -o stockfish-linux.tar \
             https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-ubuntu-x86-64-avx2.tar
-          tar -xf stockfish.tar
-          STOCKFISH_FILE=$(find . -type f -name "stockfish*" -executable | head -n 1)
-          echo "Found engine: $STOCKFISH_FILE"
-          mv "$STOCKFISH_FILE" module/internal/chess-engine/src/main/resources/engines/linux-x64/stockfish
+          tar -xf stockfish-linux.tar
+          STOCKFISH_LINUX=$(find . -type f -name "stockfish*" -executable | head -n 1)
+          echo "Found Linux engine: $STOCKFISH_LINUX"
+          mv "$STOCKFISH_LINUX" module/internal/chess-engine/src/main/resources/engines/linux-x64/stockfish
           chmod +x module/internal/chess-engine/src/main/resources/engines/linux-x64/stockfish
+          rm -rf stockfish-linux.tar stockfish*
+
+      # --- Windows (zip) ---
+      - name: Download Stockfish (Windows x64)
+        run: |
+          curl -L -o stockfish-windows.zip \
+            https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-windows-x86-64-avx2.zip
+          unzip -q stockfish-windows.zip
+          STOCKFISH_WIN=$(find . -type f -iname "stockfish*.exe" | head -n 1)
+          echo "Found Windows engine: $STOCKFISH_WIN"
+          mv "$STOCKFISH_WIN" module/internal/chess-engine/src/main/resources/engines/windows-x64/stockfish.exe
+          rm -rf stockfish-windows.zip stockfish*
+
+      # --- macOS (Apple Silicon) ---
+      - name: Download Stockfish (macOS arm64)
+        run: |
+          curl -L -o stockfish-macos.tar \
+            https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-macos-m1-apple-silicon.tar
+          tar -xf stockfish-macos.tar
+          STOCKFISH_MAC=$(find . -type f -name "stockfish*" -executable | head -n 1)
+          echo "Found macOS engine: $STOCKFISH_MAC"
+          mv "$STOCKFISH_MAC" module/internal/chess-engine/src/main/resources/engines/mac-arm/stockfish
+          chmod +x module/internal/chess-engine/src/main/resources/engines/mac-arm/stockfish
+          rm -rf stockfish-macos.tar stockfish*
 
       - name: Build bootJar
         run: ./gradlew :module:application:app-chess-api:bootJar
