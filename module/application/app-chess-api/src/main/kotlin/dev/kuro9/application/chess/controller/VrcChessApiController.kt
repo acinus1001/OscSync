@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * 체스 게임 구동 위한 컨트롤러.
+ * 게임 내 제약조건으로 컴파일 타임 url, GET 메소드만 지원하므로 수정 시 유의.
+ */
 @RestController
 @RequestMapping("/chess")
 class VrcChessApiController(
