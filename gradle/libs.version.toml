@@ -1,6 +1,7 @@
 [versions]
 kotlin = "2.2.21"
 kotlinx-coroutines = "1.10.1"
+kotlinx-serialization = "1.9.0"
 spring = "3.5.6"
 retrofit2 = "2.11.0"
 exposed = "1.0.0-rc-2"
@@ -45,12 +46,15 @@ spring-boot-starter-oauth2-client = { module = "org.springframework.boot:spring-
 spring-boot-starter-aop = { module = "org.springframework.boot:spring-boot-starter-aop", version.ref = "spring" }
 spring-boot-starter-batch = { module = "org.springframework.boot:spring-boot-starter-batch", version.ref = "spring" }
 spring-boot-starter-cache = { module = "org.springframework.boot:spring-boot-starter-cache", version.ref = "spring" }
+spring-boot-starter-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis", version.ref = "spring" }
 
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-core-js = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-js", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinx-coroutines" }
-kotlin-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.8.0" }
+kotlin-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
+kotlin-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlin-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinx-serialization" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.6.2" }
 
 ktor-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
