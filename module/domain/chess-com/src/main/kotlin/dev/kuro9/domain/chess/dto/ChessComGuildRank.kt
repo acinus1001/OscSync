@@ -4,7 +4,7 @@ import dev.kuro9.domain.chess.enums.EloType
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ChessComUserRank(
+data class ChessComGuildRank(
     val guildId: Long,
     val eloType: EloType,
     val rankList: List<UserInfo>, // 정렬된 상태

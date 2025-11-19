@@ -5,11 +5,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ChessComUserStat(
-    @SerialName("chess_daily") val chessDaily: ChessGameStat = ChessGameStat(),
-    @SerialName("chess960_daily") val chess960Daily: ChessGameStat = ChessGameStat(),
-    @SerialName("chess_rapid") val chessRapid: ChessGameStat = ChessGameStat(),
-    @SerialName("chess_bullet") val chessBullet: ChessGameStat = ChessGameStat(),
-    @SerialName("chess_blitz") val chessBlitz: ChessGameStat = ChessGameStat(),
+    @SerialName("chess_daily") val chessDaily: ChessGameStat? = ChessGameStat(),
+    @SerialName("chess960_daily") val chess960Daily: ChessGameStat? = ChessGameStat(),
+    @SerialName("chess_rapid") val chessRapid: ChessGameStat? = ChessGameStat(),
+    @SerialName("chess_bullet") val chessBullet: ChessGameStat? = ChessGameStat(),
+    @SerialName("chess_blitz") val chessBlitz: ChessGameStat? = ChessGameStat(),
     val fide: Int = 0,
     val tactics: TacticsStat? = null,
     @SerialName("puzzle_rush") val puzzleRush: PuzzleRushStat = PuzzleRushStat()

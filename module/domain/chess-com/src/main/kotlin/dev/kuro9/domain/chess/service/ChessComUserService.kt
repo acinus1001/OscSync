@@ -1,20 +1,21 @@
 package dev.kuro9.domain.chess.service
 
-import dev.kuro9.domain.chess.dto.ChessComUserRank
+import dev.kuro9.domain.chess.dto.ChessComGuildRank
 import dev.kuro9.domain.chess.enums.EloType
 import dev.kuro9.domain.chess.repository.table.ChessComEloHistories
 import dev.kuro9.domain.chess.repository.table.ChessComUserEntity
 import dev.kuro9.domain.chess.repository.table.ChessComUsers
+import dev.kuro9.domain.database.between
 import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.date.util.toDateTimeRange
+import dev.kuro9.multiplatform.common.date.util.toList
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.alias
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.insert
-import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.upsert
+import org.jetbrains.exposed.v1.jdbc.*
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -65,7 +66,7 @@ class ChessComUserService {
     fun getRank(
         guildId: Long,
         eloType: EloType,
-    ): ChessComUserRank {
+    ): ChessComGuildRank {
         val latestHistory = ChessComEloHistories
             .select(
                 ChessComEloHistories.userId,
@@ -90,7 +91,7 @@ class ChessComUserService {
             .where { ChessComUsers.guildId eq guildId }
             .orderBy(ChessComEloHistories.elo to SortOrder.DESC)
             .mapIndexed { index, row ->
-                ChessComUserRank.UserInfo(
+                ChessComGuildRank.UserInfo(
                     userId = row[ChessComUsers.userId].value,
                     chessComUserName = row[ChessComUsers.username],
                     chessUserUrl = row[ChessComUsers.userProfileUrl],
@@ -99,10 +100,42 @@ class ChessComUserService {
                 )
             }
 
-        return ChessComUserRank(
+        return ChessComGuildRank(
             guildId = guildId,
             eloType = eloType,
             rankList = rankList,
         )
     }
+
+    fun getEloTimeline(
+        userId: Long,
+        eloType: EloType,
+        dateRange: ClosedRange<LocalDate>,
+    ): List<Pair<LocalDate, Int>> {
+        val eloDateMap = ChessComEloHistories
+            .select(
+                ChessComEloHistories.userId,
+                ChessComEloHistories.createdAt,
+                ChessComEloHistories.elo
+            )
+            .where { ChessComEloHistories.userId eq userId }
+            .andWhere { ChessComEloHistories.eloType eq eloType }
+            .andWhere { ChessComEloHistories.createdAt between dateRange.toDateTimeRange() }
+            .orderBy(
+                ChessComEloHistories.userId to SortOrder.ASC,
+                ChessComEloHistories.createdAt to SortOrder.DESC,
+            )
+            .groupBy { row -> row[ChessComEloHistories.createdAt].date }
+            .mapValues { (_, rows) ->
+                rows.maxBy { it[ChessComEloHistories.createdAt] }[ChessComEloHistories.elo]
+            }
+
+        // Map에서 기록 없으면 기록 있는 가장 최근 점수 가져옴
+        var lastElo = 0
+        return dateRange.toList().map { date: LocalDate ->
+            date to (eloDateMap[date]?.also { lastElo = it } ?: lastElo)
+        }
+
+    }
+
 }
