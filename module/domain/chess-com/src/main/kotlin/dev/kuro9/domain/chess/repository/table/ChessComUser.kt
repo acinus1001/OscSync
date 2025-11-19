@@ -21,6 +21,7 @@ object ChessComUsers : IdTable<Long>("chess_com_user") {
     override val id: Column<EntityID<Long>> = userId
 
     init {
+        uniqueIndex(userId)
         index(isUnique = false, guildId)
     }
 }

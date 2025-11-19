@@ -5,6 +5,7 @@ spring:
       - member
       - discord
       - database
+      - redis
 
 management:
   server:

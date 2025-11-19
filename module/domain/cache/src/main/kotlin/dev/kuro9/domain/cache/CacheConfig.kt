@@ -25,12 +25,6 @@ import kotlin.time.toJavaDuration
 class CacheConfig {
 
     @Bean
-    @ConditionalOnMissingBean
-    fun cacheManager(): CacheManager {
-        return ConcurrentMapCacheManager()
-    }
-
-    @Bean
     fun redisCacheManager(
         connectionFactory: RedisConnectionFactory,
         redisCacheCustomizer: RedisCacheManagerBuilderCustomizer
@@ -49,9 +43,20 @@ class CacheConfig {
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    fun cacheManager(): CacheManager {
+        return ConcurrentMapCacheManager()
+    }
+
+    @Bean
     fun redisCacheCustomizer(): RedisCacheManagerBuilderCustomizer {
         return RedisCacheManagerBuilderCustomizer { builder ->
 //            builder.withCacheConfiguration("example", typedCacheConfiguration<String>())
+            builder.withCacheConfiguration("cache-discord-name", jdkCacheConfiguration(Duration.ZERO))
+
+            builder.withCacheConfiguration("smartapp-registered-devices", jdkCacheConfiguration(24.hours))
+            builder.withCacheConfiguration("ai-master-memory-list", jdkCacheConfiguration(10.minutes))
+            builder.withCacheConfiguration("ai-master-memory-list-w-i", jdkCacheConfiguration(10.minutes))
 
             builder.withCacheConfiguration("cache-1m", jdkCacheConfiguration(1.minutes))
             builder.withCacheConfiguration("cache-5m", jdkCacheConfiguration(5.minutes))

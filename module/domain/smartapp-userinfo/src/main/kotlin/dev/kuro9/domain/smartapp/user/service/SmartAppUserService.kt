@@ -159,7 +159,7 @@ class SmartAppUserService(
      * @return 삭제 row 존재 여부
      */
     @Transactional
-    @CacheEvict(cacheNames = ["smartapp-registered-devices"])
+    @CacheEvict(cacheNames = ["smartapp-registered-devices"], key = "#userId")
     suspend fun deleteDeviceByName(userId: Long, deviceName: String): Boolean {
         return (SmartAppUserDevices.userId eq userId)
             .and { SmartAppUserDevices.deviceName eq deviceName }
@@ -179,7 +179,7 @@ class SmartAppUserService(
             .singleOrNull()
     }
 
-    @Cacheable("smartapp-registered-devices")
+    @Cacheable("smartapp-registered-devices", key = "#userId")
     fun getRegisteredDevices(userId: Long): List<SmartAppUserDeviceEntity> {
         return SmartAppUserDeviceEntity
             .find { SmartAppUserDevices.userId eq userId }

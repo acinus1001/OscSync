@@ -25,7 +25,6 @@ class ChessComApiService {
         }
         install(Logging)
         install(Resources)
-        expectSuccess = true
 
         defaultRequest {
             url {
@@ -43,7 +42,7 @@ class ChessComApiService {
 
                 this@ChessComApiService.error { "Chess.com API Error: $errorBody" }
 
-                throw ChessApiFailureException(errorBody.code, errorBody.message)
+                throw ChessApiFailureException(response.status.value, errorBody.code, errorBody.message)
 
             }
         }

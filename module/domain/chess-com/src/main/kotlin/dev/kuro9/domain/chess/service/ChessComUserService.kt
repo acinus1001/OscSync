@@ -27,7 +27,7 @@ class ChessComUserService {
     @Transactional
     fun upsertUser(
         userId: Long,
-        guildId: Long,
+        guildId: Long?,
         chessUserName: String,
         chessUserUrl: String,
         chessProfilePic: String?,
@@ -43,6 +43,11 @@ class ChessComUserService {
             it[this.createdAt] = LocalDateTime.now()
             it[this.updatedAt] = LocalDateTime.now()
         }
+    }
+
+    @Transactional
+    fun deleteUser(userId: Long) {
+        ChessComUsers.deleteWhere { ChessComUsers.userId eq userId }
     }
 
     @Transactional
@@ -87,16 +92,21 @@ class ChessComUserService {
                 onColumn = ChessComUsers.userId,
                 otherColumn = latestHistory[ChessComEloHistories.userId]
             )
-            .selectAll()
+            .select(
+                ChessComUsers.userId,
+                ChessComUsers.username,
+                ChessComUsers.userProfileUrl,
+                latestHistory[ChessComEloHistories.elo],
+            )
             .where { ChessComUsers.guildId eq guildId }
-            .orderBy(ChessComEloHistories.elo to SortOrder.DESC)
+            .orderBy(latestHistory[ChessComEloHistories.elo] to SortOrder.DESC)
             .mapIndexed { index, row ->
                 ChessComGuildRank.UserInfo(
                     userId = row[ChessComUsers.userId].value,
                     chessComUserName = row[ChessComUsers.username],
                     chessUserUrl = row[ChessComUsers.userProfileUrl],
                     guildRank = index + 1,
-                    elo = row.getOrNull(ChessComEloHistories.elo) ?: 0,
+                    elo = row.getOrNull(latestHistory[ChessComEloHistories.elo]) ?: 0,
                 )
             }
 
