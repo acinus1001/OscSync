@@ -15,10 +15,7 @@ import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.*
 import dev.minn.jda.ktx.messages.Embed
 import io.github.harryjhin.slf4j.extension.error
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
@@ -54,6 +51,13 @@ class SlashChessCommand(
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
         val deferReply: Deferred<InteractionHook> = CoroutineScope(Dispatchers.IO).async {
             event.deferReply().await()
+        }
+
+        withContext(Dispatchers.IO) {
+            // 미리 캐시에 저장
+            launch {
+                discordUserService.getUserName(event.user.idLong)
+            }
         }
 
         runCatching {
