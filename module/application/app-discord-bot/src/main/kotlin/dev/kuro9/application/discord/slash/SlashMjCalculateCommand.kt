@@ -43,6 +43,16 @@ class SlashMjCalculateCommand(
             option<String>("bakaze", "장풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
             option<String>("zikaze", "자풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
         }
+
+        subcommand("image", "손패 이미지를 생성합니다.") {
+            option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
+            option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
+            option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
+            option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+            option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+            option<String>("bakaze", "장풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+            option<String>("zikaze", "자풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+        }
     }
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
@@ -51,6 +61,7 @@ class SlashMjCalculateCommand(
         runCatching {
             when (event.subcommandName) {
                 "calculate" -> calculateScore(event, deferReply)
+                "image" -> generateImage(event, deferReply)
 
                 else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
             }
@@ -62,7 +73,7 @@ class SlashMjCalculateCommand(
 
     override suspend fun handleAutoComplete(event: CommandAutoCompleteInteractionEvent) {
         when (event.subcommandName) {
-            "calculate" -> handlePaiAutoComplete(event)
+            "calculate", "image" -> handlePaiAutoComplete(event)
             else -> return
         }
     }
@@ -183,6 +194,53 @@ class SlashMjCalculateCommand(
             }
         }
         deferReply.await().sendFiles(FileUpload.fromData(handImage.await(), "hand.png")).await()
+        deferReply.await().editOriginalEmbeds(resultEmbed).await()
+    }
+
+    private suspend fun generateImage(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+
+        val tehai = event.getOption("tehai")!!.asString
+        val tsumo = event.getOption("tsumo")?.asString
+        val ron = event.getOption("ron")?.asString
+        val huro = event.getOption("huro")?.asString
+        val ankang = event.getOption("ankang")?.asString
+        val bakaze = (event.getOption("bakaze")?.asString ?: "동").let(::toKaze)
+        val zikaze = (event.getOption("zikaze")?.asString ?: "동").let(::toKaze)
+
+        // validate input
+        if (!((tsumo != null) xor (ron != null))) {
+            throw IllegalArgumentException("쯔모와 론 옵션 중 하나의 옵션에만 입력하십시오.")
+        }
+
+        val huroBody = huro?.removeSurrounding(" ")?.split(" ")?.toTypedArray()
+        val ankangBody = ankang?.removeSurrounding(" ")?.split(" ")?.toTypedArray()
+
+        val gameInfo = MjGameInfoVo.of(zikaze = zikaze, bakaze = bakaze)
+        val parsedTeHai: MjTeHai? = mjCalculateService.parseTeHai(
+            teHaiStr = tehai,
+            agariHaiStr = ron ?: tsumo!!,
+            isRon = ron != null,
+            huroBody = huroBody ?: emptyArray(),
+            anKanBody = ankangBody ?: emptyArray(),
+            gameInfo = gameInfo
+        )
+
+        requireNotNull(parsedTeHai) { "완성된 손패가 아닙니다." }
+
+        val image = mjImageService.getHandPicture(parsedTeHai, gameInfo)
+        val handImage = ByteArrayOutputStream().use { baos ->
+            ImageIO.write(image, "png", baos)
+            baos.toByteArray()
+        }
+
+        val resultEmbed = Embed {
+            title = "Result"
+            description = "`$parsedTeHai`"
+            color = Color.GREEN.rgb
+        }.let { mutableListOf(it) }
+
+        val fileUpload = FileUpload.fromData(handImage, "hand.png")
+        deferReply.await().sendFiles(fileUpload).await()
         deferReply.await().editOriginalEmbeds(resultEmbed).await()
     }
 
