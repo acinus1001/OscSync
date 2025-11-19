@@ -1,8 +1,11 @@
+@file:OptIn(ExperimentalTime::class)
+
 package dev.kuro9.domain.member.auth.jwt
 
 import dev.kuro9.multiplatform.common.serialization.serializer.instant.UnixTimestamp
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.ExperimentalTime
 
 @Serializable
 class JwtPayloadV1(

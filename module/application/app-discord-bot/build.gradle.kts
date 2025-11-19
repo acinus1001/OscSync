@@ -26,9 +26,10 @@ dependencies {
     implementation(projects.module.common.logger)
     implementation(projects.module.common)
 
-    implementation(projects.module.internal.smartappClient)
-    implementation(projects.module.internal.discordClient)
     implementation(projects.module.internal.aiClient)
+    implementation(projects.module.internal.chessComClient)
+    implementation(projects.module.internal.discordClient)
+    implementation(projects.module.internal.smartappClient)
     implementation(projects.module.internal.errorHandler)
     implementation(projects.module.internal.mahjongCalc)
     implementation(projects.module.domain.errorHandlerDiscord)
@@ -39,6 +40,7 @@ dependencies {
     implementation(projects.module.domain.karaoke)
     implementation(projects.module.domain.aiHandler)
     implementation(projects.module.domain.f1News)
+    implementation(projects.module.domain.chessCom)
 
 
     implementation(projects.module.domain.memberAuthentication)

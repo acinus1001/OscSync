@@ -17,7 +17,8 @@ class GoogleAiChatStorageCachedService(
 
         @Suppress("UNCHECKED_CAST")
         return (cacheManager.getCache("ai-chat-log")
-            ?.get(rootKey, List::class.java) as? List<Content>)
+            ?.get(rootKey, List::class.java) as? List<String>)
+            ?.map { Content.fromJson(it) }
             ?.also { info { "chatStorage#get cache hit for $rootKey" } }
             ?: origin[rootKey]
                 .also { info { "chatStorage#get cache miss for $rootKey" } }
@@ -26,10 +27,12 @@ class GoogleAiChatStorageCachedService(
     override fun append(userId: Long, key: String, rootKey: String, log: List<Content>) {
 
         @Suppress("UNCHECKED_CAST")
-        val cachedData = cacheManager.getCache("ai-chat-log")
-            ?.get(rootKey, List::class.java) as? List<Content>? ?: origin[rootKey] ?: emptyList()
+        val cachedData: List<Content> = (cacheManager.getCache("ai-chat-log")
+            ?.get(rootKey, List::class.java) as? List<String>?)
+            ?.map { Content.fromJson(it) }
+            ?: origin[rootKey] ?: emptyList()
 
-        cacheManager.getCache("ai-chat-log")?.put(rootKey, cachedData + log)
+        cacheManager.getCache("ai-chat-log")?.put(rootKey, (cachedData + log).map { it.toJson() })
         origin.append(userId, key, rootKey, log)
     }
 

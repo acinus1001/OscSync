@@ -30,6 +30,7 @@ dependencies {
     implementation(projects.module.internal.errorHandler)
 
     implementation(projects.module.domain.database)
+    implementation(projects.module.domain.cache)
     implementation(projects.module.domain.webhook)
     implementation(projects.module.domain.vrcChess)
 }

@@ -1,6 +1,7 @@
+@file:OptIn(ExperimentalTime::class)
+
 package dev.kuro9.multiplatform.common.serialization.serializer.instant
 
-import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -8,6 +9,8 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 object InstantUnixTimestampSerializer : KSerializer<Instant> {
     override val descriptor: SerialDescriptor =

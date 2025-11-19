@@ -2,7 +2,7 @@ package dev.kuro9.application.discord.mention
 
 import com.google.genai.types.FunctionDeclaration
 import com.google.genai.types.Schema
-import dev.kuro9.application.discord.exception.NotSupportedChannel
+import dev.kuro9.application.discord.exception.NotSupportedChannelException
 import dev.kuro9.domain.ai.core.service.AiChatService
 import dev.kuro9.domain.ai.core.service.AiSearchService
 import dev.kuro9.domain.ai.log.dto.AiChatLogConfigDto
@@ -20,6 +20,7 @@ import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.messages.Embed
 import io.github.harryjhin.slf4j.extension.error
 import io.github.harryjhin.slf4j.extension.info
+import io.github.harryjhin.slf4j.extension.warn
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
@@ -142,7 +143,7 @@ class GoogleAiChatAbstractHandler(
                             is ThreadChannel -> AiChatLogConfigDto(250, 50)
                             is GroupChannel -> AiChatLogConfigDto(250, 50)
                             is TextChannel -> AiChatLogConfigDto(250, 50)
-                            else -> throw NotSupportedChannel()
+                            else -> throw NotSupportedChannelException()
                         }
                     )
                 }
@@ -216,6 +217,7 @@ class GoogleAiChatAbstractHandler(
         message: Message,
         exception: Throwable
     ) {
+        warn(exception) { "에러 발생" }
         val (embed, isRetryable) = when (exception) {
             is java.net.SocketException -> {
                 Embed {
@@ -225,7 +227,7 @@ class GoogleAiChatAbstractHandler(
                 } to true
             }
 
-            is NotSupportedChannel -> {
+            is NotSupportedChannelException -> {
                 Embed {
                     title = "미지원 채널"
                     description = "해당 채널은 해당 동작을 지원하지 않습니다."

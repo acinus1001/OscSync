@@ -1,12 +1,10 @@
-@file:OptIn(ExperimentalEncodingApi::class)
+@file:OptIn(ExperimentalEncodingApi::class, ExperimentalTime::class)
 
 package dev.kuro9.domain.member.auth.jwt
 
 import dev.kuro9.domain.member.auth.config.JwtTokenConfigProperties
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.multiplatform.common.serialization.minifyJson
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Clock.System
 import kotlinx.serialization.SerializationException
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.core.OAuth2Error
@@ -20,6 +18,7 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.ExperimentalTime
 
 @Service
 class JwtTokenService(
@@ -33,8 +32,8 @@ class JwtTokenService(
         val payload = JwtPayloadV1(
             sub = userDetail.id.toString(),
             name = userDetail.userName,
-            iat = Clock.System.now(),
-            exp = Clock.System.now() + accessTokenExpireDuration,
+            iat = kotlin.time.Clock.System.now(),
+            exp = kotlin.time.Clock.System.now() + accessTokenExpireDuration,
             scp = authentication.authorities.map { it.authority },
             avatarUrl = userDetail.avatarUrl,
         )
@@ -144,6 +143,6 @@ class JwtTokenService(
     }
 
     private fun JwtBasicPayload.isExpired(): Boolean {
-        return System.now() >= exp
+        return kotlin.time.Clock.System.now() >= exp
     }
 }
