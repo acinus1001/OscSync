@@ -162,10 +162,10 @@ class SlashChessCommand(
 
         val leaderBoardString = rank.rankList.joinToString(
             separator = "\n",
-            prefix = "```\n[등수] 닉네임 ( chess.com 닉네임 )\n",
+            prefix = "```\n[등수] 닉네임 ( chess.com 닉네임 ) : ELO\n\n",
             postfix = "\n```"
         ) { userInfo: ChessComGuildRank.UserInfo ->
-            "[${userInfo.guildRank}] ${nameMap[userInfo.userId]} ( ${userInfo.chessComUserName} )"
+            "[${userInfo.guildRank}] ${nameMap[userInfo.userId]} ( ${userInfo.chessComUserName} ) : ${userInfo.elo}"
         }
 
         Embed {
