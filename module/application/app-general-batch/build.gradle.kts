@@ -27,5 +27,6 @@ dependencies {
 
     implementation(projects.module.domain.karaoke)
     implementation(projects.module.domain.f1News)
+    implementation(projects.module.domain.chessCom)
     implementation(projects.module.internal.aiClient)
 }

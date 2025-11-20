@@ -1,21 +1,19 @@
 package dev.kuro9.application.batch.f1.news.job
 
 import com.navercorp.spring.batch.plus.kotlin.configuration.BatchDsl
-import com.navercorp.spring.batch.plus.kotlin.configuration.StepTransitionBuilderDsl
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemProcessor
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamReader
 import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamWriter
+import dev.kuro9.application.batch.common.BatchErrorListener
+import dev.kuro9.application.batch.common.handleFlow
 import dev.kuro9.application.batch.f1.news.tasklet.F1NewsFetchTasklet
 import dev.kuro9.application.batch.f1.news.tasklet.F1NewsSummaryTasklet
 import dev.kuro9.application.batch.f1.news.tasklet.F1NewsWebhookTesklet
 import dev.kuro9.application.batch.f1.news.tasklet.dto.F1NewsTargetWebhookDto
 import dev.kuro9.application.batch.f1.news.tasklet.dto.F1NewsTaskletDto
 import dev.kuro9.domain.f1.dto.F1NewsHtmlDto
-import org.springframework.batch.core.ChunkListener
-import org.springframework.batch.core.ExitStatus
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
-import org.springframework.batch.core.scope.context.ChunkContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
@@ -27,27 +25,22 @@ class F1NewsParseBatchConfig(
     private val f1NewsFetchTasklet: F1NewsFetchTasklet,
     private val f1NewsSummaryTasklet: F1NewsSummaryTasklet,
     private val f1NewsWebhookTasklet: F1NewsWebhookTesklet,
+    private val errorListener: BatchErrorListener,
 ) {
 
     @Bean
     fun f1NewsParseJob(): Job = batch {
         job("f1NewsParseJob") {
             step(f1NewsFetchStep()) {
-                on(ExitStatus.COMPLETED.exitCode) {
+                handleFlow {
                     stepBean("f1NewsSummaryStep") {
-                        on(ExitStatus.COMPLETED.exitCode) {
-                            stepBean("f1NewsWebhookStep") {
-                                on(ExitStatus.COMPLETED.exitCode) {
-                                    end()
-                                }
-                                handleError()
-                            }
+                        handleFlow {
+                            stepBean("f1NewsWebhookStep") { handleFlow { end() } }
                         }
-                        handleError()
                     }
                 }
-                handleError()
             }
+            listener(errorListener)
         }
     }
 
@@ -100,29 +93,6 @@ class F1NewsParseBatchConfig(
 
                 listener(errorListener)
             }
-        }
-    }
-
-    private val errorListener = object : ChunkListener {
-        override fun afterChunkError(context: ChunkContext) {
-            val exception = context.stepContext.stepExecution.failureExceptions.firstOrNull()
-            if (exception != null) {
-                context.stepContext.stepExecution.executionContext.put(
-                    "exception",
-                    exception
-                )
-            }
-        }
-    }
-
-    private fun <T : Any> StepTransitionBuilderDsl<T>.handleError() {
-        on(ExitStatus.FAILED.exitCode) {
-            stepBean("batchFailureNotifyStep")
-            fail()
-        }
-        on(ExitStatus.UNKNOWN.exitCode) {
-            stepBean("batchFailureNotifyStep")
-            fail()
         }
     }
 }
