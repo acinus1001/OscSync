@@ -7,7 +7,6 @@ import dev.kuro9.internal.chess.api.exception.ChessApiFailureException
 import dev.kuro9.internal.chess.api.structure.ChessComApi
 import dev.kuro9.multiplatform.common.network.httpClient
 import dev.kuro9.multiplatform.common.serialization.minifyJson
-import io.github.harryjhin.slf4j.extension.error
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -35,17 +34,17 @@ class ChessComApiService {
         }
 
         HttpResponseValidator {
-            validateResponse { response ->
-                if (response.contentType() != ContentType.Application.Json) return@validateResponse
+            handleResponseExceptionWithRequest { exception, request ->
+                exception as? ClientRequestException ?: throw exception
+                val response = exception.response
 
-                val errorBody = runCatching { response.body<ChessComErrorObj>() }.getOrNull() ?: return@validateResponse
-
-                this@ChessComApiService.error { "Chess.com API Error: $errorBody" }
+                val errorBody = runCatching { response.body<ChessComErrorObj>() }.getOrNull() ?: throw exception
 
                 throw ChessApiFailureException(response.status.value, errorBody.code, errorBody.message)
-
             }
         }
+
+        expectSuccess = true
     }
 
     suspend fun getUser(userName: String): ChessComUser {

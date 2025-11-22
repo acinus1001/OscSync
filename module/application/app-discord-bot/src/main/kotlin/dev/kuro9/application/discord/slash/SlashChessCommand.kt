@@ -15,6 +15,8 @@ import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.*
 import dev.minn.jda.ktx.messages.Embed
 import io.github.harryjhin.slf4j.extension.error
+import io.ktor.client.plugins.*
+import io.ktor.http.*
 import kotlinx.coroutines.*
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -182,10 +184,14 @@ class SlashChessCommand(
             color = Color.RED.rgb
         }
 
-        is ChessApiFailureException -> Embed {
-            title = "chess.com API Failure"
-            description = "Try again later. If the problem persists, contact <@400579163959853056> to report."
-            color = Color.RED.rgb
+        is ChessApiFailureException -> when (t.httpStatus) {
+            404 -> Embed {
+                title = "유저를 찾을 수 없습니다."
+                description = "`${t.apiMessage}`"
+                color = Color.YELLOW.rgb
+            }
+
+            else -> throw t
         }
 
         is ChessComUserNotRegisteredException -> Embed {
@@ -203,6 +209,16 @@ class SlashChessCommand(
         is GuildOnlyCommandException -> Embed {
             title = "다이렉트 메시지에서 사용 불가한 명령어입니다."
             color = Color.RED.rgb
+        }
+
+        is ClientRequestException -> {
+            if (t.response.status != HttpStatusCode.NotFound) throw t
+
+            Embed {
+                title = "404 Not Found"
+                description = "존재하지 않는 요청입니다."
+                color = Color.YELLOW.rgb
+            }
         }
 
         else -> throw t
