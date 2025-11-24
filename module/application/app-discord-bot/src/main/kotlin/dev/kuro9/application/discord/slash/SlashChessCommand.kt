@@ -9,7 +9,9 @@ import dev.kuro9.domain.chess.enums.EloType
 import dev.kuro9.domain.chess.exception.ChessComUserNotRegisteredException
 import dev.kuro9.domain.chess.service.ChessComUserProfileService
 import dev.kuro9.domain.chess.service.ChessComUserService
+import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.internal.chess.api.exception.ChessApiFailureException
+import dev.kuro9.internal.discord.message.model.ButtonInteractionHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.multiplatform.common.chess.util.extractSanListFromPgn
 import dev.kuro9.multiplatform.common.chess.util.getFen
@@ -17,11 +19,15 @@ import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.*
 import dev.minn.jda.ktx.messages.Embed
 import io.github.harryjhin.slf4j.extension.error
+import io.github.harryjhin.slf4j.extension.info
 import io.ktor.client.plugins.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
+import net.dv8tion.jda.api.components.actionrow.ActionRow
+import net.dv8tion.jda.api.components.buttons.Button
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -31,7 +37,9 @@ class SlashChessCommand(
     private val chessUserService: ChessComUserService,
     private val chessUserProfileService: ChessComUserProfileService,
     private val discordUserService: DiscordUserNameService,
-) : SlashCommandComponent {
+) : SlashCommandComponent, ButtonInteractionHandler {
+
+    private val pgnButtonPrefix = "chess_pgn_"
 
     override val commandData = Command("chess", "체스 관련 기능입니다.") {
         group("user", "chess.com 유저 관련 기능입니다.") {
@@ -77,6 +85,11 @@ class SlashChessCommand(
                     "unregister" -> unregisterUser(event, deferReply)
                     "profile" -> getUserProfile(event, deferReply)
                     "rank" -> getRank(event, deferReply)
+                    else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
+                }
+
+                "util" -> when (event.subcommandName) {
+                    "board" -> getBoardImage(event, deferReply)
                     else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
                 }
 
@@ -192,15 +205,73 @@ class SlashChessCommand(
         val fen = matchResult?.groupValues?.getOrNull(1) ?: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         val sanList = extractSanListFromPgn(pgn)
 
-        val boardFen = getFen(fen, sanList)
+//        val boardFen = getFen(fen, sanList)
+        val isWhiteStarting: Boolean = fen.split(" ")[1] == "w"
         val imageUrl = URLBuilder("https://www.chess.com/dynboard")
             .apply {
-                parameters {
-                    append(fen, boardFen)
-                    append("size", "2")
-                }
+                parameters["fen"] = fen
+                parameters["size"] = "3"
+                parameters["coordinates"] = "true"
             }
             .toString()
+
+        info { "imageUrl: $imageUrl" }
+
+        val fullMoveCount = fen.split(" ")[5].toInt()
+
+        val chunkedSanList: List<List<String>> = sanList.let {
+            return@let when (isWhiteStarting) {
+                true -> it.chunked(2)
+                false -> {
+                    val firstBlackMove = it.firstOrNull()?.let(::listOf)?.let(::listOf) ?: listOf()
+                    val otherMove = it.drop(1).chunked(2)
+                    firstBlackMove + otherMove
+                }
+            }
+        }
+            .filter { it.isNotEmpty() }
+
+        Embed {
+            title = "FEN Preview"
+            image = imageUrl
+            description = "FEN: `$fen`"
+            field {
+                name = "기보"
+                value = buildString {
+                    for ((index, chunk) in chunkedSanList.withIndex()) {
+                        if (index == 0 && isWhiteStarting.not()) {
+                            append(fullMoveCount)
+                            append("... ")
+                            append(chunk.first())
+                            append("\n")
+                            continue
+                        }
+
+                        append(fullMoveCount + index)
+                        append(". ")
+                        append(chunk.joinToString(" "))
+                        append("\n")
+                    }
+                }
+            }
+            footer {
+                name = "[INDEX=0] [FLIP=false] [FEN=$fen]"
+            }
+        }.let {
+            deferReply.await().run {
+                editOriginalEmbeds(it).await()
+
+                editOriginalComponents(
+                    ActionRow.of(
+                        Button.secondary("${pgnButtonPrefix}board_start", "<<"),
+                        Button.secondary("${pgnButtonPrefix}board_prev", "<"),
+                        Button.primary("${pgnButtonPrefix}board_flip", "FLIP"),
+                        Button.secondary("${pgnButtonPrefix}board_next", ">"),
+                        Button.secondary("${pgnButtonPrefix}board_end", ">>"),
+                    ),
+                ).await()
+            }
+        }
 
 
     }
@@ -251,5 +322,250 @@ class SlashChessCommand(
         }
 
         else -> throw t
+    }
+
+    override suspend fun isHandleable(event: ButtonInteractionEvent): Boolean {
+        return event.componentId.startsWith(pgnButtonPrefix)
+    }
+
+    @DiscordCommandErrorHandle
+    override suspend fun handleButtonInteraction(event: ButtonInteractionEvent) {
+        val deferEdit = event.deferEdit().await()
+
+        // 형식: chess_pgn_<buttonId>_<각 event에 대해 필요한 data>
+        val (buttonId, data) = event.componentId.removePrefix(pgnButtonPrefix).split("_")
+            .also { require(it.size == 2) { "올바른 형식이 아닙니다. buttonId: ${event.componentId}" } }
+
+        when (buttonId) {
+            "board" -> handleBoardButton(event, deferEdit, data)
+        }
+    }
+
+    private suspend fun handleBoardButton(event: ButtonInteractionEvent, hook: InteractionHook, data: String) {
+        val originalMessage = event.message
+
+        val sanList =
+            originalMessage.embeds.first().fields.firstOrNull { it.name == "기보" }?.value?.filter { it != '`' }
+                ?.split("\n")
+
+
+        val metaData = originalMessage.embeds.first().footer!!.text!!
+
+        val matches = """\[(\w+)=([^]]+)]""".toRegex().findAll(metaData)
+        val metadataMap = matches.associate { matchResult ->
+            val (key, value) = matchResult.destructured
+            key to value
+        }
+
+        when (data) {
+            "prev", "next", "start", "end" -> Unit
+            "flip" -> Unit
+        }
+
+        fun countMovesInSanList(sanList: List<String>?): Int {
+            if (sanList.isNullOrEmpty()) return 0
+
+            var moveCount = 0
+
+            sanList.forEach { line ->
+                val trimmed = line.trim()
+                when {
+                    trimmed.contains("...") -> {
+                        // 1... e5 와 같은 형식 (흑 이동 하나만 있는 경우)
+                        moveCount++
+                    }
+
+                    trimmed.contains(". ") -> {
+                        // 1. e4 e5 와 같은 형식 (백과 흑 이동이 모두 있을 수 있음)
+                        val movePart = trimmed.substringAfter(". ").trim()
+                        val moves = movePart.split(" ")
+
+                        // 백 이동 계산
+                        if (moves.isNotEmpty() && moves[0].isNotEmpty()) {
+                            moveCount++
+                        }
+
+                        // 흑 이동 계산
+                        if (moves.size > 1 && moves[1].isNotEmpty()) {
+                            moveCount++
+                        }
+                    }
+                }
+            }
+
+            return moveCount
+        }
+
+        val sanTotalCount = countMovesInSanList(sanList)
+        val index = metadataMap["INDEX"]?.toIntOrNull()?.let {
+            when (data) {
+                "prev" -> it - 1
+                "next" -> it + 1
+                "start" -> 0
+                "end" -> sanTotalCount
+                else -> it
+            }
+        }?.coerceIn(0..sanTotalCount) ?: 0
+
+
+        val sanString: String? = if (sanList == null || (sanList.firstOrNull() == null)) {
+            null
+        } else {
+            val isBlackFirst = sanList.firstOrNull()?.contains("...") ?: false
+
+            // 모든 움직임을 순서대로 추출
+            val allMoves = buildList {
+                sanList.forEach { line ->
+                    val trimmed = line.trim()
+                    when {
+                        trimmed.contains("...") -> {
+                            // 1... e5 와 같은 형식 처리
+                            add(trimmed.substringAfter("... ").trim())
+                        }
+
+                        trimmed.contains(". ") -> {
+                            // 1. e4 e5 와 같은 형식 처리
+                            val movePart = trimmed.substringAfter(". ").trim()
+                            val moves = movePart.split(" ")
+
+                            // 백 이동 추가
+                            if (moves.isNotEmpty()) add(moves[0])
+                            // 흑 이동 추가
+                            if (moves.size > 1) add(moves[1])
+                        }
+                    }
+                }
+            }
+
+            // 지정된 인덱스가 범위를 벗어나면 null 반환
+            if (index < 0 || index > allMoves.size) {
+                null
+            } else {
+                // 줄 별로 다시 구성하되, 해당 인덱스의 이동을 백틱으로 감싸기
+                var currentMoveIdx = 1
+                sanList.joinToString("\n") { line ->
+                    val lineBuilder = StringBuilder()
+                    val trimmed = line.trim()
+
+                    // 이동 번호 부분 처리 (1. 또는 1...)
+                    when {
+                        trimmed.contains("...") -> {
+                            val prefix = trimmed.substringBefore("... ") + "... "
+                            lineBuilder.append(prefix)
+
+                            val move = trimmed.substringAfter("... ").trim()
+                            if (currentMoveIdx == index) {
+                                lineBuilder.append("`$move`")
+                            } else {
+                                lineBuilder.append(move)
+                            }
+                            currentMoveIdx++
+                        }
+
+                        trimmed.contains(". ") -> {
+                            val prefix = trimmed.substringBefore(". ") + ". "
+                            lineBuilder.append(prefix)
+
+                            val movePart = trimmed.substringAfter(". ").trim()
+                            val moves = movePart.split(" ")
+
+                            if (moves.isNotEmpty()) {
+                                // 백 이동 처리
+                                if (currentMoveIdx == index) {
+                                    lineBuilder.append("`${moves[0]}`")
+                                } else {
+                                    lineBuilder.append(moves[0])
+                                }
+                                currentMoveIdx++
+
+                                // 흑 이동 처리 (있는 경우)
+                                if (moves.size > 1) {
+                                    lineBuilder.append(" ")
+                                    if (currentMoveIdx == index) {
+                                        lineBuilder.append("`${moves[1]}`")
+                                    } else {
+                                        lineBuilder.append(moves[1])
+                                    }
+                                    currentMoveIdx++
+                                }
+                            }
+                        }
+
+                        else -> lineBuilder.append(trimmed)
+                    }
+
+                    lineBuilder.toString()
+                }
+            }
+        }
+
+        val splitedSanList = sanList?.let {
+            buildList {
+                it.forEach { line ->
+                    val trimmed = line.trim()
+                    if (trimmed.isEmpty()) return@forEach
+
+                    when {
+                        trimmed.contains("...") -> {
+                            // 1... e5 와 같은 형식 (흑 이동만 있는 경우)
+                            val move = trimmed.substringAfter("... ").trim()
+                            if (move.isNotEmpty()) {
+                                add(move)
+                            }
+                        }
+
+                        trimmed.contains(". ") -> {
+                            // 1. e4 e5 와 같은 형식
+                            val movePart = trimmed.substringAfter(". ").trim()
+                            val moves = movePart.split(" ")
+
+                            // 백 이동 추가
+                            if (moves.isNotEmpty() && moves[0].isNotEmpty()) {
+                                add(moves[0])
+                            }
+
+                            // 흑 이동 추가
+                            if (moves.size > 1 && moves[1].isNotEmpty()) {
+                                add(moves[1])
+                            }
+                        }
+                    }
+                }
+            }
+        } ?: emptyList()
+
+        val nowFen = getFen(metadataMap["FEN"]!!, splitedSanList.take(index))
+
+        val isFlip = when (data) {
+            "flip" -> !(metadataMap["FLIP"]!!.toBoolean())
+            else -> metadataMap["FLIP"]!!.toBoolean()
+        }
+
+        val imageUrl = URLBuilder("https://www.chess.com/dynboard")
+            .apply {
+                parameters["fen"] = nowFen
+                parameters["size"] = "3"
+                parameters["coordinates"] = "true"
+                if (isFlip) parameters["flip"] = "true"
+            }
+            .toString()
+
+        info { "imageUrl: $imageUrl" }
+
+        Embed {
+            title = "FEN Preview"
+            image = imageUrl
+            description = "FEN: `$nowFen`"
+            sanString?.let {
+                field {
+                    name = "기보"
+                    value = it
+                }
+            }
+            footer {
+                name =
+                    "[INDEX=$index] [FLIP=${isFlip}] [FEN=${metadataMap["FEN"]!!}]"
+            }
+        }.let { hook.editOriginalEmbeds(it).await() }
     }
 }
