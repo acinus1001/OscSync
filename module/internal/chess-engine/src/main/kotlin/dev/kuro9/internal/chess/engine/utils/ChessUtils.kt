@@ -277,3 +277,406 @@ fun getMoveSan(fenBefore: String, fenAfter: String): String {
         if (isPromotion) append("=$promotionPiece")
     }
 }
+
+
+/**
+ * 초기 FEN 문자열과 PGN 이동 목록을 받아 최종 FEN 문자열을 계산합니다.
+ *
+ * @param initialFen 시작 체스판 상태를 나타내는 FEN 문자열 (예: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+ * @param pgnList 적용할 체스 이동의 PGN 표기 목록 (예: ["e4", "d5", "exd5"])
+ * @return 모든 이동 후의 최종 FEN 문자열
+ * @throws IllegalArgumentException 유효하지 않은 이동이 포함된 경우
+ */
+fun getFen(initialFen: String, pgnList: List<String>): String {
+    // PGN 표기법에서 사용되는 파일(열) 문자를 인덱스로 변환
+    fun fileToIndex(file: Char): Int = file - 'a'
+
+    // PGN 표기법에서 사용되는 랭크(행) 숫자를 인덱스로 변환
+    fun rankToIndex(rank: Char): Int = 8 - rank.digitToInt()
+
+    // FEN을 8x8 보드와 기타 게임 정보로 파싱
+    fun parseFen(fen: String): Pair<Array<CharArray>, MutableMap<String, String>> {
+        val parts = fen.split(" ")
+        val board = Array(8) { CharArray(8) { '.' } }
+
+        // 보드 파싱
+        val rows = parts[0].split("/")
+        for (r in rows.indices) {
+            var c = 0
+            for (ch in rows[r]) {
+                if (ch.isDigit()) {
+                    // 빈 칸 개수
+                    repeat(ch.digitToInt()) {
+                        if (c < 8) board[r][c++] = '.'
+                    }
+                } else {
+                    if (c < 8) board[r][c++] = ch
+                }
+            }
+        }
+
+        // 게임 상태 정보 파싱
+        val gameInfo = mutableMapOf(
+            "turn" to (if (parts.size > 1) parts[1] else "w"),
+            "castling" to (if (parts.size > 2) parts[2] else "KQkq"),
+            "enPassant" to (if (parts.size > 3) parts[3] else "-"),
+            "halfMoveClock" to (if (parts.size > 4) parts[4] else "0"),
+            "fullMoveNumber" to (if (parts.size > 5) parts[5] else "1")
+        )
+
+        return Pair(board, gameInfo)
+    }
+
+    // 보드 정보를 FEN 문자열로 변환
+    fun boardToFen(board: Array<CharArray>, gameInfo: Map<String, String>): String {
+        val sb = StringBuilder()
+
+        // 보드 상태를 FEN 표기로 변환
+        for (row in board) {
+            var emptyCount = 0
+            for (cell in row) {
+                if (cell == '.') {
+                    emptyCount++
+                } else {
+                    if (emptyCount > 0) {
+                        sb.append(emptyCount)
+                        emptyCount = 0
+                    }
+                    sb.append(cell)
+                }
+            }
+            if (emptyCount > 0) {
+                sb.append(emptyCount)
+            }
+            sb.append("/")
+        }
+
+        // 마지막 슬래시 제거
+        sb.deleteCharAt(sb.length - 1)
+
+        // 게임 정보 추가
+        sb.append(" ").append(gameInfo["turn"])
+        sb.append(" ").append(gameInfo["castling"])
+        sb.append(" ").append(gameInfo["enPassant"])
+        sb.append(" ").append(gameInfo["halfMoveClock"])
+        sb.append(" ").append(gameInfo["fullMoveNumber"])
+
+        return sb.toString()
+    }
+
+    // PGN에서 이동 정보를 추출
+    fun parsePgn(
+        pgn: String,
+        isWhiteTurn: Boolean,
+        board: Array<CharArray>,
+        gameInfo: Map<String, String>
+    ): Triple<Pair<Int, Int>, Pair<Int, Int>, Char?> {
+        // 기물 경로상 다른 기물이 있는지 확인
+        fun isPiecePathClear(board: Array<CharArray>, fromR: Int, fromC: Int, toR: Int, toC: Int): Boolean {
+            val rDiff = toR - fromR
+            val cDiff = toC - fromC
+
+            // 직선 이동이 아니면 false (룩, 비숍, 퀸에게 적용)
+            if (rDiff != 0 && cDiff != 0 && abs(rDiff) != abs(cDiff)) return false
+
+            val rStep = if (rDiff == 0) 0 else rDiff / abs(rDiff)
+            val cStep = if (cDiff == 0) 0 else cDiff / abs(cDiff)
+
+            var r = fromR + rStep
+            var c = fromC + cStep
+
+            while (r != toR || c != toC) {
+                if (board[r][c] != '.') return false // 경로상 다른 기물이 있으면 막힘
+                r += rStep
+                c += cStep
+            }
+
+            return true
+        }
+
+        // 캐슬링 처리
+        if (pgn == "O-O") { // 킹 사이드 캐슬링
+            val rank = if (isWhiteTurn) 7 else 0
+            return Triple(Pair(rank, 4), Pair(rank, 6), null)
+        }
+        if (pgn == "O-O-O") { // 퀸 사이드 캐슬링
+            val rank = if (isWhiteTurn) 7 else 0
+            return Triple(Pair(rank, 4), Pair(rank, 2), null)
+        }
+
+        // 프로모션 확인
+        var promotion: Char? = null
+        var pgn = pgn
+        if (pgn.contains('=')) {
+            val parts = pgn.split('=')
+            pgn = parts[0]
+            promotion = parts[1].first()
+        }
+
+        // 캡처 표시 제거
+        pgn = pgn.replace("x", "")
+
+        // 목적지 좌표 추출
+        val toFile = pgn[pgn.length - 2]
+        val toRank = pgn[pgn.length - 1]
+        val toC = fileToIndex(toFile)
+        val toR = rankToIndex(toRank)
+
+        // 남은 부분 분석
+        val remaining = pgn.substring(0, pgn.length - 2)
+
+        // 기물 종류 결정
+        var pieceType = 'P' // 기본값은 폰
+        var fromFileHint: Char? = null
+        var fromRankHint: Char? = null
+
+        if (remaining.isNotEmpty()) {
+            // 첫 글자가 대문자면 기물 종류
+            if (remaining[0].isUpperCase() && remaining[0] != 'O') {
+                pieceType = remaining[0]
+
+                // 명확화를 위한 힌트가 있는지 확인
+                if (remaining.length > 1) {
+                    val disambiguationPart = remaining.substring(1)
+                    for (ch in disambiguationPart) {
+                        when (ch) {
+                            in 'a'..'h' -> fromFileHint = ch
+                            in '1'..'8' -> fromRankHint = ch
+                        }
+                    }
+                }
+            } else {
+                // 폰 이동에서는 파일이 명시될 수 있음
+                if (remaining.length == 1 && remaining[0] in 'a'..'h') {
+                    fromFileHint = remaining[0]
+                }
+            }
+        }
+
+        // 출발지 찾기
+        val possibleStarts = mutableListOf<Pair<Int, Int>>()
+
+        // 폰 특수 케이스
+        if (pieceType == 'P') {
+            val direction = if (isWhiteTurn) -1 else 1 // 폰 이동 방향
+            val pawnChar = if (isWhiteTurn) 'P' else 'p'
+
+            // 앙파상 가능성 확인
+            val enPassantTarget = gameInfo["enPassant"]
+            val isEnPassant = enPassantTarget != "-" && enPassantTarget != null &&
+                    "${toFile}${toRank}" == enPassantTarget
+
+            if (fromFileHint != null) {
+                // 캡처 이동: 대각선으로 이동
+                val fromC = fileToIndex(fromFileHint)
+                val fromR = toR - direction
+
+                // 범위 확인 및 폰 존재 여부 확인
+                if (fromR in 0..7 && fromC in 0..7 && board[fromR][fromC] == pawnChar) {
+                    possibleStarts.add(Pair(fromR, fromC))
+                }
+            } else {
+                // 일반 이동: 전방 이동
+                // 한 칸 이동
+                val fromR1 = toR - direction
+                if (fromR1 in 0..7 && board[fromR1][toC] == pawnChar) {
+                    possibleStarts.add(Pair(fromR1, toC))
+                }
+
+                // 두 칸 이동 (시작 위치에서만)
+                val startRank = if (isWhiteTurn) 6 else 1
+                val fromR2 = toR - 2 * direction
+                if (fromR2 == startRank && board[fromR2][toC] == pawnChar &&
+                    board[fromR1][toC] == '.'
+                ) {
+                    possibleStarts.add(Pair(fromR2, toC))
+                }
+            }
+        } else {
+            // 다른 기물 이동
+            val piece = if (isWhiteTurn) pieceType else pieceType.lowercaseChar()
+
+            for (r in 0..7) {
+                for (c in 0..7) {
+                    // 출발지에 해당 기물이 있는지 확인
+                    if (board[r][c] != piece) continue
+
+                    // 힌트가 있으면 적용
+                    if (fromFileHint != null && c != fileToIndex(fromFileHint)) continue
+                    if (fromRankHint != null && r != rankToIndex(fromRankHint)) continue
+
+                    // 기물 유형에 따른 이동 가능성 확인
+                    val canMove = when (pieceType) {
+                        'R' -> r == toR || c == toC  // 룩: 같은 행 또는 열
+                        'N' -> (abs(r - toR) == 1 && abs(c - toC) == 2) || (abs(r - toR) == 2 && abs(c - toC) == 1)  // 나이트: L자 이동
+                        'B' -> abs(r - toR) == abs(c - toC)  // 비숍: 대각선
+                        'Q' -> r == toR || c == toC || abs(r - toR) == abs(c - toC)  // 퀸: 직선 또는 대각선
+                        'K' -> abs(r - toR) <= 1 && abs(c - toC) <= 1  // 킹: 주변 1칸
+                        else -> false
+                    }
+
+                    if (canMove) {
+                        // 경로상 다른 기물이 없는지 확인 (나이트 제외)
+                        if (pieceType == 'N' || isPiecePathClear(board, r, c, toR, toC)) {
+                            possibleStarts.add(Pair(r, c))
+                        }
+                    }
+                }
+            }
+        }
+
+        // 가능한 출발지가 없으면 예외 발생
+        if (possibleStarts.isEmpty()) {
+            throw IllegalArgumentException("유효하지 않은 PGN 이동: $pgn")
+        }
+
+        // 여러 가능성이 있으면 첫 번째 선택 (실제로는 더 정교한 로직이 필요할 수 있음)
+        val fromPos = possibleStarts[0]
+
+        return Triple(fromPos, Pair(toR, toC), promotion)
+    }
+
+    // PGN 이동을 적용하여 새 FEN 생성
+    fun applyMove(fen: String, pgn: String): String {
+        // FEN 분석
+        val (board, gameInfo) = parseFen(fen)
+        val isWhiteTurn = gameInfo["turn"] == "w"
+
+        // PGN 분석하여 이동 정보 추출
+        val (fromPos, toPos, promotion) = parsePgn(pgn, isWhiteTurn, board, gameInfo)
+        val (fromR, fromC) = fromPos
+        val (toR, toC) = toPos
+
+        // 이동 적용
+        val movedPiece = board[fromR][fromC]
+        val capturedPiece = board[toR][toC]
+
+        // 체스판 복사
+        val newBoard = Array(8) { r -> board[r].copyOf() }
+
+        // 캐슬링인 경우 룩도 이동
+        if (movedPiece.uppercaseChar() == 'K' && abs(fromC - toC) == 2) {
+            if (toC > fromC) { // 킹 사이드 캐슬링
+                newBoard[toR][5] = newBoard[toR][7] // 룩 이동
+                newBoard[toR][7] = '.'
+            } else { // 퀸 사이드 캐슬링
+                newBoard[toR][3] = newBoard[toR][0] // 룩 이동
+                newBoard[toR][0] = '.'
+            }
+        }
+
+        // 앙파상 처리
+        if (movedPiece.uppercaseChar() == 'P' && fromC != toC && board[toR][toC] == '.') {
+            val captureRank = fromR
+            newBoard[captureRank][toC] = '.' // 앙파상으로 잡힌 폰 제거
+        }
+
+        // 기본 이동
+        newBoard[toR][toC] = if (promotion != null) {
+            if (isWhiteTurn) promotion else promotion.lowercaseChar()
+        } else {
+            movedPiece
+        }
+        newBoard[fromR][fromC] = '.'
+
+        // 게임 상태 정보 업데이트
+        val newGameInfo = gameInfo.toMutableMap()
+
+        // 턴 변경
+        newGameInfo["turn"] = if (isWhiteTurn) "b" else "w"
+
+        // 앙파상 타겟 업데이트
+        newGameInfo["enPassant"] = "-"
+        if (movedPiece.uppercaseChar() == 'P') {
+            val rankDiff = abs(fromR - toR)
+            if (rankDiff == 2) {
+                val enPassantRank = (fromR + toR) / 2 // 중간 랭크
+                val file = ('a' + toC).toString()
+                val rank = 8 - enPassantRank
+                newGameInfo["enPassant"] = "$file$rank"
+            }
+        }
+
+        // 캐슬링 권한 업데이트
+        var castling = newGameInfo["castling"] ?: "KQkq"
+        if (movedPiece.uppercaseChar() == 'K') {
+            if (isWhiteTurn) {
+                castling = castling.replace("K", "").replace("Q", "")
+            } else {
+                castling = castling.replace("k", "").replace("q", "")
+            }
+        } else if (movedPiece.uppercaseChar() == 'R') {
+            if (isWhiteTurn) {
+                if (fromR == 7 && fromC == 0) castling = castling.replace("Q", "")
+                if (fromR == 7 && fromC == 7) castling = castling.replace("K", "")
+            } else {
+                if (fromR == 0 && fromC == 0) castling = castling.replace("q", "")
+                if (fromR == 0 && fromC == 7) castling = castling.replace("k", "")
+            }
+        }
+        // 룩이 잡힌 경우에도 캐슬링 권한 업데이트
+        if (capturedPiece.uppercaseChar() == 'R') {
+            if (toR == 0 && toC == 0) castling = castling.replace("q", "")
+            if (toR == 0 && toC == 7) castling = castling.replace("k", "")
+            if (toR == 7 && toC == 0) castling = castling.replace("Q", "")
+            if (toR == 7 && toC == 7) castling = castling.replace("K", "")
+        }
+
+        newGameInfo["castling"] = if (castling.isEmpty()) "-" else castling
+
+        // 하프무브 클럭 업데이트
+        val halfMoveClock = gameInfo["halfMoveClock"]?.toIntOrNull() ?: 0
+        if (movedPiece.uppercaseChar() == 'P' || capturedPiece != '.') {
+            newGameInfo["halfMoveClock"] = "0"
+        } else {
+            newGameInfo["halfMoveClock"] = (halfMoveClock + 1).toString()
+        }
+
+        // 풀무브 넘버 업데이트
+        if (!isWhiteTurn) {
+            val fullMoveNumber = gameInfo["fullMoveNumber"]?.toIntOrNull() ?: 1
+            newGameInfo["fullMoveNumber"] = (fullMoveNumber + 1).toString()
+        }
+
+        return boardToFen(newBoard, newGameInfo)
+    }
+
+    // 초기 FEN 및 모든 PGN 이동을 순차적으로 적용
+    var currentFen = initialFen
+    for (pgn in pgnList) {
+        // 체크(+)와 체크메이트(#) 표시 제거
+        val cleanedPgn = pgn.replace("+", "").replace("#", "")
+        currentFen = applyMove(currentFen, cleanedPgn)
+    }
+
+    return currentFen
+}
+
+fun main() {
+    val fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    val pgnList = listOf(
+        "e4", "e5",
+        "Nf3", "Nc6",
+        "Bc4", "Bc5",
+        "c3", "Nf6",
+        "d4", "exd4",
+        "e5", "d5",
+        "Bb5", "Ne4",
+        "cxd4", "Be7",
+        "Be3", "Nxf2",
+        "Bxf2", "g5",
+        "O-O", "Kf8",
+        "Be3", "Nb8",
+        "Nxg5", "Bxg5",
+        "Rxf7+", "Kg8",
+        "Bxg5", "Qxg5",
+        "Qf3", "Qc1+",
+        "Bf1", "Qe3+",
+        "Qxe3", "a6",
+        "e6", "Bxe6",
+        "Qxe6", "Nd7",
+        "Rxd7+", "Kf8",
+        "Qf7#"
+    )
+    println(getFen(fen, pgnList))
+}
