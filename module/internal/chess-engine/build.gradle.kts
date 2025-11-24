@@ -12,4 +12,5 @@ dependencies {
 
     implementation(projects.module.common.logger)
     implementation(projects.multiplatformCommon.serialization)
+    implementation(projects.multiplatformCommon.chessUtils)
 }

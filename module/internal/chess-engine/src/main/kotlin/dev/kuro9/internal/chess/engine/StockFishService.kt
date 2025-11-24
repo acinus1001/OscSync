@@ -1,6 +1,6 @@
 package dev.kuro9.internal.chess.engine
 
-import dev.kuro9.internal.chess.engine.utils.fenToBoardString
+import dev.kuro9.multiplatform.common.chess.util.fenToBoardString
 import io.github.harryjhin.slf4j.extension.error
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.*

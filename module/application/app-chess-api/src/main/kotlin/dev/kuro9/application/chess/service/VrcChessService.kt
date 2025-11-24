@@ -5,7 +5,7 @@ import dev.kuro9.domain.chess.integration.vrc.dto.ChessPlayerInfo
 import dev.kuro9.domain.chess.integration.vrc.enums.ChessTurn
 import dev.kuro9.domain.chess.integration.vrc.service.VrcChessStateService
 import dev.kuro9.internal.chess.engine.StockFishService
-import dev.kuro9.internal.chess.engine.utils.getMoveSan
+import dev.kuro9.multiplatform.common.chess.util.getMoveSan
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
