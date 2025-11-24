@@ -33,6 +33,8 @@ dependencies {
     implementation(projects.module.domain.cache)
     implementation(projects.module.domain.webhook)
     implementation(projects.module.domain.vrcChess)
+
+    implementation(projects.multiplatformCommon.chessUtils)
 }
 
 
