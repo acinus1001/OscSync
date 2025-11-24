@@ -21,6 +21,7 @@ dependencies {
     implementation(libs.reactor.kotlin.extensions)
 
     implementation(projects.multiplatformCommon.network)
+    implementation(projects.multiplatformCommon.chessUtils)
 
     implementation(projects.module.common.network)
     implementation(projects.module.common.logger)

@@ -11,6 +11,8 @@ import dev.kuro9.domain.chess.service.ChessComUserProfileService
 import dev.kuro9.domain.chess.service.ChessComUserService
 import dev.kuro9.internal.chess.api.exception.ChessApiFailureException
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
+import dev.kuro9.multiplatform.common.chess.util.extractSanListFromPgn
+import dev.kuro9.multiplatform.common.chess.util.getFen
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.*
 import dev.minn.jda.ktx.messages.Embed
@@ -46,6 +48,12 @@ class SlashChessCommand(
                         choice(type.displayName, type.name)
                     }
                 }
+            }
+        }
+
+        group("util", "체스 관련 유틸 기능입니다.") {
+            subcommand("board", "체스보드 이미지를 주어진 FEN 및 PGN을 통해 생성합니다.") {
+                option<String>("pgn", "전체 PGN string", required = true)
             }
         }
     }
@@ -174,6 +182,27 @@ class SlashChessCommand(
             title = "${providedType.displayName} 레이팅"
             description = leaderBoardString
         }.let { deferReply.await().editOriginalEmbeds(it).await() }
+    }
+
+    private suspend fun getBoardImage(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        val pgn = event.getOption("pgn")?.asString ?: throw DiscordArgumentNotProvidedException(listOf("pgn"))
+
+        val fenRegex = """\[FEN\s+"(.+?)"]""".toRegex()
+        val matchResult = fenRegex.find(pgn)
+        val fen = matchResult?.groupValues?.getOrNull(1) ?: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        val sanList = extractSanListFromPgn(pgn)
+
+        val boardFen = getFen(fen, sanList)
+        val imageUrl = URLBuilder("https://www.chess.com/dynboard")
+            .apply {
+                parameters {
+                    append(fen, boardFen)
+                    append("size", "2")
+                }
+            }
+            .toString()
+
+
     }
 
     private fun getDefaultExceptionEmbed(t: Throwable): MessageEmbed = when (t) {

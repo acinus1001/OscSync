@@ -614,3 +614,30 @@ fun getFen(initialFen: String, pgn: String): String {
 
     return getFen(initialFen, moves)
 }
+
+/**
+ * 전체 PGN 문자열에서 SAN(Standard Algebraic Notation) 이동 목록 추출
+ * 태그 섹션, 이동 번호, 주석, 결과 등을 모두 제거하고 순수 이동만 리스트로 반환
+ *
+ * @param fullPgn 전체 PGN 문자열
+ * @return 순수 SAN 이동 목록(리스트)
+ */
+fun extractSanListFromPgn(fullPgn: String): List<String> {
+    // 1. 태그 섹션 제거 [Event "?"] 등
+    val withoutTags = fullPgn.replace("\\[.*?]\\s*".toRegex(), "")
+
+    // 2. 결과 표시 제거 (1-0, 0-1, 1/2-1/2)
+    val withoutResults = withoutTags.replace("\\s+(1-0|0-1|1/2-1/2)\\s*$".toRegex(), "")
+
+    // 3. 중괄호 주석 제거 {like this}
+    val withoutComments = withoutResults.replace("\\{[^}]*\\}".toRegex(), "")
+
+    // 4. 이동 번호와 점 제거 (예: "1.", "2.")
+    val withoutMoveNumbers = withoutComments.replace("\\d+\\.+\\s*".toRegex(), " ")
+
+    // 5. 연속된 공백을 하나로 치환하고 앞뒤 공백 제거
+    val cleaned = withoutMoveNumbers.replace("\\s+".toRegex(), " ").trim()
+
+    // 6. 공백으로 분리하여 배열로 반환
+    return cleaned.split(" ").filter { it.isNotEmpty() }
+}
