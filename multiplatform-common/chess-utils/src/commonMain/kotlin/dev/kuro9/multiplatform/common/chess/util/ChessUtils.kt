@@ -596,3 +596,21 @@ fun getFen(initialFen: String, pgnList: List<String>): String {
 
     return currentFen
 }
+
+/**
+ * 초기 FEN 문자열과 PGN 이동 목록을 받아 최종 FEN 문자열을 계산합니다.
+ *
+ * @param initialFen 시작 체스판 상태를 나타내는 FEN 문자열 (예: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+ * @param pgnList 적용할 체스 이동의 PGN 표기 (예: "1. e4 c5 2. Nf3 g6")
+ * @return 모든 이동 후의 최종 FEN 문자열
+ * @throws IllegalArgumentException 유효하지 않은 이동이 포함된 경우
+ */
+fun getFen(initialFen: String, pgn: String): String {
+    val moves = pgn
+        .replace(Regex("\\d+\\.+"), "") // Remove move numbers with any number of dots
+        .trim()
+        .split(Regex("\\s+")) // Split on whitespace
+        .filter { it.isNotEmpty() } // Remove empty strings
+
+    return getFen(initialFen, moves)
+}
