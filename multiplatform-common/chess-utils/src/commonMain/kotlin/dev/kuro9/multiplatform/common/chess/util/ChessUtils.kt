@@ -355,14 +355,18 @@ fun getFen(initialFen: String, pgnList: List<String>): String {
         val isWhiteTurn = gameInfo["turn"] == "w"
 
         // 체크(+)와 체크메이트(#) 표시 제거
-        var cleanedPgn = pgn.replace("+", "").replace("#", "")
+        var cleanedPgn = pgn
+            .replace("+", "")
+            .replace("#", "")
+            .replace("!", "")
+            .replace("?", "")
 
         // 캐슬링 처리
-        if (cleanedPgn == "O-O") { // 킹 사이드 캐슬링
+        if (cleanedPgn == "O-O" || cleanedPgn == "0-0") { // 킹 사이드 캐슬링
             val rank = if (isWhiteTurn) 7 else 0
             return ChessMove(Pair(rank, 4), Pair(rank, 6))
         }
-        if (cleanedPgn == "O-O-O") { // 퀸 사이드 캐슬링
+        if (cleanedPgn == "O-O-O" || cleanedPgn == "0-0-0") { // 퀸 사이드 캐슬링
             val rank = if (isWhiteTurn) 7 else 0
             return ChessMove(Pair(rank, 4), Pair(rank, 2))
         }
