@@ -3,6 +3,7 @@ package dev.kuro9.domain.smartapp.user.service
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.*
 import dev.kuro9.domain.smartapp.user.exception.SmartAppUserException.CredentialNotFoundException
+import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevice
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDeviceEntity
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevices
 import dev.kuro9.internal.smartapp.api.dto.request.SmartAppDeviceCommandRequest
@@ -180,11 +181,12 @@ class SmartAppUserService(
     }
 
     @Cacheable("smartapp-registered-devices", key = "#userId")
-    fun getRegisteredDevices(userId: Long): List<SmartAppUserDeviceEntity> {
+    fun getRegisteredDevices(userId: Long): List<SmartAppUserDevice> {
         return SmartAppUserDeviceEntity
             .find { SmartAppUserDevices.userId eq userId }
             .notForUpdate()
             .toList()
+            .map { it.toDto() }
     }
 
     fun saveUserCredential(userId: Long, smartAppToken: String) {
