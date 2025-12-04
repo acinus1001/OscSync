@@ -49,4 +49,24 @@ class SmartAppUserDeviceEntity(pk: EntityID<CompositeID>) : CompositeEntity(pk) 
         this.deviceName = name
         this.updatedAt = LocalDateTime.now()
     }
+
+    fun toDto() = SmartAppUserDevice(
+        userId = userId,
+        deviceId = deviceId,
+        deviceComponent = deviceComponent,
+        deviceCapability = deviceCapability,
+        deviceName = deviceName,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
 }
+
+data class SmartAppUserDevice(
+    val userId: Long,
+    val deviceId: String,
+    val deviceComponent: String,
+    val deviceCapability: String,
+    val deviceName: String,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime,
+) : java.io.Serializable
