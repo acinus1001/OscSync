@@ -6,6 +6,8 @@ import dev.kuro9.internal.discord.DiscordConfigProperties
 import dev.kuro9.internal.discord.model.DiscordEventHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.minn.jda.ktx.interactions.commands.updateCommands
+import io.github.harryjhin.slf4j.extension.error
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,7 +28,9 @@ internal class SlashCommandListener(
     override val kClass = SlashCommandInteractionEvent::class
 
     override suspend fun handle(event: SlashCommandInteractionEvent) {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch(CoroutineExceptionHandler { _, e ->
+            error(e) { "event publisher error" }
+        }) {
             eventPublisher.publishEvent(event)
         }
         commandMap[event.name]?.handleEvent(event) ?: errorLog("No such command: ${event.fullCommandName}")

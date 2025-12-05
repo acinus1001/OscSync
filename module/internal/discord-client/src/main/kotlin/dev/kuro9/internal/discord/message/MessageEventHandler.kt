@@ -3,16 +3,23 @@ package dev.kuro9.internal.discord.message
 import dev.kuro9.common.logger.infoLog
 import dev.kuro9.internal.discord.message.model.MentionedMessageHandler
 import dev.kuro9.internal.discord.model.DiscordEventHandler
+import io.github.harryjhin.slf4j.extension.error
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
 @Component
 @ConditionalOnBean(MentionedMessageHandler::class)
 internal class MessageEventHandler(
     private val handler: MentionedMessageHandler,
+    private val eventPublisher: ApplicationEventPublisher,
 ) : DiscordEventHandler<MessageReceivedEvent> {
     override val kClass = MessageReceivedEvent::class
 
@@ -27,6 +34,13 @@ internal class MessageEventHandler(
         val mentionString = event.jda.selfUser.asMention
         val message = event.message.contentRaw
         infoLog(message)
+
+        CoroutineScope(Dispatchers.IO).launch(CoroutineExceptionHandler { _, e ->
+            error(e) { "event publisher error" }
+        }) {
+            eventPublisher.publishEvent(event)
+        }
+
         when {
             event.message.isFromGuild && message.startsWith(mentionString) -> handler.handleMention(event)
 

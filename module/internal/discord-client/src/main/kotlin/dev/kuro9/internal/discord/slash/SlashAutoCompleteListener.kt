@@ -3,6 +3,8 @@ package dev.kuro9.internal.discord.slash
 import dev.kuro9.common.logger.errorLog
 import dev.kuro9.internal.discord.model.DiscordEventHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
+import io.github.harryjhin.slf4j.extension.error
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,7 +21,9 @@ internal class SlashAutoCompleteListener(
     private val commandMap: Map<String, SlashCommandComponent> = slashCommands.associateBy { it.commandData.name }
 
     override suspend fun handle(event: CommandAutoCompleteInteractionEvent) {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch(CoroutineExceptionHandler { _, e ->
+            error(e) { "event publisher error" }
+        }) {
             eventPublisher.publishEvent(event)
         }
         commandMap[event.name]?.handleAutoComplete(event) ?: errorLog("No such command: ${event.fullCommandName}")

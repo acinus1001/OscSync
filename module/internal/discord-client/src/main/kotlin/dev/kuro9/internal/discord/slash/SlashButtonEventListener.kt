@@ -2,6 +2,8 @@ package dev.kuro9.internal.discord.slash
 
 import dev.kuro9.internal.discord.model.DiscordEventHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
+import io.github.harryjhin.slf4j.extension.error
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -18,7 +20,9 @@ internal class SlashButtonEventListener(
     override val kClass = ButtonInteractionEvent::class
 
     override suspend fun handle(event: ButtonInteractionEvent) {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch(CoroutineExceptionHandler { _, e ->
+            error(e) { "event publisher error" }
+        }) {
             eventPublisher.publishEvent(event)
         }
         commandMap[event.componentId]?.handleButtonEvent(event)

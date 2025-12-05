@@ -6,6 +6,8 @@ import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.springframework.context.event.EventListener
@@ -36,6 +38,49 @@ class DiscordLoggingService {
             it[this.command] = command
             it[this.args] = args
             it[this.type] = DiscordEventType.SLASH
+            it[this.requestAt] = requestTime
+            it[this.createdAt] = LocalDateTime.now()
+        }
+    }
+
+    @EventListener
+    @Transactional
+    fun handleMessage(event: MessageReceivedEvent) {
+        val author = event.author.idLong
+        val guild = event.guild.idLong
+        val channel = event.channel.idLong
+        val command = "message"
+        val args = event.message.contentRaw
+        val requestTime = event.message.timeCreated.toSeoulTime()
+
+        DiscordEventLogs.insert {
+            it[this.userId] = author
+            it[this.guildId] = guild
+            it[this.channelId] = channel
+            it[this.command] = command
+            it[this.args] = args
+            it[this.type] = DiscordEventType.MESSAGE
+            it[this.requestAt] = requestTime
+            it[this.createdAt] = LocalDateTime.now()
+        }
+    }
+
+    @EventListener
+    @Transactional
+    fun handleMessage(event: ButtonInteractionEvent) {
+        val author = event.user.idLong
+        val guild = event.guild?.idLong
+        val channel = event.channel.idLong
+        val command = event.componentId
+        val requestTime = event.timeCreated.toSeoulTime()
+
+        DiscordEventLogs.insert {
+            it[this.userId] = author
+            it[this.guildId] = guild
+            it[this.channelId] = channel
+            it[this.command] = command
+            it[this.args] = event.componentId
+            it[this.type] = DiscordEventType.BUTTON
             it[this.requestAt] = requestTime
             it[this.createdAt] = LocalDateTime.now()
         }
