@@ -37,6 +37,7 @@ dependencies {
 
     implementation(projects.module.domain.database)
     implementation(projects.module.domain.webhook)
+    implementation(projects.module.domain.discordLogging)
     implementation(projects.module.domain.smartappUserinfo)
     implementation(projects.module.domain.karaoke)
     implementation(projects.module.domain.aiHandler)
