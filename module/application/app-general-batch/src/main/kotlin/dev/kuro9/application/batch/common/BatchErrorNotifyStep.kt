@@ -21,6 +21,7 @@ class BatchErrorNotifyStep(private val batch: BatchDsl, private val txManager: P
     fun batchFailureNotifyStep(
         webhookService: DiscordWebhookService,
         discordProperties: DiscordProperties,
+        errorContext: BatchErrorContext,
     ): Step = batch {
         step("batchFailureNotifyStep") {
             tasklet(transactionManager = txManager, tasklet = { sc: StepContribution, cc: ChunkContext ->
@@ -31,13 +32,23 @@ class BatchErrorNotifyStep(private val batch: BatchDsl, private val txManager: P
                             embeds = listOf(
                                 Embed {
                                     title = "Batch Error Alert"
-                                    description = this::class.simpleName
+                                    description = sc.stepExecution.stepName
                                     color = 0xFF0000
 
-                                    cc.stepContext.stepExecution.executionContext.get(
-                                        "exception",
-                                        Throwable::class.java
-                                    )?.let { t ->
+                                    Field {
+                                        name = "Batch ID"
+                                        value = "`${sc.stepExecution.jobExecution.id}`"
+                                    }
+
+                                    Field {
+                                        name = "Step Name"
+                                        value = "`${
+                                            sc.stepExecution.jobExecution.stepExecutions.reversed()
+                                                .getOrNull(1)?.stepName ?: "Unknown Step"
+                                        }`"
+                                    }
+
+                                    errorContext.exception?.let { t ->
                                         Field {
                                             name = "Exception"
                                             value = "`${t::class.qualifiedName}`"
