@@ -12,6 +12,10 @@ dependencies {
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.boot.starter.batch)
     implementation(libs.navercorp.spring.batch.plus)
+    implementation(libs.spring.boot.starter.aop)
+
+    runtimeOnly(libs.aspectj.runtime)
+    runtimeOnly(libs.aspectj.weaver)
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
