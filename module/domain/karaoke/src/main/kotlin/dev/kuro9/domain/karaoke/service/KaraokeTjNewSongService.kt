@@ -44,7 +44,7 @@ class KaraokeTjNewSongService(
         val songs = response.body<TjNewSongResponseDto>()
 
         return songs.resultData.items
-            .filter { it.pro in 52894..53000 }
+            .filter { it.pro in 52894..53000 || it.indexTitle.isJapanese() }
             .map {
                 KaraokeSongDto(
                     brand = supportBrand,
@@ -73,4 +73,13 @@ class KaraokeTjNewSongService(
         singer = singer,
         releaseDate = releaseDate,
     )
+
+    private fun String.isJapanese(): Boolean {
+        // 히라가나
+        if (this.any { it in '\u3041'..'\u3096' }) return true
+        // 가타카나
+        if (this.any { it in '\u30a0'..'\u30ff' }) return true
+
+        return false
+    }
 }
