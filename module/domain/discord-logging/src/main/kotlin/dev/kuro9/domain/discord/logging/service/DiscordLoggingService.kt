@@ -5,6 +5,7 @@ import dev.kuro9.domain.discord.logging.repository.table.DiscordEventLogs
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -81,6 +82,27 @@ class DiscordLoggingService {
             it[this.command] = command
             it[this.args] = event.componentId
             it[this.type] = DiscordEventType.BUTTON
+            it[this.requestAt] = requestTime
+            it[this.createdAt] = LocalDateTime.now()
+        }
+    }
+
+    @EventListener
+    @Transactional
+    fun handleMessage(event: ModalInteractionEvent) {
+        val author = event.user.idLong
+        val guild = event.guild?.idLong
+        val channel = event.channel.idLong
+        val modalId = event.modalId
+        val requestTime = event.timeCreated.toSeoulTime()
+
+        DiscordEventLogs.insert {
+            it[this.userId] = author
+            it[this.guildId] = guild
+            it[this.channelId] = channel
+            it[this.command] = modalId
+            it[this.args] = event.type.toString()
+            it[this.type] = DiscordEventType.MODAL
             it[this.requestAt] = requestTime
             it[this.createdAt] = LocalDateTime.now()
         }

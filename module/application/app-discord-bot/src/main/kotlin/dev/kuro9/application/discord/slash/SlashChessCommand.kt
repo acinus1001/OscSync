@@ -11,7 +11,7 @@ import dev.kuro9.domain.chess.service.ChessComUserProfileService
 import dev.kuro9.domain.chess.service.ChessComUserService
 import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.internal.chess.api.exception.ChessApiFailureException
-import dev.kuro9.internal.discord.message.model.ButtonInteractionHandler
+import dev.kuro9.internal.discord.handler.model.ButtonInteractionHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.multiplatform.common.chess.util.extractSanListFromPgn
 import dev.kuro9.multiplatform.common.chess.util.getFen

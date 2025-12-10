@@ -20,6 +20,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.reactor.kotlin.extensions)
 
+    implementation(libs.bundles.jda)
+
     implementation(projects.multiplatformCommon.network)
     implementation(projects.multiplatformCommon.chessUtils)
 
