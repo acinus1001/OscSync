@@ -13,6 +13,7 @@ class InquiryService(
     private val eventPublisher: ApplicationEventPublisher,
 ) {
 
+    @Transactional
     fun save(
         userId: Long,
         guildId: Long?,

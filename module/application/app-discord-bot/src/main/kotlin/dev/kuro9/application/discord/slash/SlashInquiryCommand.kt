@@ -1,10 +1,13 @@
 package dev.kuro9.application.discord.slash
 
+import dev.kuro9.domain.inquiry.service.InquiryService
 import dev.kuro9.internal.discord.handler.model.ModalInteractionHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.messages.Embed
 import io.github.harryjhin.slf4j.extension.info
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import net.dv8tion.jda.api.components.attachmentupload.AttachmentUpload
 import net.dv8tion.jda.api.components.label.Label
 import net.dv8tion.jda.api.components.textinput.TextInput
@@ -19,7 +22,9 @@ import java.awt.Color
 import java.time.OffsetDateTime
 
 @Component
-class SlashInquiryCommand : SlashCommandComponent, ModalInteractionHandler {
+class SlashInquiryCommand(
+    private val inquiryService: InquiryService,
+) : SlashCommandComponent, ModalInteractionHandler {
     override val commandData: SlashCommandData = slash("inquiry", "문의사항을 전송합니다.")
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
@@ -59,6 +64,16 @@ class SlashInquiryCommand : SlashCommandComponent, ModalInteractionHandler {
         val user = event.user.idLong
 
         info { "문의사항 제목: $title, 내용: $body, 파일 url: ${file?.url ?: "없음"} ,사용자 ID: $user" }
+        withContext(Dispatchers.IO) {
+            inquiryService.save(
+                userId = event.user.idLong,
+                guildId = event.guild?.idLong,
+                channelId = event.channelIdLong,
+                title = title,
+                content = body,
+                attachmentUrl = file?.url,
+            )
+        }
 
         Embed {
             this.title = "200 OK"
