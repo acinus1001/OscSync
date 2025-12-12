@@ -1,7 +1,7 @@
-package dev.kuro9.internal.discord.message
+package dev.kuro9.internal.discord.handler
 
 import dev.kuro9.common.logger.infoLog
-import dev.kuro9.internal.discord.message.model.MentionedMessageHandler
+import dev.kuro9.internal.discord.handler.model.MentionedMessageHandler
 import dev.kuro9.internal.discord.model.DiscordEventHandler
 import io.github.harryjhin.slf4j.extension.error
 import kotlinx.coroutines.CoroutineExceptionHandler

@@ -20,6 +20,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.reactor.kotlin.extensions)
 
+    implementation(libs.bundles.jda)
+
     implementation(projects.multiplatformCommon.network)
     implementation(projects.multiplatformCommon.chessUtils)
 
@@ -33,16 +35,17 @@ dependencies {
     implementation(projects.module.internal.smartappClient)
     implementation(projects.module.internal.errorHandler)
     implementation(projects.module.internal.mahjongCalc)
-    implementation(projects.module.domain.errorHandlerDiscord)
 
     implementation(projects.module.domain.database)
     implementation(projects.module.domain.webhook)
     implementation(projects.module.domain.discordLogging)
+    implementation(projects.module.domain.errorHandlerDiscord)
     implementation(projects.module.domain.smartappUserinfo)
     implementation(projects.module.domain.karaoke)
     implementation(projects.module.domain.aiHandler)
     implementation(projects.module.domain.f1News)
     implementation(projects.module.domain.chessCom)
+    implementation(projects.module.domain.inquiry)
 
 
     implementation(projects.module.domain.memberAuthentication)

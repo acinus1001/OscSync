@@ -11,8 +11,8 @@ import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.service.KaraokeApiService
 import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
-import dev.kuro9.internal.discord.message.model.ButtonInteractionHandler
-import dev.kuro9.internal.discord.message.model.MentionedMessageHandler
+import dev.kuro9.internal.discord.handler.model.ButtonInteractionHandler
+import dev.kuro9.internal.discord.handler.model.MentionedMessageHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import dev.kuro9.multiplatform.common.serialization.minifyJson
