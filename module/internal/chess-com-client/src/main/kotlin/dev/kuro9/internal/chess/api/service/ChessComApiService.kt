@@ -1,6 +1,7 @@
 package dev.kuro9.internal.chess.api.service
 
 import dev.kuro9.internal.chess.api.dto.ChessComErrorObj
+import dev.kuro9.internal.chess.api.dto.ChessComPuzzle
 import dev.kuro9.internal.chess.api.dto.ChessComUser
 import dev.kuro9.internal.chess.api.dto.ChessComUserStat
 import dev.kuro9.internal.chess.api.exception.ChessApiFailureException
@@ -53,6 +54,14 @@ class ChessComApiService {
 
     suspend fun getUserStat(userName: String): ChessComUserStat {
         return httpClient.get(ChessComApi.Player.User.Stats(toUserObj(userName))).body()
+    }
+
+    suspend fun getTodayPuzzle(): ChessComPuzzle {
+        return httpClient.get(ChessComApi.DailyPuzzle()).body()
+    }
+
+    suspend fun getRandomPuzzle(): ChessComPuzzle {
+        return httpClient.get(ChessComApi.DailyPuzzle.Random()).body()
     }
 
     private fun toUserObj(userName: String): ChessComApi.Player.User {

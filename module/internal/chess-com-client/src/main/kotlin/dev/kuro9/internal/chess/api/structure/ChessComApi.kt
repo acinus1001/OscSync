@@ -15,4 +15,11 @@ class ChessComApi {
             class Stats(val parent: User)
         }
     }
+
+    @Resource("/puzzle")
+    class DailyPuzzle(val parent: ChessComApi = ChessComApi()) {
+
+        @Resource("/random")
+        class Random(val parent: DailyPuzzle = DailyPuzzle())
+    }
 }
