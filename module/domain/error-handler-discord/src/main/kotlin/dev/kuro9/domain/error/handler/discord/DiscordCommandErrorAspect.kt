@@ -17,7 +17,18 @@ class DiscordCommandErrorAspect(
     private val eventPublisher: ApplicationEventPublisher
 ) {
 
-    @Around("(@within(DiscordCommandErrorHandle) || @annotation(DiscordCommandErrorHandle) || execution(* dev.kuro9.internal.discord.slash.model.SlashCommandComponent.handleEvent(..))) && args(event, ..)")
+    @Around(
+        """
+        (
+            @within(DiscordCommandErrorHandle) || 
+            @annotation(DiscordCommandErrorHandle) || 
+            execution(* dev.kuro9.internal.discord.slash.model.SlashCommandComponent.handleEvent(..)) || 
+            execution(* dev.kuro9.internal.discord.handler.model.ButtonInteractionHandler.handleButtonInteraction(..)) || 
+            execution(* dev.kuro9.internal.discord.handler.model.ModalInteractionHandler.handleModalInteraction(..)) ||
+            execution(* dev.kuro9.internal.discord.handler.model.MentionedMessageHandler.handleMention(..))
+        ) && args(event, ..)
+        """
+    )
     fun onError(joinPoint: ProceedingJoinPoint, event: GenericEvent): Any? {
         return joinPoint.runCoroutine {
             joinPoint.proceedCoroutine().let { rtn ->

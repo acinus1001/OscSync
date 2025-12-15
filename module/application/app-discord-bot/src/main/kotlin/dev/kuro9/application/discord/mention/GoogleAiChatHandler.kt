@@ -7,7 +7,6 @@ import dev.kuro9.domain.ai.core.service.AiChatService
 import dev.kuro9.domain.ai.core.service.AiSearchService
 import dev.kuro9.domain.ai.log.dto.AiChatLogConfigDto
 import dev.kuro9.domain.ai.memory.service.AiMasterMemoryService
-import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.service.KaraokeApiService
 import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
@@ -69,7 +68,6 @@ class GoogleAiChatAbstractHandler(
 
     private val retryButtonIdPrefix = "ai_retry_btn_"
 
-    @DiscordCommandErrorHandle
     @Transactional(rollbackFor = [Throwable::class])
     override suspend fun handleMention(event: MessageReceivedEvent) {
         handleAiChat(event.author, event.message, event.channel)
@@ -79,7 +77,6 @@ class GoogleAiChatAbstractHandler(
         return event.componentId.startsWith(retryButtonIdPrefix)
     }
 
-    @DiscordCommandErrorHandle
     @Transactional(rollbackFor = [Throwable::class])
     override suspend fun handleButtonInteraction(event: ButtonInteractionEvent) {
         val deferEdit = event.deferEdit().await()

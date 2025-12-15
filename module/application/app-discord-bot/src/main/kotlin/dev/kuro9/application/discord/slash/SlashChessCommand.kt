@@ -9,7 +9,6 @@ import dev.kuro9.domain.chess.enums.EloType
 import dev.kuro9.domain.chess.exception.ChessComUserNotRegisteredException
 import dev.kuro9.domain.chess.service.ChessComUserProfileService
 import dev.kuro9.domain.chess.service.ChessComUserService
-import dev.kuro9.domain.error.handler.discord.DiscordCommandErrorHandle
 import dev.kuro9.internal.chess.api.exception.ChessApiFailureException
 import dev.kuro9.internal.discord.handler.model.ButtonInteractionHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
@@ -119,13 +118,15 @@ class SlashChessCommand(
             return
         }
 
-        chessUserService.upsertUser(
-            userId = event.user.idLong,
-            guildId = event.guild?.idLong,
-            chessUserName = profile.username,
-            chessUserUrl = profile.profileUrl,
-            chessProfilePic = profile.avatarUrl,
-        )
+        withContext(Dispatchers.IO) {
+            chessUserService.upsertUser(
+                userId = event.user.idLong,
+                guildId = event.guild?.idLong,
+                chessUserName = profile.username,
+                chessUserUrl = profile.profileUrl,
+                chessProfilePic = profile.avatarUrl,
+            )
+        }
 
         profile.eloMap.entries.forEach { (type, elo) ->
             chessUserService.insertElo(
@@ -142,7 +143,9 @@ class SlashChessCommand(
     }
 
     private suspend fun unregisterUser(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
-        chessUserService.deleteUser(event.user.idLong)
+        withContext(Dispatchers.IO) {
+            chessUserService.deleteUser(event.user.idLong)
+        }
 
         Embed {
             title = "200 OK"
@@ -177,7 +180,9 @@ class SlashChessCommand(
         val providedType = event.getOption("type")?.asString?.let { EloType.valueOf(it) } ?: EloType.RAPID
         val guildId = event.guild?.idLong ?: throw GuildOnlyCommandException()
 
-        val rank: ChessComGuildRank = chessUserService.getRank(guildId, providedType)
+        val rank: ChessComGuildRank = withContext(Dispatchers.IO) {
+            chessUserService.getRank(guildId, providedType)
+        }
 
         val nameMap = rank.rankList.associate { userInfo: ChessComGuildRank.UserInfo ->
             userInfo.userId to discordUserService.getUserName(userInfo.userId)
@@ -328,7 +333,6 @@ class SlashChessCommand(
         return event.componentId.startsWith(pgnButtonPrefix)
     }
 
-    @DiscordCommandErrorHandle
     override suspend fun handleButtonInteraction(event: ButtonInteractionEvent) {
         val deferEdit = event.deferEdit().await()
 
