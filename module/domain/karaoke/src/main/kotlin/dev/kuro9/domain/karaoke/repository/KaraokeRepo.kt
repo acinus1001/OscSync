@@ -8,6 +8,7 @@ import dev.kuro9.domain.karaoke.repository.table.KaraokeSongs
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.atTime
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.batchInsert
@@ -51,6 +52,25 @@ class KaraokeRepo {
     ): List<KaraokeSongEntity> {
         return (KaraokeSongs.brand eq brand)
             .and { KaraokeSongs.releaseDate between releaseDateRange }
+            .let(KaraokeSongEntity::find)
+            .toList()
+    }
+
+    fun findByCreatedDate(
+        brand: KaraokeBrand,
+        createdDateRange: ClosedRange<LocalDate>,
+    ): List<KaraokeSongEntity> {
+        return (KaraokeSongs.brand eq brand)
+            .and {
+                KaraokeSongs.createdAt between createdDateRange.let {
+                    it.start.atTime(0, 0)..it.endInclusive.atTime(
+                        23,
+                        59,
+                        59,
+                        999999999
+                    )
+                }
+            }
             .let(KaraokeSongEntity::find)
             .toList()
     }

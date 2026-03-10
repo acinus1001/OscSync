@@ -2,6 +2,7 @@ package dev.kuro9.domain.ai.core.service
 
 import dev.kuro9.domain.ai.log.dto.AiChatLogConfigDto
 import dev.kuro9.domain.ai.log.service.GoogleAiChatKeychainStorageService
+import dev.kuro9.internal.google.ai.dto.GoogleAiToken
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import dev.kuro9.internal.google.ai.service.GoogleAiService
 import io.github.harryjhin.slf4j.extension.info
@@ -9,9 +10,10 @@ import org.springframework.stereotype.Service
 
 @Service
 class GoogleLoggedAiChatService(
-    private val aiService: GoogleAiService,
+    token: GoogleAiToken,
     private val logStorage: GoogleAiChatKeychainStorageService,
 ) : AiChatService {
+    private val aiService: GoogleAiService = GoogleAiService(token)
 
     override suspend fun doChat(
         systemInstruction: String,

@@ -57,9 +57,9 @@ class KaraokeTjNewSongService(
     }
 
     override fun getNewReleaseSongs(targetDate: LocalDate): List<KaraokeSongDto> {
-        return karaokeRepo.findByReleaseDate(
+        return karaokeRepo.findByCreatedDate(
             brand = KaraokeBrand.TJ,
-            releaseDateRange = targetDate..targetDate,
+            createdDateRange = targetDate..targetDate,
         )
             .takeIf { it.isNotEmpty() }
             ?.map { it.toDto() }
