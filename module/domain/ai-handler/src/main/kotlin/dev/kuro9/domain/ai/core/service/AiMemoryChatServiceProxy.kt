@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service
 @Primary
 @Service
 class AiMemoryChatServiceProxy(
-    @Qualifier("googleLoggedAiChatService") private val origin: AiChatService,
+    @param:Qualifier("googleLoggedAiChatService") private val origin: AiChatService,
     private val memoryService: AiMasterMemoryService,
 ) : AiChatService {
 

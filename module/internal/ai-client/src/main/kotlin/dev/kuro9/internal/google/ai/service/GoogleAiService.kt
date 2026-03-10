@@ -6,14 +6,12 @@ import dev.kuro9.internal.google.ai.dto.GoogleAiChatResponse
 import dev.kuro9.internal.google.ai.dto.GoogleAiToken
 import dev.kuro9.internal.google.ai.dto.GoogleAiToolDto
 import kotlinx.coroutines.*
-import org.springframework.stereotype.Service
 import kotlin.jvm.optionals.getOrNull
 
-@Service
 class GoogleAiService(token: GoogleAiToken) {
 
     private val chatModelVersion = "gemini-2.5-flash"
-    private val searchModelVersion = "gemini-2.0-flash"
+    private val searchModelVersion = "gemini-2.5-flash"
 
     private val client = Client.builder()
         .apiKey(token.token)

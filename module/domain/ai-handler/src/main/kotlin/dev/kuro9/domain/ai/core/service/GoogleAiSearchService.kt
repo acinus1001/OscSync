@@ -1,10 +1,12 @@
 package dev.kuro9.domain.ai.core.service
 
+import dev.kuro9.internal.google.ai.dto.GoogleAiToken
 import dev.kuro9.internal.google.ai.service.GoogleAiService
 import org.springframework.stereotype.Service
 
 @Service
-class GoogleAiSearchService(private val aiService: GoogleAiService) : AiSearchService {
+class GoogleAiSearchService(token: GoogleAiToken) : AiSearchService {
+    private val aiService: GoogleAiService = GoogleAiService(token)
 
     private val systemInstruction = """
             당신은 다른 자동화된 봇을 위한 검색 결과 제공 서비스입니다. 

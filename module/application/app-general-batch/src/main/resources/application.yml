@@ -9,3 +9,5 @@ dev:
   kuro9:
     discord:
       error-url: ${DISCORD_ERROR_WEBHOOK}
+    f1:
+      gemini-api-key: ${F1_GEMINI_API_KEY}
