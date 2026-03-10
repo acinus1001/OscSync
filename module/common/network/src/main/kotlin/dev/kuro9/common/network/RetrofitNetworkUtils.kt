@@ -3,13 +3,17 @@ package dev.kuro9.common.network
 import dev.kuro9.common.logger.errorLog
 import dev.kuro9.common.logger.infoLog
 import dev.kuro9.multiplatform.common.serialization.prettyJson
-import okhttp3.*
+import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.RequestBody
+import okhttp3.Response
 import okio.Buffer
 import okio.GzipSource
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlin.time.measureTimedValue
 
-val JsonConverterFactory = prettyJson.asConverterFactory(MediaType.get("application/json"))
+val JsonConverterFactory = prettyJson.asConverterFactory("application/json".toMediaType())
 
 fun loggingOkHttpClient(vararg interceptors: Interceptor): OkHttpClient = OkHttpClient.Builder()
     .apply {
@@ -30,31 +34,31 @@ object NetworkLogger : Interceptor {
         val request = chain.request()
 
         val requestLog = """
----> ${request.method()} ${request.url()}
+---> ${request.method} ${request.url}
 
 Headers : 
 ${
             request
-                .headers()
+                .headers
                 .toMultimap()
                 .entries
                 .joinToString(separator = "\n") { (key, valueList) -> "\t$key : $valueList" }
         }
 
 Body : 
-    Content-Type : ${request.body()?.contentType() ?: "<body-is-null>"}
-    Content-Length: ${request.body()?.contentLength() ?: "<body-is-null>"}
-${request.body()?.toStringBody() ?: "<body-is-null>"}
+    Content-Type : ${request.body?.contentType() ?: "<body-is-null>"}
+    Content-Length: ${request.body?.contentLength() ?: "<body-is-null>"}
+${request.body?.toStringBody() ?: "<body-is-null>"}
 """
 
         infoLog(requestLog)
 
         val (response, timeValue) = measureTimedValue { chain.proceed(request) }
 
-        val source = response.body()?.source()
+        val source = response.body?.source()
         source?.request(Long.MAX_VALUE)
 
-        val charset = response.body()?.contentType()?.charset(Charsets.UTF_8) ?: Charsets.UTF_8
+        val charset = response.body?.contentType()?.charset(Charsets.UTF_8) ?: Charsets.UTF_8
 
         val responseBody = when {
             source == null -> null
@@ -71,20 +75,20 @@ ${request.body()?.toStringBody() ?: "<body-is-null>"}
         }
 
         val responseLog = """
-<--- ${response.code()} ${response.message()} (${timeValue})
+<--- ${response.code} ${response.message} (${timeValue})
 
 Headers : 
 ${
             response
-                .headers()
+                .headers
                 .toMultimap()
                 .entries
                 .joinToString(separator = "\n") { (key, valueList) -> "\t$key : $valueList" }
         }
 
 Body : 
-    Content-Type : ${response.body()?.contentType() ?: "<body-is-null>"}
-    Content-Length: ${response.body()?.contentLength() ?: "<body-is-null>"}
+    Content-Type : ${response.body?.contentType() ?: "<body-is-null>"}
+    Content-Length: ${response.body?.contentLength() ?: "<body-is-null>"}
 ${responseBody ?: "<body-is-null>"}
 """
 

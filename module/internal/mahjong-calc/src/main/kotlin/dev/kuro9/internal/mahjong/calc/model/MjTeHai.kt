@@ -32,13 +32,13 @@ data class MjTeHai(
         }.map { it.index }
 
         return hasAgariHaiBlockIndex.map {
-            val notAgariBlockList = blockList.filterIndexed { index, _ -> index != it }
+            val notAgariBlockList: List<MjComponent> = blockList.filterIndexed { index, _ -> index != it }
             val yakuSet = MjYakuParser.getYaku(
                 agariHai,
                 blockList[it],
                 gameInfo.bakaze,
                 gameInfo.zikaze,
-                *notAgariBlockList.toTypedArray()
+                *(notAgariBlockList).toTypedArray()
             )
 
             when (isRiichi) {
@@ -74,7 +74,7 @@ data class MjTeHai(
                 blockList[it],
                 gameInfo.bakaze,
                 gameInfo.zikaze,
-                *notAgariBlockList.toTypedArray()
+                *(notAgariBlockList as List<MjComponent>).toTypedArray()
             ).run {
                 val yakuToAdd = mutableSetOf<MjYaku>()
                 if (isRiichi) yakuToAdd += MjYaku.RIICHI
