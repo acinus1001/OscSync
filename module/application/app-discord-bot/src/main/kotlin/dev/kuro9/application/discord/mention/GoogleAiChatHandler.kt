@@ -253,7 +253,10 @@ class GoogleAiChatAbstractHandler(
 
                     429 -> Embed {
                         title = "Gemini 요청 수 제한"
-                        description = "Gemini Free-Tier 요청수 제한에 도달했습니다. 나중에 다시 시도해 주세요."
+                        description = """
+                            Gemini Free-Tier 요청수 제한에 도달했습니다. 나중에 다시 시도해 주세요.
+                            가난한 개발자 후원하기 --> (우리) 001-339960-02-201
+                        """.trimIndent()
                         color = Color.YELLOW.rgb
                     } to false
 
