@@ -5,7 +5,8 @@ import dev.kuro9.common.exception.DuplicatedInsertException
 import dev.kuro9.domain.error.handler.discord.exception.DiscordEmbedException
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.service.KaraokeApiService
-import dev.kuro9.domain.karaoke.service.KaraokeChannelService
+import dev.kuro9.domain.webhook.enums.WebhookDomainType
+import dev.kuro9.domain.webhook.service.WebhookManageService
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.*
@@ -22,8 +23,8 @@ import java.awt.Color
 
 @Component
 class SlashKaraokeCommand(
-    private val channelService: KaraokeChannelService,
-    private val apiService: KaraokeApiService
+    private val apiService: KaraokeApiService,
+    private val webhookManageService: WebhookManageService,
 ) : SlashCommandComponent {
     override val commandData = Command("kara", "노래방 관련 명령어 모음") {
         group("channel", "알림 관련 채널 설정") {
@@ -110,7 +111,7 @@ class SlashKaraokeCommand(
                 ?: event.channel.asTextChannel()
 
         val isRegistered = withContext(Dispatchers.IO) {
-            channelService.getRegisteredChannel(targetChannel.idLong)
+            webhookManageService.getRegisteredChannel(WebhookDomainType.KARAOKE, targetChannel.idLong)
         } != null
 
         if (isRegistered) {
@@ -126,7 +127,8 @@ class SlashKaraokeCommand(
         val webhook = targetChannel.createWebhook("KGB: Karaoke Notify Hook").await()
 
         withContext(Dispatchers.IO) {
-            channelService.registerChannel(
+            webhookManageService.registerChannel(
+                domainType = WebhookDomainType.KARAOKE,
                 channelId = event.channelIdLong,
                 guildId = event.guild?.idLong,
                 webhookUrl = webhook.url,
@@ -158,7 +160,7 @@ class SlashKaraokeCommand(
             } ?: event.channel.asTextChannel()
 
         val registerInfo = withContext(Dispatchers.IO) {
-            channelService.getRegisteredChannel(targetChannel.idLong)
+            webhookManageService.getRegisteredChannel(WebhookDomainType.KARAOKE, targetChannel.idLong)
         }
 
         if (registerInfo == null) {
@@ -173,7 +175,7 @@ class SlashKaraokeCommand(
 
         targetChannel.deleteWebhookById(registerInfo.webhookId.toString()).await()
         withContext(Dispatchers.IO) {
-            channelService.unregisterChannel(registerInfo.channelId.value)
+            webhookManageService.unregisterChannel(WebhookDomainType.KARAOKE, registerInfo.channelId)
         }.takeIf { it }
             ?: throw IllegalStateException("Channel delete failed")
 
