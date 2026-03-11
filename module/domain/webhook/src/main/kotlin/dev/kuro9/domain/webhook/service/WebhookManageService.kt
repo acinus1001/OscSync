@@ -8,8 +8,6 @@ import dev.kuro9.domain.webhook.repository.table.WebhookNotifySendLogs
 import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannelEntity
 import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannels
 import dev.kuro9.multiplatform.common.date.util.now
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.dao.id.CompositeID
@@ -150,9 +148,7 @@ class WebhookManageService {
         data: WebhookSubscribeChannelEntity,
         action: suspend (latestDataSeq: Long?, entity: WebhookSubscribeChannelEntity) -> Pair<String?, Long?>,
     ) {
-        val latestDataSeq = withContext(Dispatchers.IO) {
-            getLatestSendDataSeq(data.domainType, data.channelId)
-        }
+        val latestDataSeq = getLatestSendDataSeq(data.domainType, data.channelId)
 
         val seq = WebhookNotifySendLogs.insertAndGetId {
             it[WebhookNotifySendLogs.domainType] = data.domainType
