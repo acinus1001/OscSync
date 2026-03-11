@@ -3,10 +3,13 @@ package dev.kuro9.domain.webhook.service
 import dev.kuro9.common.exception.DuplicatedInsertException
 import dev.kuro9.domain.webhook.enums.WebhookDomainType
 import dev.kuro9.domain.webhook.enums.WebhookNotifyPhase
+import dev.kuro9.domain.webhook.repository.table.WebhookNotifySendLogEntity
 import dev.kuro9.domain.webhook.repository.table.WebhookNotifySendLogs
 import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannelEntity
 import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannels
 import dev.kuro9.multiplatform.common.date.util.now
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.dao.id.CompositeID
@@ -102,6 +105,19 @@ class WebhookManageService {
             ?.get(WebhookNotifySendLogs.sendDataSeq)
     }
 
+    fun getLastestSendLog(domainType: WebhookDomainType, channelId: Long): WebhookNotifySendLogEntity? {
+        return WebhookNotifySendLogEntity
+            .find {
+                (WebhookNotifySendLogs.domainType eq domainType)
+                    .and(WebhookNotifySendLogs.channelId eq channelId)
+            }
+            .orderBy(WebhookNotifySendLogs.seq to SortOrder.DESC)
+            .limit(1)
+            .firstOrNull()
+
+    }
+
+
     /**
      * 커서 방식의 페이징 처리된 채널 반환
      *
@@ -132,7 +148,9 @@ class WebhookManageService {
         data: WebhookSubscribeChannelEntity,
         action: suspend (latestDataSeq: Long?, entity: WebhookSubscribeChannelEntity) -> Pair<String?, Long?>,
     ) {
-        val latestDataSeq = getLatestSendDataSeq(data.domainType, data.channelId)
+        val latestDataSeq = withContext(Dispatchers.IO) {
+            getLatestSendDataSeq(data.domainType, data.channelId)
+        }
 
         val seq = WebhookNotifySendLogs.insertAndGetId {
             it[WebhookNotifySendLogs.domainType] = data.domainType

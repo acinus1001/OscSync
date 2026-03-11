@@ -8,7 +8,7 @@ import dev.kuro9.application.batch.common.handleFlow
 import dev.kuro9.application.batch.karaoke.tasklet.KaraokeSongFetchTasklet
 import dev.kuro9.application.batch.karaoke.tasklet.KaraokeWebhookTasklet
 import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
-import dev.kuro9.domain.karaoke.repository.table.KaraokeSubscribeChannelEntity
+import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannelEntity
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
 import org.springframework.context.annotation.Bean
@@ -54,7 +54,7 @@ class KaraokeCrawlBatchConfig(
     @Bean
     fun karaokeNotifyNewSongStep(): Step = batch {
         step("karaokeNotifyNewSongStep") {
-            chunk<KaraokeSubscribeChannelEntity, KaraokeSubscribeChannelEntity>(1, txManager) {
+            chunk<WebhookSubscribeChannelEntity, WebhookSubscribeChannelEntity>(1, txManager) {
                 reader(webhookTasklet.asItemStreamReader())
                 writer(webhookTasklet.asItemStreamWriter())
 
