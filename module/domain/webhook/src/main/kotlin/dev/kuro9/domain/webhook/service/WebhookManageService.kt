@@ -95,6 +95,7 @@ class WebhookManageService {
             .toList()
     }
 
+    @Transactional
     fun getLatestSendDataSeq(domainType: WebhookDomainType, channelId: Long): Long? {
         return WebhookNotifySendLogs.select(WebhookNotifySendLogs.sendDataSeq)
             .where { WebhookNotifySendLogs.domainType eq domainType }
@@ -105,6 +106,7 @@ class WebhookManageService {
             ?.get(WebhookNotifySendLogs.sendDataSeq)
     }
 
+    @Transactional
     fun getLastestSendLog(domainType: WebhookDomainType, channelId: Long): WebhookNotifySendLogEntity? {
         return WebhookNotifySendLogEntity
             .find {
