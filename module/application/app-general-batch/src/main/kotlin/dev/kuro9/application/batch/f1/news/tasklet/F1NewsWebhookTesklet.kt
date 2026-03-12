@@ -46,24 +46,20 @@ class F1NewsWebhookTesklet(
     }
 
     override fun write(p0: Chunk<out F1NewsTargetWebhookDto>) {
-        runBlocking {
-
-            for ((channel, newsList) in p0) {
-
-                for (news in newsList) {
-                    webhookService.executeWithLog(channel) { _, _ ->
+        for ((channel, newsList) in p0) {
+            for (news in newsList) {
+                webhookService.executeWithLog(channel) { _, _ ->
+                    runBlocking {
                         discordWebhookService.sendWebhookWithRetry(
-                            channel.webhookUrl,
-                            news.toWebhookPayload()
+                            url = channel.webhookUrl,
+                            payload = news.toWebhookPayload(),
                         )
-                        null to news.id
                     }
 
+                    null to news.id
                 }
-
             }
         }
-
     }
 
     private fun List<F1NewsDto>.toWebhookPayload(): List<DiscordWebhookPayload> {

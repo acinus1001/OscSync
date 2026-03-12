@@ -57,12 +57,10 @@ class KaraokeWebhookTasklet(
 
             if (lastLog?.sendDataInfo == info) continue
 
-            runBlocking {
-                webhookManageService.executeWithLog(entity) { _, _ ->
-                    webhookService.sendWebhook(entity.webhookUrl, webhookPayload)
+            webhookManageService.executeWithLog(entity) { _, _ ->
+                runBlocking { webhookService.sendWebhook(entity.webhookUrl, webhookPayload) }
 
-                    info to null
-                }
+                info to null
             }
         }
     }

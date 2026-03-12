@@ -144,9 +144,9 @@ class WebhookManageService {
      * 람다 (sendDataDescription, sendDataSeq) 리턴
      */
     @Transactional(noRollbackFor = [Throwable::class])
-    suspend fun executeWithLog(
+    fun executeWithLog(
         data: WebhookSubscribeChannelEntity,
-        action: suspend (latestDataSeq: Long?, entity: WebhookSubscribeChannelEntity) -> Pair<String?, Long?>,
+        action: (latestDataSeq: Long?, entity: WebhookSubscribeChannelEntity) -> Pair<String?, Long?>,
     ) {
         val latestDataSeq = getLatestSendDataSeq(data.domainType, data.channelId)
 
