@@ -6,6 +6,7 @@ import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
+import java.time.LocalTime
 
 @Component
 class KaraokeCrawlJobScheduler(
@@ -20,6 +21,7 @@ class KaraokeCrawlJobScheduler(
             job,
             JobParametersBuilder()
                 .addLocalDate("executeDate", LocalDate.now())
+                .addString("timeType", if (LocalTime.now().hour in 0..11) "AM" else "PM")
                 .toJobParameters()
         )
     }
