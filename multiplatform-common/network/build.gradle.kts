@@ -24,6 +24,10 @@ kotlin {
         wasmJsMain.dependencies {
             api(libs.ktor.client.js)
         }
+
+        jsMain.dependencies {
+            api(libs.ktor.client.js)
+        }
     }
 }
 

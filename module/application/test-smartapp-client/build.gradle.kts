@@ -19,37 +19,37 @@ dependencies {
     implementation(projects.module.domain.database)
     implementation(projects.multiplatformCommon.types.testSmartappClient)
 }
-
-val frontModule = projects.moduleFront.testSmartappClient
-val frontIdentityPath = frontModule.identityPath
-val frontModuleBuildPath = "${rootProject.projectDir.path}/module-front/${frontModule.name}/build"
-
-tasks.named("build") {
-    println("=======build start $frontIdentityPath======")
-    dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
-}
-
-tasks.named("bootRun") {
-    println("=======run start ======")
-    dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
-}
-
-tasks.named("processResources") {
-    dependsOn(copyFrontendToBackend)
-}
-
-val copyFrontendToBackend by tasks.registering(Copy::class) {
-    dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
-    delete("$projectDir/src/main/resources/static")
-    println("======= Checking Frontend Build Directory: $frontModuleBuildPath =======")
-    from("$frontModuleBuildPath/kotlin-webpack/wasmJs/productionExecutable/") {
-        include("**/*")
-    }
-    from("$frontModuleBuildPath/processedResources/wasmJs/main/") {
-        include("**/*")
-    }
-
-    println("=======cp start $projectDir ======")
-
-    into("$projectDir/src/main/resources/static")
-}
+//
+//val frontModule = projects.moduleFront.testSmartappClient
+//val frontIdentityPath = frontModule.identityPath
+//val frontModuleBuildPath = "${rootProject.projectDir.path}/module-front/${frontModule.name}/build"
+//
+//tasks.named("build") {
+//    println("=======build start $frontIdentityPath======")
+//    dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
+//}
+//
+//tasks.named("bootRun") {
+//    println("=======run start ======")
+//    dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
+//}
+//
+//tasks.named("processResources") {
+//    dependsOn(copyFrontendToBackend)
+//}
+//
+//val copyFrontendToBackend by tasks.registering(Copy::class) {
+//    dependsOn("$frontIdentityPath:wasmJsBrowserProductionWebpack")
+//    delete("$projectDir/src/main/resources/static")
+//    println("======= Checking Frontend Build Directory: $frontModuleBuildPath =======")
+//    from("$frontModuleBuildPath/kotlin-webpack/wasmJs/productionExecutable/") {
+//        include("**/*")
+//    }
+//    from("$frontModuleBuildPath/processedResources/wasmJs/main/") {
+//        include("**/*")
+//    }
+//
+//    println("=======cp start $projectDir ======")
+//
+//    into("$projectDir/src/main/resources/static")
+//}

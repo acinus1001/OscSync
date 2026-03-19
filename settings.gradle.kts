@@ -46,18 +46,30 @@ include("module-front")
 include("multiplatform-common")
 
 // module 서브모듈 전체적용
-val moduleTypeList = listOf("application", "domain", "internal", "common")
-moduleTypeList.forEach { moduleType ->
+listOf("application", "domain", "internal", "common").forEach { moduleType ->
     include("module:$moduleType")
     println("$moduleType : ${getSubModuleName(moduleType)}")
     getSubModuleName(moduleType).forEach { subModuleName -> includeModule(moduleType, subModuleName) }
 }
 
-// module front 서브모듈 전체적용
-getSubModuleNameOfPrimaryModule("module-front").forEach { subModuleName ->
-    println("front: $subModuleName")
-    include("module-front:$subModuleName")
+// module 서브모듈 전체적용
+listOf("application").forEach { moduleType ->
+    include("module-front:$moduleType")
+    println("$moduleType : ${getSubModuleName(moduleType, "module-front")}")
+    getSubModuleName(moduleType, "module-front").forEach { subModuleName ->
+        includeModule(
+            moduleType,
+            subModuleName,
+            "module-front"
+        )
+    }
 }
+
+//// module front 서브모듈 전체적용
+//getSubModuleNameOfPrimaryModule("module-front").forEach { subModuleName ->
+//    println("front: $subModuleName")
+//    include("module-front:$subModuleName")
+//}
 
 // multiplatform common 서브모듈 전체적용
 getSubModuleNameOfPrimaryModule("multiplatform-common").forEach { subModuleName ->
@@ -77,13 +89,13 @@ getSubModuleNameOfPrimaryModule("multiplatform-common/network").forEach { subMod
     include("multiplatform-common:network:$subModuleName")
 }
 
-fun includeModule(moduleType: String, moduleName: String) {
-    println("module:$moduleType:$moduleName")
-    include("module:$moduleType:$moduleName")
+fun includeModule(moduleType: String, moduleName: String, rootModuleName: String = "module") {
+    println("$rootModuleName:$moduleType:$moduleName")
+    include("$rootModuleName:$moduleType:$moduleName")
 }
 
-fun getSubModuleName(moduleType: String): List<String> {
-    val moduleDir = File("$rootDir/module/$moduleType")
+fun getSubModuleName(moduleType: String, rootModuleName: String = "module"): List<String> {
+    val moduleDir = File("$rootDir/$rootModuleName/$moduleType")
 
     return moduleDir.listFiles()?.filter { subDir ->
         subDir.isDirectory && File(subDir, "build.gradle.kts").exists()
