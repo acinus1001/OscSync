@@ -9,10 +9,8 @@ import dev.kuro9.domain.karaoke.service.KaraokeNewSongService
 import dev.kuro9.domain.webhook.enums.WebhookDomainType
 import dev.kuro9.domain.webhook.repository.table.WebhookSubscribeChannelEntity
 import dev.kuro9.domain.webhook.service.WebhookManageService
-import dev.kuro9.multiplatform.common.date.util.now
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.number
 import kotlinx.datetime.toKotlinLocalDate
 import org.springframework.batch.core.configuration.annotation.StepScope
@@ -28,11 +26,11 @@ class KaraokeWebhookTasklet(
     private val newSongService: KaraokeNewSongService,
     private val webhookManageService: WebhookManageService,
     @param:Value("#{jobParameters['executeDate']}") private val _executeDate: java.time.LocalDate,
+    @param:Value("#{jobParameters['timeType']}") private val timeType: String,
 ) : ItemStreamIterableReaderWriter<WebhookSubscribeChannelEntity> {
     private val executeDate = _executeDate.toKotlinLocalDate()
     private var lastChannelId: Long? = null
     private val webhookPayload = makeWebhookPayload()
-    private val isAm = LocalTime.now().hour in 0..11
 
     override fun readIterable(context: ExecutionContext): Iterable<WebhookSubscribeChannelEntity> {
         if (webhookPayload == null) return emptyList() // 데이터 없다면 종료
@@ -53,14 +51,13 @@ class KaraokeWebhookTasklet(
         }
         for (entity in chunk) {
             val lastLog = webhookManageService.getLastestSendLog(WebhookDomainType.KARAOKE, entity.channelId)
-            val info = if (isAm) "AM" else "PM"
 
-            if (lastLog?.sendDataInfo == info) continue
+            if (lastLog?.sendDataInfo == timeType) continue
 
             webhookManageService.executeWithLog(entity) { _, _ ->
                 runBlocking { webhookService.sendWebhook(entity.webhookUrl, webhookPayload) }
 
-                info to null
+                timeType to null
             }
         }
     }
@@ -78,7 +75,7 @@ class KaraokeWebhookTasklet(
             Embed {
                 title = "TJ ${executeDate.month.number}/${executeDate.day} 신곡 알림"
                 description =
-                    "$executeDate ${if (isAm) "오전" else "오후"} 데이터 : " + if (tjReleaseSongs.size > 25) "${i + 1}/${((tjReleaseSongs.size - 1) / 25) + 1}" else ""
+                    "$executeDate ${if (timeType == "AM") "오전" else "오후"} 데이터 : " + if (tjReleaseSongs.size > 25) "${i + 1}/${((tjReleaseSongs.size - 1) / 25) + 1}" else ""
                 songChunk.forEach { song ->
                     Field {
                         name = "[${song.songNo}] ${song.title}"
