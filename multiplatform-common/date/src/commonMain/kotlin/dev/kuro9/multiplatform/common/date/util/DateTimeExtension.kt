@@ -28,3 +28,4 @@ fun ClosedRange<LocalDate>.toList(): List<LocalDate> {
     }
     return result
 }
+

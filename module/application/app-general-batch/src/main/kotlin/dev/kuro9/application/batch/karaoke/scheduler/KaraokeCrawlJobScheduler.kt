@@ -3,6 +3,7 @@ package dev.kuro9.application.batch.karaoke.scheduler
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.number
 import kotlinx.datetime.toJavaLocalDate
 import org.springframework.batch.core.JobParametersBuilder
 import org.springframework.batch.core.configuration.JobRegistry
@@ -16,14 +17,22 @@ class KaraokeCrawlJobScheduler(
     private val jobRegistry: JobRegistry,
 ) {
 
-    @Scheduled(cron = "0 40 9 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "10 0 9,12,15,18 * * *", zone = "Asia/Seoul")
     fun runKaraokeJob() {
         val job = jobRegistry.getJob("karaokeCrawlJob")
         jobLauncher.run(
             job,
             JobParametersBuilder()
                 .addLocalDate("executeDate", LocalDate.now().toJavaLocalDate())
-                .addString("timeType", if (LocalTime.now().hour in 0..11) "AM" else "PM")
+                .addString(
+                    "executeTimeKey", "${
+                        LocalDate.now().let {
+                            "${it.year}${it.month.number.toString().padStart(2, '0')}${
+                                it.day.toString().padStart(2, '0')
+                            }"
+                        }
+                    }-${LocalTime.now().hour}"
+                )
                 .toJobParameters()
         )
     }

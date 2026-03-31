@@ -26,7 +26,7 @@ class KaraokeWebhookTasklet(
     private val newSongService: KaraokeNewSongService,
     private val webhookManageService: WebhookManageService,
     @param:Value("#{jobParameters['executeDate']}") private val _executeDate: java.time.LocalDate,
-    @param:Value("#{jobParameters['timeType']}") private val timeType: String,
+    @param:Value("#{jobParameters['executeTimeKey']}") private val executeTimeKey: String,
 ) : ItemStreamIterableReaderWriter<WebhookSubscribeChannelEntity> {
     private val executeDate = _executeDate.toKotlinLocalDate()
     private var lastChannelId: Long? = null
@@ -52,12 +52,12 @@ class KaraokeWebhookTasklet(
         for (entity in chunk) {
             val lastLog = webhookManageService.getLastestSendLog(WebhookDomainType.KARAOKE, entity.channelId)
 
-            if (lastLog?.sendDataInfo == timeType) continue
+            if (lastLog?.sendDataInfo == executeTimeKey) continue
 
             webhookManageService.executeWithLog(entity) { _, _ ->
                 runBlocking { webhookService.sendWebhook(entity.webhookUrl, webhookPayload) }
 
-                timeType to null
+                executeTimeKey to null
             }
         }
     }
@@ -75,7 +75,7 @@ class KaraokeWebhookTasklet(
             Embed {
                 title = "TJ ${executeDate.month.number}/${executeDate.day} 신곡 알림"
                 description =
-                    "$executeDate ${if (timeType == "AM") "오전" else "오후"} 데이터 : " + if (tjReleaseSongs.size > 25) "${i + 1}/${((tjReleaseSongs.size - 1) / 25) + 1}" else ""
+                    "$executeDate 데이터 : " + if (tjReleaseSongs.size > 25) "${i + 1}/${((tjReleaseSongs.size - 1) / 25) + 1}" else ""
                 songChunk.forEach { song ->
                     Field {
                         name = "[${song.songNo}] ${song.title}"
