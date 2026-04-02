@@ -52,6 +52,7 @@ class KaraokeTjNewSongService(
                     title = it.indexTitle,
                     singer = it.indexSong,
                     releaseDate = it.publishdate,
+                    seq = -1,
                 )
             }
     }
@@ -72,6 +73,7 @@ class KaraokeTjNewSongService(
         title = title,
         singer = singer,
         releaseDate = releaseDate,
+        seq = seq,
     )
 
     private fun String.isJapanese(): Boolean {

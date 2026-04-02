@@ -4,6 +4,7 @@ import com.navercorp.spring.batch.plus.step.adapter.ItemStreamIterableReaderWrit
 import dev.kuro9.application.batch.discord.dto.DiscordWebhookPayload
 import dev.kuro9.application.batch.discord.dto.Embed
 import dev.kuro9.application.batch.discord.service.DiscordWebhookService
+import dev.kuro9.domain.karaoke.dto.KaraokeSongDto
 import dev.kuro9.domain.karaoke.enumurate.KaraokeBrand
 import dev.kuro9.domain.karaoke.service.KaraokeNewSongService
 import dev.kuro9.domain.webhook.enums.WebhookDomainType
@@ -18,6 +19,7 @@ import org.springframework.batch.item.Chunk
 import org.springframework.batch.item.ExecutionContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.time.LocalDate
 
 @StepScope
 @Component
@@ -25,16 +27,18 @@ class KaraokeWebhookTasklet(
     private val webhookService: DiscordWebhookService,
     private val newSongService: KaraokeNewSongService,
     private val webhookManageService: WebhookManageService,
-    @param:Value("#{jobParameters['executeDate']}") private val _executeDate: java.time.LocalDate,
+    @param:Value("#{jobParameters['executeDate']}") private val _executeDate: LocalDate,
     @param:Value("#{jobParameters['executeTimeKey']}") private val executeTimeKey: String,
 ) : ItemStreamIterableReaderWriter<WebhookSubscribeChannelEntity> {
     private val executeDate = _executeDate.toKotlinLocalDate()
     private var lastChannelId: Long? = null
-    private val webhookPayload = makeWebhookPayload()
+    private val tjReleaseSongs: List<KaraokeSongDto> = newSongService.getNewReleaseSongs(
+        brand = KaraokeBrand.TJ,
+        targetDate = executeDate,
+    )
+    private val tjReleaseSongLastSeq = tjReleaseSongs.maxOf { it.seq }
 
     override fun readIterable(context: ExecutionContext): Iterable<WebhookSubscribeChannelEntity> {
-        if (webhookPayload == null) return emptyList() // 데이터 없다면 종료
-
         return webhookManageService.getAllFilteredSubscribedChannels(
             domainType = WebhookDomainType.KARAOKE,
             pageSize = 1000,
@@ -45,28 +49,29 @@ class KaraokeWebhookTasklet(
     }
 
     override fun write(chunk: Chunk<out WebhookSubscribeChannelEntity>) {
-        if (webhookPayload == null) {
-            info { "WebhookPayload is null" }
-            return
-        }
+
         for (entity in chunk) {
             val lastLog = webhookManageService.getLastestSendLog(WebhookDomainType.KARAOKE, entity.channelId)
 
-            if (lastLog?.sendDataInfo == executeTimeKey) continue
+            val lastSeenSeq = lastLog?.sendDataSeq
+            val webhookPayload = makeWebhookPayload(tjReleaseSongs, lastSeenSeq?.toInt())
+
+            if (webhookPayload == null) {
+                info { "skip webhook for channelId: ${entity.channelId} (lastSeenSeq: $lastSeenSeq)" }
+                continue
+            }
 
             webhookManageService.executeWithLog(entity) { _, _ ->
                 runBlocking { webhookService.sendWebhook(entity.webhookUrl, webhookPayload) }
 
-                executeTimeKey to null
+                executeTimeKey to tjReleaseSongLastSeq.toLong()
             }
         }
     }
 
-    private fun makeWebhookPayload(): DiscordWebhookPayload? {
-        val tjReleaseSongs = newSongService.getNewReleaseSongs(
-            brand = KaraokeBrand.TJ,
-            targetDate = executeDate,
-        )
+    private fun makeWebhookPayload(tjReleaseSongs: List<KaraokeSongDto>, lastSeenSeq: Int?): DiscordWebhookPayload? {
+        val tjReleaseSongs: List<KaraokeSongDto> = tjReleaseSongs
+            .filter { it.seq > (lastSeenSeq ?: return@filter true) }
             .takeIf { it.isNotEmpty() }
             ?: return null
 

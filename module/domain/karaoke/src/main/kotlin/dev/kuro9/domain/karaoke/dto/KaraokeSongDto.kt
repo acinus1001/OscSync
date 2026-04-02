@@ -9,4 +9,5 @@ data class KaraokeSongDto(
     val title: String,
     val singer: String,
     val releaseDate: LocalDate,
+    val seq: Int,
 )
