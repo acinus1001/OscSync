@@ -36,9 +36,11 @@ class KaraokeWebhookTasklet(
         brand = KaraokeBrand.TJ,
         targetDate = executeDate,
     )
-    private val tjReleaseSongLastSeq = tjReleaseSongs.maxOf { it.seq }
+    private val tjReleaseSongLastSeq = tjReleaseSongs.maxOfOrNull { it.seq }
 
     override fun readIterable(context: ExecutionContext): Iterable<WebhookSubscribeChannelEntity> {
+        if (tjReleaseSongs.isEmpty()) return emptyList()
+
         return webhookManageService.getAllFilteredSubscribedChannels(
             domainType = WebhookDomainType.KARAOKE,
             pageSize = 1000,
@@ -56,7 +58,7 @@ class KaraokeWebhookTasklet(
             val lastSeenSeq = lastLog?.sendDataSeq
             val webhookPayload = makeWebhookPayload(tjReleaseSongs, lastSeenSeq?.toInt())
 
-            if (webhookPayload == null) {
+            if (webhookPayload == null || tjReleaseSongLastSeq == null) {
                 info { "skip webhook for channelId: ${entity.channelId} (lastSeenSeq: $lastSeenSeq)" }
                 continue
             }
