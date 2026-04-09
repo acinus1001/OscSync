@@ -1,5 +1,6 @@
 package dev.kuro9.application.batch.f1.news.tasklet
 
+import com.google.genai.errors.ClientException
 import com.navercorp.spring.batch.plus.step.adapter.ItemStreamIterableReaderProcessorWriter
 import dev.kuro9.application.batch.f1.news.config.F1NewsProperties
 import dev.kuro9.application.batch.f1.news.tasklet.dto.F1NewsTaskletDto
@@ -18,7 +19,9 @@ class F1NewsSummaryTasklet(
     private val f1NewsService: F1NewsService,
     private val f1NewsParseService: F1NewsParseService,
     f1NewsProperties: F1NewsProperties,
-) : ItemStreamIterableReaderProcessorWriter<F1NewsTaskletDto, F1NewsTaskletDto> {
+) : ItemStreamIterableReaderProcessorWriter<F1NewsTaskletDto, Result<F1NewsTaskletDto>> {
+    private var exception429: ClientException? = null
+
     private val summaryInstruction = """
         당신은 뉴스를 요약하는 봇 입니다. 
         제공된 텍스트를 한국어 1000자 이내로 요약해 제공하십시오.
@@ -41,14 +44,25 @@ class F1NewsSummaryTasklet(
         }
     }
 
-    override fun process(p0: F1NewsTaskletDto): F1NewsTaskletDto {
-        return runBlocking { summariseNews(p0) }
+    override fun process(p0: F1NewsTaskletDto): Result<F1NewsTaskletDto> {
+        if (exception429 != null) return Result.failure(exception429!!)
+        return runBlocking {
+            runCatching { summariseNews(p0) }
+                .also {
+                    val exception = it.exceptionOrNull() ?: return@also
+                    if (exception is ClientException && exception.code() == 429)
+                        exception429 = exception
+                }
+        }
     }
 
-    override fun write(p0: Chunk<out F1NewsTaskletDto>) {
+    override fun write(p0: Chunk<out Result<F1NewsTaskletDto>>) {
         for (news in p0) {
-            f1NewsService.updateSummary(news.id, news.contentSummary!!)
+            if (news.isFailure) continue
+            f1NewsService.updateSummary(news.getOrThrow().id, news.getOrThrow().contentSummary!!)
         }
+
+        p0.firstOrNull { it.isFailure }?.getOrThrow()
     }
 
     private suspend fun summariseNews(news: F1NewsTaskletDto): F1NewsTaskletDto {

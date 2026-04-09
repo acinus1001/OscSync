@@ -64,15 +64,10 @@ class F1NewsParseBatchConfig(
     @Bean
     fun f1NewsSummaryStep(): Step = batch {
         step("f1NewsSummaryStep") {
-            chunk<F1NewsTaskletDto, F1NewsTaskletDto>(1, txManager) {
+            chunk<F1NewsTaskletDto, Result<F1NewsTaskletDto>>(1, txManager) {
                 reader(f1NewsSummaryTasklet.asItemStreamReader())
                 processor(f1NewsSummaryTasklet.asItemProcessor())
                 writer(f1NewsSummaryTasklet.asItemStreamWriter())
-
-                faultTolerant {
-                    retry<Throwable>()
-                    retryLimit(3)
-                }
 
                 listener(errorListener)
             }
