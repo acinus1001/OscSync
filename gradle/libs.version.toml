@@ -47,6 +47,7 @@ spring-boot-starter-aop = { module = "org.springframework.boot:spring-boot-start
 spring-boot-starter-batch = { module = "org.springframework.boot:spring-boot-starter-batch", version.ref = "spring" }
 spring-boot-starter-cache = { module = "org.springframework.boot:spring-boot-starter-cache", version.ref = "spring" }
 spring-boot-starter-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis", version.ref = "spring" }
+spring-shell = { module = "org.springframework.boot:spring-shell-starter", version.ref = "spring" }
 
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
@@ -121,7 +122,7 @@ navercorp-spring-batch-plus = { module = "com.navercorp.spring:spring-boot-start
 
 slf4j-api-extensions = { module = "io.github.harryjhin:slf4j-api-extensions", version = "1.0.3" }
 
-
+apache-commons-exec = { module = "org.apache.commons:commons-exec", version = "1.6.0" }
 
 
 
