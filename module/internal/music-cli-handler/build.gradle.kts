@@ -9,4 +9,7 @@ dependencies {
     implementation(libs.spring.boot.starter)
 
     implementation(projects.module.common.logger)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.reactor)
+    implementation(libs.apache.commons.exec)
 }
