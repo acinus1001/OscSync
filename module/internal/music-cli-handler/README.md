@@ -10,3 +10,8 @@
 - [음악 일시정지]()
 - [현재 음악 스킵]()
 - [현재 음악 가져오기]()
+
+## iTunes 사용 API 목록
+
+- [search by title](https://itunes.apple.com/search?term=ウルトラ魂&entity=song&country=jp)
+- [get info by id](https://itunes.apple.com/lookup?id=1881610738)

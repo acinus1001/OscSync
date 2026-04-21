@@ -4,3 +4,6 @@ GET https://examples.http-client.intellij.net/get
 
 ###
 GET https://itunes.apple.com/search?term=ウルトラ魂&entity=song&country=jp
+
+###
+GET https://itunes.apple.com/lookup?id=1881610738
