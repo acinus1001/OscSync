@@ -30,10 +30,15 @@ class ShortcutCliService {
     suspend fun skipMusic() = executeCommand("music_skip")
 
     /**
-     * @return iTunesId ( null if not playing )
+     * 음악 단축어 현재재생 항목이 불러와지지 않아서 osascript 사용으로 대체.
+     * itunesId 직접 가져올 수 없어 일단 title + artist 반환으로 변경.
+     *
+     * @return title + artist ( null if not playing )
      */
-    suspend fun getNowPlaying(): String? = executeCommand("music_now_playing")
-        .takeIf { it.isNotBlank() && it.all { c -> c.isDigit() } }
+    suspend fun getNowPlaying(): String? {
+        val result = executeCommand("music_now_playing")
+        return result.ifBlank { null }
+    }
 
     suspend fun executeCommand(command: String, vararg args: String): String = withContext(dispatcher) {
         require("^[A-Za-z0-9_-]{1,50}$".toRegex().matchEntire(command) != null) { "Invalid command format: $command" }

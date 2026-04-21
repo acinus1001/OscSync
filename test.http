@@ -3,7 +3,7 @@ GET https://examples.http-client.intellij.net/get
     ?generated-in=IntelliJ IDEA
 
 ###
-GET https://itunes.apple.com/search?term=ウルトラ魂&entity=song&country=jp
+GET https://itunes.apple.com/search?term=花占い Vaundy&entity=song&country=jp&limit=1
 
 ###
 GET https://itunes.apple.com/lookup?id=1881610738

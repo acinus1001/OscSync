@@ -9,6 +9,7 @@ class ItunesApiResource {
         val term: String,
         val entity: String = "song",
         val country: String = "jp",
+        val limit: Int? = null
     )
 
     @Resource("/lookup")
