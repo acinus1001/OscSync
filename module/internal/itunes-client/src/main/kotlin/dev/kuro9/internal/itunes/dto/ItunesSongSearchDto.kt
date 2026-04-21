@@ -30,7 +30,7 @@ data class ItunesSongSearchDto(
     val discNumber: Int? = null,
     val trackCount: Int? = null,
     val trackNumber: Int? = null,
-    val trackTimeMillis: Long? = null,
+    val trackTimeMillis: Long,
     val country: String? = null,
     val currency: String? = null,
     val primaryGenreName: String? = null,
