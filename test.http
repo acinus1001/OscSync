@@ -1,0 +1,21 @@
+### GET request to example server
+GET https://examples.http-client.intellij.net/get
+    ?generated-in=IntelliJ IDEA
+
+###
+GET https://itunes.apple.com/search?term=イデア Vaundy&entity=song&country=jp&limit=1
+
+###
+GET https://itunes.apple.com/lookup?id=1881610738&country=jp
+
+###
+GET http://localhost:8080/api/music/now
+
+###
+PUT http://localhost:8080/api/music/queue?iTunesId=1891710449
+
+###
+POST http://localhost:8080/api/music/now/resume
+
+###
+POST http://localhost:8080/api/music/now/pause
