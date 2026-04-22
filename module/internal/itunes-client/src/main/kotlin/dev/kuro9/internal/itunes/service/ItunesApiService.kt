@@ -12,7 +12,9 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.resources.*
+import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.*
 import io.ktor.serialization.kotlinx.json.*
 import org.springframework.stereotype.Service
 
@@ -21,12 +23,14 @@ class ItunesApiService {
     private val httpClient = httpClient {
         install(ContentNegotiation) {
             json(minifyJson)
+            register(ContentType.Text.JavaScript, KotlinxSerializationConverter(minifyJson))
         }
         install(Logging)
+        install(Resources)
         expectSuccess = true
 
         defaultRequest {
-            contentType(ContentType.Application.Json)
+            accept(ContentType.Any)
             url {
                 protocol = URLProtocol.HTTPS
                 host = "itunes.apple.com"

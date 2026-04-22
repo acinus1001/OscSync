@@ -1,5 +1,8 @@
 package dev.kuro9.application.music.dto
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class MusicInfo(
     val id: Long,
     val title: String,

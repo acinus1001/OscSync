@@ -13,7 +13,7 @@ class ItunesApiResource {
     )
 
     @Resource("/lookup")
-    class Lookup(val id: Long)
+    class Lookup(val id: Long, val country: String = "jp")
 
 
 }

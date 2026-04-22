@@ -31,6 +31,13 @@ class MusicStateService(
         val info = itunesApiService.getItunesSongInfo(iTunesId)?.toMusicInfo()
             ?: throw MusicSearchException()
 
+        if (nowPlaying.load() == null) {
+            info { "play first music: ${info.artist} - ${info.title}" }
+            nowPlaying.store(info)
+            shortcutCliService.playMusic(iTunesId.toString())
+            return
+        }
+
         shortcutCliService.playlistAdd(iTunesId.toString())
         playQueue.add(info)
     }

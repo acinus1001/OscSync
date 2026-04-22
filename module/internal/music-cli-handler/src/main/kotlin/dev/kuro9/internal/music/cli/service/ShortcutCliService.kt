@@ -14,12 +14,12 @@ class ShortcutCliService {
     private val dispatcher = Dispatchers.IO.limitedParallelism(1)
 
     suspend fun playMusic(iTunesId: String) {
-        require("^[0-9]$".toRegex().matchEntire(iTunesId) != null) { "Invalid iTunesId format: $iTunesId" }
+        require("^[0-9]*$".toRegex().matchEntire(iTunesId) != null) { "Invalid iTunesId format: $iTunesId" }
         executeCommand("music_play", iTunesId)
     }
 
     suspend fun playlistAdd(iTunesId: String) {
-        require("^[0-9]$".toRegex().matchEntire(iTunesId) != null) { "Invalid iTunesId format: $iTunesId" }
+        require("^[0-9]*$".toRegex().matchEntire(iTunesId) != null) { "Invalid iTunesId format: $iTunesId" }
         executeCommand("music_playlist_add", iTunesId)
     }
 
@@ -60,7 +60,7 @@ class ShortcutCliService {
         val commandLine = CommandLine("shortcuts")
             .addArgument("run")
             .addArgument(command)
-            .addArgument("-i")
+            .apply { if (args.isNotEmpty()) addArgument("-i") }
             .apply { args.forEach { this.addArgument(it) } }
 
         try {

@@ -16,5 +16,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.ktor.core)
     implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.client.resources)
     implementation(libs.ktor.serialization.kotlinx.json)
 }
