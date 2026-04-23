@@ -37,13 +37,13 @@ class SlashMusicControlCommand(
         subcommand("resume", "일시정지된 음악 재개")
 
         subcommand("search", "음악 검색") {
-            option<String>("query", "검색어")
+            option<String>("query", "검색어", required = true)
         }
         subcommand("add-id", "iTunes ID로 재생목록에 음악 추가") {
-            option<Long>("itunes_id", "추가하려는 음악의 iTunes ID")
+            option<Long>("itunes_id", "추가하려는 음악의 iTunes ID", required = true)
         }
         subcommand("add-search", "검색결과의 최상단 음악으로 재생목록에 음악 추가") {
-            option<String>("query", "검색어")
+            option<String>("query", "검색어", required = true)
         }
     }
 
@@ -114,6 +114,7 @@ class SlashMusicControlCommand(
                 field {
                     name = music.title
                     value = if (music.album != null) "${music.artist} - ${music.album}" else music.artist
+                    inline = false
                 }
             }
         }.let { deferReply.await().editOriginalEmbeds(it).await() }
@@ -149,6 +150,7 @@ class SlashMusicControlCommand(
                 field {
                     name = "${result.trackName} - ${result.artistName}"
                     value = "iTunes ID : ${result.trackId}"
+                    inline = false
                 }
             }
         }
