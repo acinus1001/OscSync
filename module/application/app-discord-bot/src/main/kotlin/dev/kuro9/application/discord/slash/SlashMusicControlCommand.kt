@@ -40,7 +40,7 @@ class SlashMusicControlCommand(
             option<String>("query", "검색어")
         }
         subcommand("add-id", "iTunes ID로 재생목록에 음악 추가") {
-            option<Long>("iTunesId", "추가하려는 음악의 iTunes ID")
+            option<Long>("itunes_id", "추가하려는 음악의 iTunes ID")
         }
         subcommand("add-search", "검색결과의 최상단 음악으로 재생목록에 음악 추가") {
             option<String>("query", "검색어")
@@ -169,7 +169,7 @@ class SlashMusicControlCommand(
     }
 
     private suspend fun handleAddId(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
-        val iTunesId = event.getOption("iTunesId")!!.asLong
+        val iTunesId = event.getOption("itunes_id")!!.asLong
         val addedMusic = musicConnectService.addPlayQueue(iTunesId)
 
         Embed {
