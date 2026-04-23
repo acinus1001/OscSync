@@ -37,11 +37,11 @@ class MusicConnectService(
     }
 
     suspend fun getNowPlaying(): MusicInfoDto? {
-        return httpClient.get(MusicClientResource.Music.Now).body<MusicInfoDto?>()
+        return httpClient.get(MusicClientResource.Music.Now()).body<MusicInfoDto?>()
     }
 
     suspend fun getPlayQueue(): List<MusicInfoDto> {
-        return httpClient.get(MusicClientResource.Music.QueueGet).body<List<MusicInfoDto>>()
+        return httpClient.get(MusicClientResource.Music.QueueGet()).body<List<MusicInfoDto>>()
     }
 
     suspend fun addPlayQueue(iTunesId: Long): MusicInfoDto {
@@ -49,14 +49,14 @@ class MusicConnectService(
     }
 
     suspend fun skipMusic() {
-        httpClient.post(MusicClientResource.Music.Now.Skip)
+        httpClient.post(MusicClientResource.Music.Now.Skip())
     }
 
     suspend fun pauseMusic() {
-        httpClient.post(MusicClientResource.Music.Now.Pause)
+        httpClient.post(MusicClientResource.Music.Now.Pause())
     }
 
     suspend fun resumeMusic() {
-        httpClient.post(MusicClientResource.Music.Now.Resume)
+        httpClient.post(MusicClientResource.Music.Now.Resume())
     }
 }
