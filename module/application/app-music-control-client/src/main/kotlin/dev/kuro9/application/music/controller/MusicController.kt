@@ -23,8 +23,8 @@ class MusicController(
     }
 
     @PutMapping("/queue")
-    suspend fun addQueue(@RequestParam("iTunesId") iTunesId: Long) {
-        musicStateService.addQueue(iTunesId)
+    suspend fun addQueue(@RequestParam("iTunesId") iTunesId: Long): MusicInfo {
+        return musicStateService.addQueue(iTunesId)
     }
 
     @PostMapping("/now/skip")
