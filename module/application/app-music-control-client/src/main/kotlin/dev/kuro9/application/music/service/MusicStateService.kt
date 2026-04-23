@@ -27,7 +27,7 @@ class MusicStateService(
     fun getPlayQueue(): List<MusicInfo> = playQueue.toList()
 
     @Throws(MusicSearchException::class)
-    suspend fun addQueue(iTunesId: Long) {
+    suspend fun addQueue(iTunesId: Long): MusicInfo {
         val info = itunesApiService.getItunesSongInfo(iTunesId)?.toMusicInfo()
             ?: throw MusicSearchException()
 
@@ -35,11 +35,12 @@ class MusicStateService(
             info { "play first music: ${info.artist} - ${info.title}" }
             nowPlaying.store(info)
             shortcutCliService.playMusic(iTunesId.toString())
-            return
+            return info
         }
 
         shortcutCliService.playlistAdd(iTunesId.toString())
         playQueue.add(info)
+        return info
     }
 
     suspend fun skipMusic(): MusicInfo? {
