@@ -145,7 +145,7 @@ class SlashMusicControlCommand(
         val embed = Embed {
             title = "검색어 [${query}] 에 대한 검색 결과 : ${searchResult.size} 건"
             description = "상위 5건만 노출"
-            image = searchResult.firstOrNull()?.artworkUrl100
+            thumbnail = searchResult.firstOrNull()?.artworkUrl100
             for (result in searchResult.take(5)) {
                 field {
                     name = "${result.trackName} - ${result.artistName}"
@@ -177,7 +177,7 @@ class SlashMusicControlCommand(
         Embed {
             title = "음악 추가 완료"
             description = "${addedMusic.title} - ${addedMusic.artist}"
-            image = addedMusic.imageUrl
+            thumbnail = addedMusic.imageUrl
             footer {
                 name = "iTunes ID : ${addedMusic.id}"
             }
@@ -202,7 +202,7 @@ class SlashMusicControlCommand(
         Embed {
             title = "음악 추가 완료"
             description = "${addedMusic.title} - ${addedMusic.artist}"
-            image = addedMusic.imageUrl
+            thumbnail = addedMusic.imageUrl
             footer {
                 name = "iTunes ID : ${addedMusic.id}"
             }
@@ -220,7 +220,7 @@ class SlashMusicControlCommand(
         val embed = Embed {
             title = "음악 추가 완료"
             description = "${addedMusic.title} - ${addedMusic.artist}"
-            image = addedMusic.imageUrl
+            thumbnail = addedMusic.imageUrl
             footer {
                 name = "iTunes ID : ${addedMusic.id}"
             }
