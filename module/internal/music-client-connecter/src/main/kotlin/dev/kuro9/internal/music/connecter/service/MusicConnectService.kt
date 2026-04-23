@@ -45,7 +45,7 @@ class MusicConnectService(
     }
 
     suspend fun addPlayQueue(iTunesId: Long): MusicInfoDto {
-        return httpClient.post(MusicClientResource.Music.QueuePut(iTunesId)).body<MusicInfoDto>()
+        return httpClient.put(MusicClientResource.Music.QueuePut(iTunesId)).body<MusicInfoDto>()
     }
 
     suspend fun skipMusic() {
