@@ -71,6 +71,7 @@ class MusicStateService(
         this.nowPlaying.store(musicInfo)
 
         val queueHead: MusicInfo? = playQueue.peek()
+        info { "queueHead: ${queueHead?.id} / musicInfo: ${musicInfo.id}" }
         if (queueHead == musicInfo) {
             info { "Deleting queue head: ${musicInfo.artist} - ${musicInfo.title}" }
             playQueue.poll()
