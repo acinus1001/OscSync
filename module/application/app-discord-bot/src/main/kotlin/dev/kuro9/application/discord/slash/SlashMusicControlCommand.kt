@@ -40,7 +40,7 @@ class SlashMusicControlCommand(
         subcommand("pause", "현재 재생중인 음악 일시정지")
         subcommand("resume", "일시정지된 음악 재개")
 
-        subcommand("search", "음악 검색") {
+        subcommand("search", "음악 검색 (iTunes 검색)") {
             option<String>("query", "검색어", required = true)
         }
         subcommand("add-id", "iTunes ID로 재생목록에 음악 추가") {
