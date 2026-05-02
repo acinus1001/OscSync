@@ -4,5 +4,7 @@ enum class DiscordEventType {
     SLASH,
     BUTTON,
     MESSAGE,
-    MODAL;
+    MODAL,
+    STRING_SELECT,
+    ENTITY_SELECT;
 }

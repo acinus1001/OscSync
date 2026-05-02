@@ -8,6 +8,7 @@ import kotlinx.datetime.toKotlinLocalDateTime
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -103,6 +104,28 @@ class DiscordLoggingService {
             it[this.command] = modalId
             it[this.args] = event.type.toString()
             it[this.type] = DiscordEventType.MODAL
+            it[this.requestAt] = requestTime
+            it[this.createdAt] = LocalDateTime.now()
+        }
+    }
+
+
+    @EventListener
+    @Transactional
+    fun handleStringSelect(event: StringSelectInteractionEvent) {
+        val author = event.user.idLong
+        val guild = event.guild?.idLong
+        val channel = event.channel.idLong
+        val command = event.componentId
+        val requestTime = event.timeCreated.toSeoulTime()
+
+        DiscordEventLogs.insert {
+            it[this.userId] = author
+            it[this.guildId] = guild
+            it[this.channelId] = channel
+            it[this.command] = command
+            it[this.args] = "${event.componentId} : ${event.values}"
+            it[this.type] = DiscordEventType.STRING_SELECT
             it[this.requestAt] = requestTime
             it[this.createdAt] = LocalDateTime.now()
         }

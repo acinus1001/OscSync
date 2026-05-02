@@ -2,6 +2,7 @@ package dev.kuro9.application.discord.slash
 
 import dev.kuro9.application.discord.util.asyncDeferReply
 import dev.kuro9.internal.discord.handler.model.ButtonInteractionHandler
+import dev.kuro9.internal.discord.handler.model.StringSelectInteractionHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.internal.itunes.service.ItunesApiService
 import dev.kuro9.internal.music.connecter.service.MusicConnectService
@@ -9,14 +10,17 @@ import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.Command
 import dev.minn.jda.ktx.interactions.commands.option
 import dev.minn.jda.ktx.interactions.commands.subcommand
+import dev.minn.jda.ktx.interactions.components.SelectOption
 import dev.minn.jda.ktx.messages.Embed
 import io.github.harryjhin.slf4j.extension.error
 import kotlinx.coroutines.Deferred
 import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.components.buttons.Button
+import net.dv8tion.jda.api.components.selections.StringSelectMenu
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
@@ -27,7 +31,7 @@ import java.awt.Color
 class SlashMusicControlCommand(
     private val itunesApiService: ItunesApiService,
     private val musicConnectService: MusicConnectService,
-) : SlashCommandComponent, ButtonInteractionHandler {
+) : SlashCommandComponent, ButtonInteractionHandler, StringSelectInteractionHandler {
     private val buttonPrefix = "music_ctr_"
     override val commandData: SlashCommandData = Command("music", "음악 영상공유 컨트롤 관련 명령어") {
         subcommand("now-playing", "현재 재생중인 음악 확인")
@@ -144,7 +148,7 @@ class SlashMusicControlCommand(
 
         val embed = Embed {
             title = "검색어 [${query}] 에 대한 검색 결과 : ${searchResult.size} 건"
-            description = "상위 5건만 노출"
+            description = "상위 5건만 노출 / 전체목록 Dropdown menu에서 확인 가능"
             thumbnail = searchResult.firstOrNull()?.artworkUrl100
             for (result in searchResult.take(5)) {
                 field {
@@ -158,13 +162,45 @@ class SlashMusicControlCommand(
         deferReply.await().run {
             editOriginalEmbeds(embed).await()
             editOriginalComponents(
-                searchResult.take(5).mapIndexed { i, result ->
-                    ActionRow.of(
-                        Button.secondary(
-                            "${buttonPrefix}add_${result.trackId}",
-                            "[${i + 1}] ${result.trackName} - ${result.artistName}"
+                buildList {
+                    add(
+                        ActionRow.of(
+                            searchResult.take(5).mapIndexed { i, result ->
+                                Button.secondary(
+                                    "${buttonPrefix}add_${result.trackId}",
+                                    "[${i + 1}] ${result.trackName} - ${result.artistName}".take(70)
+                                )
+                            })
+                    )
+                    add(
+                        ActionRow.of(
+                            StringSelectMenu.create("${buttonPrefix}dropdown_search_1")
+                                .addOptions(
+                                    searchResult.take(25).mapIndexed { i, result ->
+                                        SelectOption(
+                                            label = "[${i + 1}] ${result.trackName} - ${result.artistName}".take(70),
+                                            value = result.trackId.toString()
+                                        )
+                                    }
+                                )
+                                .build()
                         )
                     )
+                    if (searchResult.size > 25)
+                        add(
+                            ActionRow.of(
+                                StringSelectMenu.create("${buttonPrefix}dropdown_search_2")
+                                    .addOptions(
+                                        searchResult.drop(25).take(25).mapIndexed { i, result ->
+                                            SelectOption(
+                                                label = "[${i + 26}] ${result.trackName} - ${result.artistName}".take(70),
+                                                value = result.trackId.toString()
+                                            )
+                                        }
+                                    )
+                                    .build()
+                            )
+                        )
                 }
             ).await()
         }
@@ -239,4 +275,23 @@ class SlashMusicControlCommand(
 
             else -> throw t
         }.also { error(t) { "handled err" } }
+
+    override suspend fun isHandleable(event: StringSelectInteractionEvent): Boolean {
+        return event.componentId.startsWith("${buttonPrefix}dropdown_search")
+    }
+
+    override suspend fun handleStringSelectInteraction(event: StringSelectInteractionEvent) {
+        val iTunesId = event.values.first().toLong()
+        val deferReply = event.deferReply()
+        val addedMusic = musicConnectService.addPlayQueue(iTunesId)
+
+        Embed {
+            title = "음악 추가 완료"
+            description = "${addedMusic.title} - ${addedMusic.artist}"
+            thumbnail = addedMusic.imageUrl
+            footer {
+                name = "iTunes ID : ${addedMusic.id}"
+            }
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
+    }
 }
