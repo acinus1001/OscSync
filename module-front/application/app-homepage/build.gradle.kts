@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.build.config)
 }
 
 
@@ -40,10 +41,18 @@ kotlin {
 
         jsMain.dependencies {
 //            implementation(compose.runtime)
+            implementation(projects.moduleFront.internal.memberClient)
+            implementation(projects.multiplatformCommon.network)
+            implementation(projects.multiplatformCommon.types.member)
+
             implementation(libs.compose.html)
 
 
 //            implementation(npm("@discord/embedded-app-sdk", "latest"))
         }
+    }
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xexplicit-backing-fields")
     }
 }

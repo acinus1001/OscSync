@@ -52,8 +52,8 @@ listOf("application", "domain", "internal", "common").forEach { moduleType ->
     getSubModuleName(moduleType).forEach { subModuleName -> includeModule(moduleType, subModuleName) }
 }
 
-// module 서브모듈 전체적용
-listOf("application").forEach { moduleType ->
+// module-front 서브모듈 전체적용
+listOf("application", "internal").forEach { moduleType ->
     include("module-front:$moduleType")
     println("$moduleType : ${getSubModuleName(moduleType, "module-front")}")
     getSubModuleName(moduleType, "module-front").forEach { subModuleName ->

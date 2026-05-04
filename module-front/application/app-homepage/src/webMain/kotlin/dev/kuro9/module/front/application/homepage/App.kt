@@ -6,6 +6,8 @@ import dev.kuro9.module.front.application.homepage.page.About
 import dev.kuro9.module.front.application.homepage.page.Contact
 import dev.kuro9.module.front.application.homepage.page.Index
 import dev.kuro9.module.front.application.homepage.page.Services
+import dev.kuro9.module.front.application.homepage.state.route.Route
+import dev.kuro9.module.front.application.homepage.state.route.RouteState
 import org.jetbrains.compose.web.dom.Hr
 import org.koin.compose.koinInject
 

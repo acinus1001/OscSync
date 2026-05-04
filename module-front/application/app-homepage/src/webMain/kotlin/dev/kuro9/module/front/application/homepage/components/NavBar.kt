@@ -1,17 +1,23 @@
 package dev.kuro9.module.front.application.homepage.components
 
 import androidx.compose.runtime.Composable
-import dev.kuro9.module.front.application.homepage.Route
-import dev.kuro9.module.front.application.homepage.RouteState
+import androidx.compose.runtime.LaunchedEffect
+import dev.kuro9.module.front.application.homepage.state.route.Route
+import dev.kuro9.module.front.application.homepage.state.route.RouteState
+import dev.kuro9.module.front.application.homepage.state.user.UserEffect
+import dev.kuro9.module.front.application.homepage.state.user.UserState
+import dev.kuro9.module.front.application.homepage.state.user.UserViewModel
+import kotlinx.browser.window
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.A
+import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Text
 import org.koin.compose.koinInject
 
 @Composable
 fun NavBar() {
-    val routeState: RouteState = koinInject()
     Div(attrs = {
         style {
             padding(12.px)
@@ -27,26 +33,95 @@ fun NavBar() {
             alignItems(AlignItems.Center)
         }
     }) {
-        Div(attrs = {
-            style {
-                fontSize(24.px)
-                fontWeight("bold")
-                marginBottom(8.px)
-            }
-        }) {
-            Text("kuro9.dev")
-        }
+        Logo()
+        NavMenus()
+        UtilButtons()
+    }
+}
 
-        Div(attrs = {
+@Composable
+private fun Logo() {
+    Div(attrs = {
+        style {
+            flex(1)
+            fontSize(24.px)
+        }
+    }) {
+        Text("kuro9.dev")
+    }
+}
+
+@Composable
+private fun NavMenus() {
+    val routeState: RouteState = koinInject()
+    Div(attrs = {
+        style {
+            display(DisplayStyle.Flex)
+            justifyContent(JustifyContent.Center)
+            gap(6.px)
+        }
+    }) {
+        MenuItem(routeState.nowPage == Route.HOME, "Home") { routeState.navigate(Route.HOME) }
+        MenuItem(routeState.nowPage == Route.ABOUT, "About") { routeState.navigate(Route.ABOUT) }
+        MenuItem(routeState.nowPage == Route.CONTACT, "Contact") { routeState.navigate(Route.CONTACT) }
+        MenuItem(routeState.nowPage == Route.SERVICES, "Services") { routeState.navigate(Route.SERVICES) }
+    }
+}
+
+@Composable
+private fun UtilButtons() {
+    val userViewModel: UserViewModel = koinInject()
+    val userState: UserState = koinInject()
+    LaunchedEffect(Unit) {
+        launch {
+            userViewModel.effect.collect { effect ->
+                println("effect: $effect")
+                when (effect) {
+                    is UserEffect.OpenOAuth -> {
+                        println("openOAuth: $effect")
+                        window.location.href = effect.url
+                    }
+                }
+            }
+        }
+        userViewModel.refreshMyInfo()
+    }
+
+    Div(attrs = {
+        style {
+            flex(1)
+            display(DisplayStyle.Flex)
+            justifyContent(JustifyContent.FlexEnd)
+        }
+    }) {
+        Button(attrs = {
             style {
-                display(DisplayStyle.Flex)
-                gap(6.px)
+                cursor("pointer")
+                padding(4.px, 12.px)
+                border {
+                    width(1.px)
+                    style(LineStyle.Solid)
+                    color(Color.black)
+                }
+                backgroundColor(Color("#f8f8f8"))
+                color(Color.black)
+                fontFamily("serif")
+                fontSize(16.px)
+            }
+
+            onClick {
+                println("login button clicked, userInfo: ${userState.userInfo}")
+                when (userState.userInfo) {
+                    null -> userViewModel.doLogin()
+
+                    else -> TODO()
+                }
             }
         }) {
-            MenuItem(routeState.nowPage == Route.HOME, "Home") { routeState.navigate(Route.HOME) }
-            MenuItem(routeState.nowPage == Route.ABOUT, "About") { routeState.navigate(Route.ABOUT) }
-            MenuItem(routeState.nowPage == Route.CONTACT, "Contact") { routeState.navigate(Route.CONTACT) }
-            MenuItem(routeState.nowPage == Route.SERVICES, "Services") { routeState.navigate(Route.SERVICES) }
+            when (userState.userInfo) {
+                null -> Text("Login")
+                else -> Text("Logged in as : ${userState.userInfo!!.userName}")
+            }
         }
     }
 }
