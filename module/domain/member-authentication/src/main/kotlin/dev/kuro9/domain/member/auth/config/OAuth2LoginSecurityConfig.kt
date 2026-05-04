@@ -41,14 +41,8 @@ class OAuth2LoginSecurityConfig {
             }
             sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
             authorizeHttpRequests {
-//                authorize("/*.js", permitAll)
-//                authorize("/*.html", permitAll)
-//                authorize("/*.wasm", permitAll)
-//                authorize("/static/**", permitAll)
-//                authorize("/error", permitAll)
-//                authorize("/favicon.ico", permitAll)
-                authorize("/ping", permitAll)
-                authorize("/api/user", authenticated)
+                authorize("/error", permitAll)
+                authorize("/users/me", authenticated)
 
                 authorize(anyRequest, denyAll)
             }

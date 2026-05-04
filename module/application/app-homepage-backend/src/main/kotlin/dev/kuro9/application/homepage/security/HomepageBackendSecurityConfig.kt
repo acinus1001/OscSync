@@ -13,9 +13,9 @@ class HomepageBackendSecurityConfig {
     @[Primary Bean]
     fun homepageFilterChain(http: HttpSecurity): SecurityFilterChain {
         http {
-            securityMatcher("/api/test")
+            securityMatcher("/health")
             authorizeHttpRequests {
-                authorize("/api/test", authenticated)
+                authorize("/health", authenticated)
             }
         }
 

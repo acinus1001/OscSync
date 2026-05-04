@@ -23,6 +23,7 @@ dependencies {
 
 
     implementation(projects.multiplatformCommon.network)
+    implementation(projects.multiplatformCommon.date)
 
     implementation(projects.module.common.network)
     implementation(projects.module.common.logger)
