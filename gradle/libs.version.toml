@@ -18,6 +18,8 @@ aspectj = "1.9.23"
 
 junit = "4.13.2"
 
+compose = "1.10.3"
+
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -123,6 +125,8 @@ jsoup = { module = "org.jsoup:jsoup", version = "1.19.1" }
 navercorp-spring-batch-plus = { module = "com.navercorp.spring:spring-boot-starter-batch-plus-kotlin", version = "1.2.0" }
 
 slf4j-api-extensions = { module = "io.github.harryjhin:slf4j-api-extensions", version = "1.0.3" }
+
+compose-html-core = { module = "org.jetbrains.compose.html:html-core", version.ref = "compose" }
 
 
 
