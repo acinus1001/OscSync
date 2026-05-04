@@ -21,9 +21,10 @@ fun NavBar() {
             border {
                 width(1.px)
                 style(LineStyle.Solid)
-                color(Color.black)
+                color(Color("#333333"))
             }
-            backgroundColor(Color("#eeeeee"))
+            backgroundColor(Color("#1e1e1e"))
+            color(Color("#f1f1f1"))
             fontFamily("serif")
             display(DisplayStyle.Flex)
             justifyContent(JustifyContent.SpaceBetween)
@@ -98,10 +99,10 @@ private fun UtilButtons() {
                 border {
                     width(1.px)
                     style(LineStyle.Solid)
-                    color(Color.black)
+                    color(Color("#444444"))
                 }
-                backgroundColor(Color("#f8f8f8"))
-                color(Color.black)
+                backgroundColor(Color("#2a2a2a"))
+                color(Color("#f1f1f1"))
                 fontFamily("serif")
                 fontSize(16.px)
                 display(DisplayStyle.Flex)
@@ -134,7 +135,7 @@ private fun UtilButtons() {
                                     border {
                                         width(1.px)
                                         style(LineStyle.Solid)
-                                        color(Color("#999999"))
+                                        color(Color("#555555"))
                                     }
                                 }
                             }
@@ -164,19 +165,19 @@ fun MenuItem(isSelected: Boolean, text: String, doNavigate: () -> Unit) {
             border {
                 width(1.px)
                 style(LineStyle.Solid)
-                color(Color.black)
+                color(Color("#444444"))
             }
             textDecoration("none")
             fontFamily("serif")
             fontSize(16.px)
 
             if (isSelected) {
-                backgroundColor(Color("#cccccc"))
-                color(Color.black)
+                backgroundColor(Color("#3a3a3a"))
+                color(Color("#ffffff"))
                 fontWeight("bold")
             } else {
-                backgroundColor(Color("#f8f8f8"))
-                color(Color("#0000ee"))
+                backgroundColor(Color("#242424"))
+                color(Color("#9ecbff"))
             }
         }
 
