@@ -5,6 +5,7 @@ import dev.kuro9.domain.member.auth.handler.OAuth2SuccessHandler
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2UserService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -17,10 +18,10 @@ import org.springframework.security.web.authentication.logout.HttpStatusReturnin
 
 @Configuration
 @EnableWebSecurity
-class OAuth2LoginSecurityConfig(
-) {
+class OAuth2LoginSecurityConfig {
 
     @Bean
+    @Order(Int.MAX_VALUE)
     fun securityFilterChain(
         http: HttpSecurity,
         oAuth2UserService: DiscordOAuth2UserService,
@@ -40,18 +41,16 @@ class OAuth2LoginSecurityConfig(
             }
             sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
             authorizeHttpRequests {
-
-                authorize("/", permitAll)
-                authorize("/*.js", permitAll)
-                authorize("/*.html", permitAll)
-                authorize("/*.wasm", permitAll)
-                authorize("/static/**", permitAll)
-                authorize("/error", permitAll)
-                authorize("/favicon.ico", permitAll)
-                authorize("/smartapp/webhook", permitAll)
+//                authorize("/*.js", permitAll)
+//                authorize("/*.html", permitAll)
+//                authorize("/*.wasm", permitAll)
+//                authorize("/static/**", permitAll)
+//                authorize("/error", permitAll)
+//                authorize("/favicon.ico", permitAll)
                 authorize("/ping", permitAll)
+                authorize("/api/user", authenticated)
 
-                authorize(anyRequest, authenticated)
+                authorize(anyRequest, denyAll)
             }
             oauth2Login {
                 userInfoEndpoint {

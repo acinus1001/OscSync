@@ -24,16 +24,14 @@ class TokenAuthFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        val accessToken = parseToken(request)
-
-        when (accessToken) {
+        when (val accessToken = parseToken(request)) {
             null -> {
                 infoLog("accessToken is null")
                 // refreshToken 사용가능한 경우 토큰 재발급 로직을 여기에 작성
 
-//                response.sendRedirect("https://discord.com/oauth2/authorize?client_id=1345369370171408444&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Flogin%2Foauth2%2Fcode%2Fdiscord&scope=identify")
 
-                // 토큰 발급 실패한 경우
+                // 토큰 발급 실패한 경우 -> context 비우고 진행
+                SecurityContextHolder.clearContext()
 //                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is not valid.")
             }
 

@@ -25,8 +25,9 @@ class OAuth2SuccessHandler(
 
         val accessTokenCookie = ResponseCookie.from("accessToken", accessToken.token)
             .httpOnly(true)
-            .secure(true)
-            .domain("localhost")
+            .secure(false) // TODO test용. production에서는 true로 바꿀 것.
+//            .secure(true)
+//            .domain("localhost")
             .sameSite("none")
             .path("/")
             .maxAge(30.minutes.toJavaDuration())
