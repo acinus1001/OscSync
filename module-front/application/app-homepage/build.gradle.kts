@@ -40,7 +40,7 @@ kotlin {
 
         jsMain.dependencies {
 //            implementation(compose.runtime)
-            implementation(libs.compose.html.core)
+            implementation(libs.compose.html)
 
 
 //            implementation(npm("@discord/embedded-app-sdk", "latest"))
