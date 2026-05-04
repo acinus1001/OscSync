@@ -10,10 +10,7 @@ import dev.kuro9.module.front.application.homepage.state.user.UserViewModel
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.css.*
-import org.jetbrains.compose.web.dom.A
-import org.jetbrains.compose.web.dom.Button
-import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.Text
+import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
 
 @Composable
@@ -107,6 +104,10 @@ private fun UtilButtons() {
                 color(Color.black)
                 fontFamily("serif")
                 fontSize(16.px)
+                display(DisplayStyle.Flex)
+                alignItems(AlignItems.Center)
+                gap(12.px)
+                lineHeight("1")
             }
 
             onClick {
@@ -120,7 +121,35 @@ private fun UtilButtons() {
         }) {
             when (userState.userInfo) {
                 null -> Text("Login")
-                else -> Text("Logged in as : ${userState.userInfo!!.userName}")
+                else -> {
+                    userState.userInfo?.userAvatarUrl?.let { avatarUrl ->
+                        Img(
+                            src = avatarUrl,
+                            attrs = {
+                                style {
+                                    width(28.px)
+                                    height(28.px)
+                                    borderRadius(50.percent)
+                                    property("object-fit", "cover")
+                                    border {
+                                        width(1.px)
+                                        style(LineStyle.Solid)
+                                        color(Color("#999999"))
+                                    }
+                                }
+                            }
+                        )
+                        Span(attrs = {
+                            style {
+                                display(DisplayStyle.Flex)
+                                alignItems(AlignItems.Center)
+                                lineHeight("1")
+                            }
+                        }) {
+                            Text("Logged in as : ${userState.userInfo!!.userName}")
+                        }
+                    }
+                }
             }
         }
     }
