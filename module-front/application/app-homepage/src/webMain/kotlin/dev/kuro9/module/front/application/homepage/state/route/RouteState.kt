@@ -20,6 +20,7 @@ enum class Route(val path: String) {
     ABOUT("/about"),
     CONTACT("/contact"),
     SERVICES("/services"),
+    PROFILE("/profile"),
     ;
 
     companion object {

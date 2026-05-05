@@ -68,6 +68,7 @@ private fun NavMenus() {
 
 @Composable
 private fun UtilButtons() {
+    val routeState: RouteState = koinInject()
     val userViewModel: UserViewModel = koinInject()
     val userState: UserState = koinInject()
     LaunchedEffect(Unit) {
@@ -116,7 +117,7 @@ private fun UtilButtons() {
                 when (userState.userInfo) {
                     null -> userViewModel.doLogin()
 
-                    else -> TODO()
+                    else -> routeState.navigate(Route.PROFILE)
                 }
             }
         }) {

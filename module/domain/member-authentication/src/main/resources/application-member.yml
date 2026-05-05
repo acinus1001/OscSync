@@ -11,6 +11,7 @@ spring:
             redirect-uri: ${OAUTH2_BASE_URL}/login/oauth2/code/discord
             scope:
               - identify
+              - guilds.members.read
             authorization-grant-type: authorization_code
         provider:
           discord:
@@ -23,17 +24,3 @@ dev:
   kuro9:
     jwt:
       key: ${MEMBER_JWT_KEY}
-
----
-# dev env
-dev:
-  kuro9:
-    oauth2:
-      redirect-front: http://localhost:8090
-
----
-# prod env
-dev:
-  kuro9:
-    oauth2:
-      redirect-front: https://kuro9.dev

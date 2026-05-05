@@ -6,8 +6,10 @@ import dev.kuro9.domain.member.auth.service.DiscordOAuth2UserService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseCookie
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.invoke
@@ -19,6 +21,8 @@ import org.springframework.security.web.authentication.logout.HttpStatusReturnin
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 @Configuration
 @EnableWebSecurity
@@ -31,6 +35,7 @@ class OAuth2LoginSecurityConfig {
         oAuth2UserService: DiscordOAuth2UserService,
         oAuth2SuccessHandler: OAuth2SuccessHandler,
         tokenAuthFilter: TokenAuthFilter,
+        cookieConfigProperties: CookieConfigProperties,
     ): SecurityFilterChain {
         http {
             csrf { disable() }
@@ -42,8 +47,20 @@ class OAuth2LoginSecurityConfig {
             logout {
                 logoutUrl = "/users/me/logout"
                 logoutSuccessUrl = "/"
-                logoutSuccessHandler = HttpStatusReturningLogoutSuccessHandler()
-                deleteCookies("accessToken")
+                logoutSuccessHandler = { _, response, _ ->
+                    HttpStatusReturningLogoutSuccessHandler()
+                    val expiredAccessTokenCookie = ResponseCookie.from("accessToken", "")
+                        .httpOnly(true)
+                        .secure(cookieConfigProperties.secure)
+                        .domain(cookieConfigProperties.domain)
+                        .sameSite("Lax")
+                        .path("/")
+                        .maxAge(0.seconds.toJavaDuration())
+                        .build()
+
+                    response.addHeader(HttpHeaders.SET_COOKIE, expiredAccessTokenCookie.toString())
+                    response.status = HttpStatus.OK.value()
+                }
             }
             sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
             authorizeHttpRequests {

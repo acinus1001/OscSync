@@ -1,5 +1,6 @@
 package dev.kuro9.domain.member.auth.handler
 
+import dev.kuro9.domain.member.auth.config.CookieConfigProperties
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,6 +15,7 @@ import kotlin.time.toJavaDuration
 @Component
 class OAuth2SuccessHandler(
     private val tokenService: JwtTokenService,
+    private val cookieProperties: CookieConfigProperties
 ) : AuthenticationSuccessHandler {
 
     override fun onAuthenticationSuccess(
@@ -25,17 +27,16 @@ class OAuth2SuccessHandler(
 
         val accessTokenCookie = ResponseCookie.from("accessToken", accessToken.token)
             .httpOnly(true)
-            .secure(false) // TODO test용. production에서는 true로 바꿀 것.
-//            .secure(true)
-//            .domain("localhost")
-            .sameSite("none")
+            .secure(cookieProperties.secure)
+            .domain(cookieProperties.domain)
+            .sameSite("Lax")
             .path("/")
             .maxAge(30.minutes.toJavaDuration())
             .build()
 
         response.run {
             addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
-            sendRedirect("http://localhost:8090")
+            sendRedirect(cookieProperties.redirectFrontUri)
         }
     }
 }
