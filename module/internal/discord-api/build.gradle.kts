@@ -13,4 +13,6 @@ dependencies {
     implementation(projects.module.common.logger)
     implementation(projects.multiplatformCommon.serialization)
     implementation(projects.multiplatformCommon.network)
+    implementation(projects.multiplatformCommon.date)
+    implementation(projects.multiplatformCommon.types.discordApi)
 }
