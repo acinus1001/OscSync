@@ -1,8 +1,6 @@
 package dev.kuro9.domain.member.auth.repository
 
 import dev.kuro9.domain.member.auth.enumurate.MemberRole
-import dev.kuro9.multiplatform.common.date.util.now
-import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 import org.jetbrains.exposed.v1.dao.LongEntity
@@ -21,18 +19,11 @@ object Members : LongIdTable("member") {
 class MemberEntity(pk: EntityID<Long>) : LongEntity(pk) {
     companion object : LongEntityClass<MemberEntity>(Members)
 
-    var name by Members.name; private set
-    var role by Members.role; private set
+    var name by Members.name
+    var role by Members.role
+    var avatarUrl by Members.avatarUrl
     val createdAt by Members.createdAt
-    var updatedAt by Members.updatedAt; private set
+    var updatedAt by Members.updatedAt
 
-    fun updateName(name: String) {
-        this.name = name
-        this.updatedAt = LocalDateTime.now()
-    }
-
-    fun updateRole(role: MemberRole) {
-        this.role = role
-        this.updatedAt = LocalDateTime.now()
-    }
+    val authorities by MemberAuthorityEntity referrersOn MemberAuthorities.member
 }

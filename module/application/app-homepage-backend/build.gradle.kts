@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.boot.starter.aop)
     implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.boot.starter.oauth2.client)
 
     runtimeOnly(libs.aspectj.runtime)
     runtimeOnly(libs.aspectj.weaver)
@@ -24,12 +25,14 @@ dependencies {
 
     implementation(projects.multiplatformCommon.network)
     implementation(projects.multiplatformCommon.date)
+    implementation(projects.multiplatformCommon.types.discordApi)
 
     implementation(projects.module.common.network)
     implementation(projects.module.common.logger)
     implementation(projects.module.common)
 
     implementation(projects.module.internal.errorHandler)
+    implementation(projects.module.internal.discordApi)
 
     implementation(projects.module.domain.database)
     implementation(projects.module.domain.inquiry)

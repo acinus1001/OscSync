@@ -5,10 +5,21 @@ import io.ktor.resources.*
 @Resource("/api/v10")
 class DiscordApiResource {
 
-    @Resource("/guilds/{guildId}")
-    class Guild(val guildId: Long, val parent: DiscordApiResource = DiscordApiResource()) {
+    @Resource("guilds/{guildId}")
+    class Guild(
+        val guildId: Long,
+        val parent: DiscordApiResource = DiscordApiResource(),
+    ) {
 
-        @Resource("/members/{userId}")
-        class Member(val guildId: Long, val userId: Long, val parent: Guild = Guild(guildId))
+        @Resource("members/{userId}")
+        class Member(
+            val parent: Guild,
+            val userId: Long,
+        ) {
+            constructor(guildId: Long, userId: Long) : this(
+                parent = Guild(guildId = guildId),
+                userId = userId,
+            )
+        }
     }
 }

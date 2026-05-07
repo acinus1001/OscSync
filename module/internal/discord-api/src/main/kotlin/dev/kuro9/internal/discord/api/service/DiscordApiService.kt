@@ -37,7 +37,14 @@ class DiscordApiService(
         }
         install(HttpCallValidator) {
             handleResponseExceptionWithRequest { cause, request ->
-                if (cause !is ResponseException) return@handleResponseExceptionWithRequest
+                when (cause) {
+                    is ClientRequestException -> when (cause.response.status) {
+                        HttpStatusCode.NotFound -> throw DiscordApiException.NotFound("Not Found")
+                        HttpStatusCode.TooManyRequests -> throw DiscordApiException.TooManyRequests("Rate limit exceeded")
+                    }
+
+                    !is ResponseException -> return@handleResponseExceptionWithRequest
+                }
 
                 throw DiscordApiException(
                     code = cause.response.status.value,
@@ -58,6 +65,8 @@ class DiscordApiService(
             }
 
         }
+
+        expectSuccess = true
     }
 
     private val rateLimitTime = AtomicReference<Instant?>(null)
@@ -70,11 +79,9 @@ class DiscordApiService(
     @Throws(DiscordApiException::class)
     private suspend inline fun <reified R> handleRateLimit(call: () -> HttpResponse): R {
         val limitedTime = rateLimitTime.load()
-        if (limitedTime != null && limitedTime >= Clock.System.now()) throw DiscordApiException(
-            code = 429,
-            message = "Rate limit exceeded",
-            cause = null,
-        )
+        if (limitedTime != null && limitedTime >= Clock.System.now()) {
+            throw DiscordApiException.TooManyRequests("Rate limit exceeded")
+        }
 
         if (limitedTime != null && limitedTime < Clock.System.now()) {
             rateLimitTime.store(null)
@@ -86,11 +93,7 @@ class DiscordApiService(
             info { "Rate limit exceeded. Retry after ${body.retryAfter} seconds. message: ${body.message}, isGlobal : ${body.global}" }
             rateLimitTime.store(Clock.System.now() + body.retryAfter.toLong().seconds)
 
-            throw DiscordApiException(
-                code = 429,
-                message = "Rate limit exceeded",
-                cause = null,
-            )
+            throw DiscordApiException.TooManyRequests("Rate limit exceeded")
         }
 
         return response.body()

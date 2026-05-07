@@ -3,6 +3,11 @@ spring:
     include:
       - member
       - database
+dev:
+  kuro9:
+    discord:
+      api:
+        token: ${DISCORD_TOKEN}
 
 ---
 # dev env

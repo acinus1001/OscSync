@@ -2,6 +2,7 @@ package dev.kuro9.domain.member.auth.service
 
 import dev.kuro9.domain.member.auth.enumurate.MemberRole
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
+import dev.kuro9.domain.member.auth.repository.MemberEntity
 import dev.kuro9.domain.member.auth.repository.Members
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
@@ -38,12 +39,15 @@ class DiscordOAuth2UserService : DefaultOAuth2UserService() {
             it[createdAt] = LocalDateTime.now()
             it[updatedAt] = LocalDateTime.now()
         }.single()
+        val memberId = memberResultRow[Members.id].value
+        val memberEntity = MemberEntity.findById(memberId)!!
 
         return DiscordUserDetail(
-            id = memberResultRow[Members.id].value,
-            userName = memberResultRow[Members.name],
-            role = memberResultRow[Members.role],
-            avatarUrl = memberResultRow[Members.avatarUrl],
+            id = memberEntity.id.value,
+            userName = memberEntity.name,
+            role = memberEntity.role,
+            authorities = memberEntity.authorities.map { it.authority },
+            avatarUrl = memberEntity.avatarUrl,
             userAttr = userAttr,
         )
     }

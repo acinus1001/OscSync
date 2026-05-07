@@ -43,8 +43,13 @@ class TokenAuthFilter(
                     id = payload.sub.toLong(),
                     userName = payload.name,
                     avatarUrl = payload.avatarUrl,
-                    role = payload.scp.map(MemberRole::valueOf).single(),
+                    role = payload.scp
+                        .filter { it.startsWith("ROLE_") }
+                        .map(MemberRole::valueOf)
+                        .single(),
                     userAttr = emptyMap(),
+                    authorities = payload.scp
+                        .filter { !it.startsWith("ROLE_") }
                 )
                 SecurityContextHolder.getContext().authentication =
                     UsernamePasswordAuthenticationToken(user, accessToken.token, authorities)
