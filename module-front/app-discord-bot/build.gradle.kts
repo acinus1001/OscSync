@@ -22,11 +22,13 @@ kotlin {
                 outputFileName = "composeApp.js"
                 devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
                     port = 8090
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(rootDirPath)
-                        add(projectDirPath)
-                    }
+                    static(rootDirPath)
+                    static(projectDirPath)
+//                    static = (static ?: mutableListOf()).apply {
+//                        // Serve sources to debug inside browser
+//                        add(rootDirPath)
+//                        add(projectDirPath)
+//                    }
                 }
             }
         }
@@ -45,6 +47,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.bundles.mvi.kotlin.decomposed)
+            implementation(compose.html.core)
 
             implementation(projects.multiplatformCommon.serialization)
             implementation(projects.multiplatformCommon.network)

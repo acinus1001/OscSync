@@ -1,0 +1,36 @@
+spring:
+  profiles:
+    include:
+      - member
+      - database
+dev:
+  kuro9:
+    discord:
+      api:
+        token: ${DISCORD_TOKEN}
+
+---
+# dev env
+spring:
+  config:
+    activate:
+      on-profile: dev
+dev:
+  kuro9:
+    cookie:
+      redirect-front-uri: http://localhost:8090
+      domain: localhost
+      secure: false
+
+---
+# prod env
+spring:
+  config:
+    activate:
+      on-profile: prod
+dev:
+  kuro9:
+    cookie:
+      redirect-front-uri: https://kuro9.dev
+      domain: kuro9.dev
+      secure: true

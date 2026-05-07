@@ -4,45 +4,157 @@ package dev.kuro9.domain.member.auth.jwt
 
 import dev.kuro9.domain.member.auth.config.JwtTokenConfigProperties
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
+import dev.kuro9.domain.member.auth.repository.MemberEntity
+import dev.kuro9.domain.member.auth.service.RefreshTokenService
+import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.date.util.toLocalDateTime
 import dev.kuro9.multiplatform.common.serialization.minifyJson
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.SerializationException
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.core.OAuth2Error
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes
 import org.springframework.security.oauth2.jwt.JwtValidationException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import kotlin.experimental.xor
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
 
 @Service
 class JwtTokenService(
     private val properties: JwtTokenConfigProperties,
+    private val refreshTokenService: RefreshTokenService,
 ) {
     private val noPaddingBase64 = Base64.withPadding(Base64.PaddingOption.ABSENT)
     private val accessTokenExpireDuration = 30.minutes
+    private val refreshTokenExpireDuration = 7.days
 
-    fun makeToken(authentication: Authentication): JwtToken {
+    fun makeTokenResponse(authentication: Authentication): JwtTokenResponse {
         val userDetail = authentication.principal as DiscordUserDetail
-        val payload = JwtPayloadV1(
+        val now = Clock.System.now()
+
+        val accessPayload = JwtPayloadV1(
             sub = userDetail.id.toString(),
             name = userDetail.userName,
-            iat = kotlin.time.Clock.System.now(),
-            exp = kotlin.time.Clock.System.now() + accessTokenExpireDuration,
+            iat = now,
+            exp = now + accessTokenExpireDuration,
             scp = authentication.authorities.map { it.authority },
             avatarUrl = userDetail.avatarUrl,
         )
 
-        return makeToken(payload, properties.key)
+        val refreshPayload = JwtRefreshPayload(
+            sub = userDetail.id.toString(),
+            name = userDetail.userName,
+            iat = now,
+            exp = now + refreshTokenExpireDuration,
+        )
+
+        val accessToken = makeToken(accessPayload, properties.key)
+        val refreshToken = makeToken(refreshPayload, properties.key)
+
+        refreshTokenService.saveToken(
+            userId = userDetail.id,
+            token = refreshToken.token,
+            expiresAt = refreshPayload.exp.toLocalDateTime(),
+            createdAt = now.toLocalDateTime()
+        )
+
+        return JwtTokenResponse(
+            accessToken = accessToken.token,
+            refreshToken = refreshToken.token
+        )
+    }
+
+    @Transactional
+    fun refreshToken(refreshTokenStr: String): JwtTokenResponse {
+        val payload = validateAndGetRefreshPayload(JwtToken(refreshTokenStr))
+
+        if (payload.type != "REFRESH") {
+            throw JwtValidationException(
+                "Not a refresh token", listOf(
+                    OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_TOKEN,
+                        "Not a refresh token.",
+                        null
+                    )
+                )
+            )
+        }
+
+        val savedToken = refreshTokenService.findByToken(refreshTokenStr)
+            ?: throw JwtValidationException(
+                "Refresh token not found or already used", listOf(
+                    OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_TOKEN,
+                        "Refresh token not found or already used.",
+                        null
+                    )
+                )
+            )
+
+        // Rotation: Delete old token
+        refreshTokenService.deleteByToken(refreshTokenStr)
+
+        if (savedToken.expiresAt <= LocalDateTime.now())
+            throw JwtValidationException(
+                "Refresh token has expired", listOf(
+                    OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_TOKEN,
+                        "Refresh token has expired.",
+                        null
+                    )
+                )
+            )
+
+        val memberInfo = MemberEntity.findById(savedToken.userId) ?: throw IllegalStateException("Member not found")
+        val grantAuthority = listOf(memberInfo.role.name) + memberInfo.authorities.map { it.authority }
+
+        val now = Clock.System.now()
+        val accessPayload = JwtPayloadV1(
+            iat = now,
+            exp = now + accessTokenExpireDuration,
+            scp = grantAuthority,
+            sub = memberInfo.id.value.toString(),
+            name = memberInfo.name,
+            avatarUrl = memberInfo.avatarUrl,
+        )
+
+        val newRefreshPayload = payload.copy(
+            iat = now,
+            exp = now + refreshTokenExpireDuration,
+        )
+
+        val newAccessToken = makeToken(accessPayload, properties.key)
+        val newRefreshToken = makeToken(newRefreshPayload, properties.key)
+
+        refreshTokenService.saveToken(
+            userId = payload.sub.toLong(),
+            token = newRefreshToken.token,
+            expiresAt = newRefreshPayload.exp.toLocalDateTime(),
+            createdAt = now.toLocalDateTime()
+        )
+
+        return JwtTokenResponse(
+            accessToken = newAccessToken.token,
+            refreshToken = newRefreshToken.token
+        )
     }
 
     @Throws(JwtValidationException::class, SerializationException::class)
     fun validateAndGetPayload(token: JwtToken): JwtPayloadV1 {
+        return token.validateAndGetPayload(properties.key)
+    }
+
+    @Throws(JwtValidationException::class, SerializationException::class)
+    fun validateAndGetRefreshPayload(token: JwtToken): JwtRefreshPayload {
         return token.validateAndGetPayload(properties.key)
     }
 
@@ -93,6 +205,16 @@ class JwtTokenService(
             )
         )
 
+        if (Clock.System.now() >= payload.exp) throw JwtValidationException(
+            "jwt has expired.", listOf(
+                OAuth2Error(
+                    OAuth2ErrorCodes.INVALID_TOKEN,
+                    "jwt has expired.",
+                    null
+                )
+            )
+        )
+
         return payload
     }
 
@@ -110,7 +232,7 @@ class JwtTokenService(
             secretKey = secretKey,
         )
 
-        return expectSignature == signature && !payload.isExpired()
+        return expectSignature == signature && (Clock.System.now() < payload.exp)
     }
 
     private inline fun <reified T : JwtBasicPayload> getSecretKeyWithSalt(jwtPayload: T, secretKey: String): ByteArray {
@@ -140,9 +262,5 @@ class JwtTokenService(
 
     fun ByteArray.encodeWithNoPadding(): String {
         return noPaddingBase64.encode(this)
-    }
-
-    private fun JwtBasicPayload.isExpired(): Boolean {
-        return kotlin.time.Clock.System.now() >= exp
     }
 }

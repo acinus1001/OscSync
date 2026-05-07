@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 
 @Serializable
-class JwtPayloadV1(
+data class JwtPayloadV1(
     override val sub: String,
     override val name: String,
     override val iat: UnixTimestamp,

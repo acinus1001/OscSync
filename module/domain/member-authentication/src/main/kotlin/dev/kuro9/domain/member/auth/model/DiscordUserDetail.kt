@@ -10,6 +10,7 @@ data class DiscordUserDetail(
     val id: Long,
     val userName: String,
     val role: MemberRole,
+    val authorities: List<String>,
     val avatarUrl: String?,
 
     val userAttr: Map<String, Any?>
@@ -17,7 +18,7 @@ data class DiscordUserDetail(
     override fun getAttributes() = userAttr
 
     override fun getAuthorities(): Collection<GrantedAuthority> {
-        return listOf(SimpleGrantedAuthority(role.name))
+        return listOf(SimpleGrantedAuthority(role.name)) + authorities.map { SimpleGrantedAuthority(it) }
     }
 
     override fun getPassword() = ""

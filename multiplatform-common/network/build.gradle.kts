@@ -24,6 +24,10 @@ kotlin {
         wasmJsMain.dependencies {
             api(libs.ktor.client.js)
         }
+
+        jsMain.dependencies {
+            api(libs.ktor.client.js)
+        }
     }
 }
 
@@ -31,7 +35,11 @@ private val profile: Profile by ProjectInfo
 
 buildConfig {
     when (profile) {
-        Profile.PRODUCTION -> TODO()
+        Profile.PRODUCTION -> {
+            buildConfigField("API_SERVER_HOST", "api.kuro9.dev")
+            buildConfigField("API_SERVER_PORT", 443)
+            buildConfigField("API_SERVER_METHOD", "HTTPS")
+        }
 
         Profile.DEVELOPMENT -> {
             buildConfigField("API_SERVER_HOST", "localhost")

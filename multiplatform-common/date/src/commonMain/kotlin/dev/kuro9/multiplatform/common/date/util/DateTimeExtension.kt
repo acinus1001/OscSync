@@ -3,6 +3,7 @@ package dev.kuro9.multiplatform.common.date.util
 import kotlinx.datetime.*
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 @OptIn(ExperimentalTime::class)
 fun LocalDateTime.Companion.now(timeZone: TimeZone = TimeZone.of("Asia/Seoul")): LocalDateTime =
@@ -29,3 +30,4 @@ fun ClosedRange<LocalDate>.toList(): List<LocalDate> {
     return result
 }
 
+fun Instant.toLocalDateTime(): LocalDateTime = toLocalDateTime(TimeZone.of("Asia/Seoul"))

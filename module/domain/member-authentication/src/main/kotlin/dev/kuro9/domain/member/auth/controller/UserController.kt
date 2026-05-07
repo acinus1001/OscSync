@@ -8,11 +8,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/users")
 class UserController {
 
-    @GetMapping
-    fun getUserInfo(
+    @GetMapping("/me")
+    fun getMyInfo(
         @AuthenticationPrincipal userInfo: DiscordUserDetail,
     ): UserInfoApiResponse {
         return UserInfoApiResponse(

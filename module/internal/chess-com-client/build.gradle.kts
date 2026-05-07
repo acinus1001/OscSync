@@ -13,5 +13,4 @@ dependencies {
     implementation(projects.module.common.logger)
     implementation(projects.multiplatformCommon.serialization)
     implementation(projects.multiplatformCommon.network)
-    implementation("io.ktor:ktor-client-resources:3.1.1")
 }

@@ -14,6 +14,10 @@ kotlin {
         browser()
         binaries.executable()
     }
+    js {
+        browser()
+        binaries.executable()
+    }
 }
 
 subprojects {
@@ -24,6 +28,10 @@ subprojects {
         configure<KotlinMultiplatformExtension> {
             jvm()
             wasmJs {
+                browser()
+                binaries.executable()
+            }
+            js {
                 browser()
                 binaries.executable()
             }
