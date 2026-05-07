@@ -48,23 +48,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
       - name: Build with Gradle Wrapper
         run: ./gradlew module:application:app-homepage-backend:build -Dmode=prod
 
       - name: Docker Image Build
         run: docker build -f ./script/backend/app-homepage-backend/Dockerfile -t app-homepage-backend .
 
-      - name: Docker Image Tag
-        run: docker image tag app-homepage-backend ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
+      - name: Docker Image Save
+        run: docker save -o app-homepage-backend.tar app-homepage-backend
 
-      - name: Docker Image Push
-        run: docker push ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-homepage-backend-image
+          path: app-homepage-backend.tar
+          retention-days: 1
 
   deploy:
     if: always() && (needs.build.result == 'skipped' || needs.build.result == 'success') && inputs.do_depoly
@@ -76,7 +74,23 @@ jobs:
       contents: read
     env:
       COMPOSE_FILE_LOC: "/var/services/homes/github-cd/app-homepage-backend/docker-compose-deploy.yml"
+      IMAGE_DEST_PATH: "/var/services/homes/github-cd/app-homepage-backend/app-homepage-backend.tar"
     steps:
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-homepage-backend-image
+
+      - name: Copy Docker Image to Remote Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "app-homepage-backend.tar"
+          target: "/var/services/homes/github-cd/app-homepage-backend/"
+
       - name: Deploy Remote Server
         uses: appleboy/ssh-action@v1
         with:
@@ -85,12 +99,10 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            echo "tst"
-            echo "$COMPOSE_FILE_LOC"
-            echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | /usr/local/bin/docker login -u ${{ vars.DOCKER_HUB_USERNAME }} --password-stdin
-            /usr/local/bin/docker pull ${{ vars.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_HUB_REPO_NAME }}
-            /usr/local/bin/docker-compose -f /var/services/homes/github-cd/app-homepage-backend/docker-compose-deploy.yml down
-            /usr/local/bin/docker-compose -f /var/services/homes/github-cd/app-homepage-backend/docker-compose-deploy.yml up -d
+            /usr/local/bin/docker load -i ${{ env.IMAGE_DEST_PATH }}
+            /usr/local/bin/docker-compose -f ${{ env.COMPOSE_FILE_LOC }} down
+            /usr/local/bin/docker-compose -f ${{ env.COMPOSE_FILE_LOC }} up -d
+            rm ${{ env.IMAGE_DEST_PATH }}
 
   dependency-submission:
     if: inputs.do_build
