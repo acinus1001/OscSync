@@ -41,17 +41,17 @@ dependencies {
 }
 
 
-tasks.named<Jar>("jar") {
-    manifest {
-        attributes(
-            "Main-Class" to "dev.kuro9.HomepageBackendApplicationKt",
-            "Implementation-Title" to project.name,
-            "Implementation-Version" to project.version,
-        )
-    }
-}
-
-tasks.register<Copy>("copyDependency") {
-    from(configurations.runtimeClasspath.get())
-    into("${layout.buildDirectory.get()}/libs/lib")
-}
+//tasks.named<Jar>("jar") {
+//    manifest {
+//        attributes(
+//            "Main-Class" to "dev.kuro9.HomepageBackendApplicationKt",
+//            "Implementation-Title" to project.name,
+//            "Implementation-Version" to project.version,
+//        )
+//    }
+//}
+//
+//tasks.register<Copy>("copyDependency") {
+//    from(configurations.runtimeClasspath.get())
+//    into("${layout.buildDirectory.get()}/libs/lib")
+//}
