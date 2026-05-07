@@ -1,7 +1,7 @@
 services:
   app:
     container_name: app-homepage-backend
-    image: kurovine9/app-homepage-backend
+    image: app-homepage-backend
     env_file:
       - ${ENV_FILE_LOC}
     networks:
