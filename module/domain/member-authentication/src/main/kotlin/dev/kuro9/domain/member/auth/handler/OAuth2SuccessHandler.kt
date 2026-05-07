@@ -10,6 +10,7 @@ import org.springframework.http.ResponseCookie
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.stereotype.Component
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
@@ -24,9 +25,9 @@ class OAuth2SuccessHandler(
         response: HttpServletResponse,
         authentication: Authentication
     ) {
-        val accessToken = tokenService.makeToken(authentication)
+        val tokenResponse = tokenService.makeTokenResponse(authentication)
 
-        val accessTokenCookie = ResponseCookie.from("accessToken", accessToken.token)
+        val accessTokenCookie = ResponseCookie.from("accessToken", tokenResponse.accessToken)
             .httpOnly(true)
             .secure(cookieProperties.secure)
             .domain(cookieProperties.domain)
@@ -35,8 +36,18 @@ class OAuth2SuccessHandler(
             .maxAge(30.minutes.toJavaDuration())
             .build()
 
+        val refreshTokenCookie = ResponseCookie.from("refreshToken", tokenResponse.refreshToken)
+            .httpOnly(true)
+            .secure(cookieProperties.secure)
+            .domain(cookieProperties.domain)
+            .sameSite("Lax")
+            .path("/")
+            .maxAge(7.days.toJavaDuration())
+            .build()
+
         response.run {
             addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+            addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
             sendRedirect(cookieProperties.redirectFrontUri)
         }
     }

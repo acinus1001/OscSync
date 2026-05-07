@@ -1,6 +1,6 @@
 package dev.kuro9.domain.member.auth.filter
 
-import dev.kuro9.common.logger.infoLog
+import dev.kuro9.domain.member.auth.config.CookieConfigProperties
 import dev.kuro9.domain.member.auth.enumurate.MemberRole
 import dev.kuro9.domain.member.auth.jwt.JwtToken
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
@@ -8,15 +8,21 @@ import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.http.HttpHeaders
+import org.springframework.http.ResponseCookie
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.toJavaDuration
 
 @Component
 class TokenAuthFilter(
     private val tokenService: JwtTokenService,
+    private val cookieProperties: CookieConfigProperties,
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -25,37 +31,63 @@ class TokenAuthFilter(
         filterChain: FilterChain
     ) {
         when (val accessToken = parseToken(request)) {
-            null -> {
-                infoLog("accessToken is null")
-                // refreshToken 사용가능한 경우 토큰 재발급 로직을 여기에 작성
+            null -> run {
+                val refreshToken = request.cookies?.firstOrNull { it.name == "refreshToken" }?.value
+                if (refreshToken == null) {
+                    SecurityContextHolder.clearContext()
+                    return@run
+                }
 
+                val tokenResponse = tokenService.refreshToken(refreshToken)
 
-                // 토큰 발급 실패한 경우 -> context 비우고 진행
-                SecurityContextHolder.clearContext()
-//                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is not valid.")
+                val accessTokenCookie = ResponseCookie.from("accessToken", tokenResponse.accessToken)
+                    .httpOnly(true)
+                    .secure(cookieProperties.secure)
+                    .domain(cookieProperties.domain)
+                    .sameSite("Lax")
+                    .path("/")
+                    .maxAge(30.minutes.toJavaDuration())
+                    .build()
+
+                val refreshTokenCookie = ResponseCookie.from("refreshToken", tokenResponse.refreshToken)
+                    .httpOnly(true)
+                    .secure(cookieProperties.secure)
+                    .domain(cookieProperties.domain)
+                    .sameSite("Lax")
+                    .path("/")
+                    .maxAge(7.days.toJavaDuration())
+                    .build()
+
+                response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+
+                setAuthentication(JwtToken(tokenResponse.accessToken))
             }
 
             else -> {
-                // set authentication
-                val payload = tokenService.validateAndGetPayload(accessToken)
-                val authorities = payload.scp.map(::SimpleGrantedAuthority)
-                val user = DiscordUserDetail(
-                    id = payload.sub.toLong(),
-                    userName = payload.name,
-                    avatarUrl = payload.avatarUrl,
-                    role = payload.scp
-                        .filter { it.startsWith("ROLE_") }
-                        .map(MemberRole::valueOf)
-                        .single(),
-                    userAttr = emptyMap(),
-                    authorities = payload.scp
-                        .filter { !it.startsWith("ROLE_") }
-                )
-                SecurityContextHolder.getContext().authentication =
-                    UsernamePasswordAuthenticationToken(user, accessToken.token, authorities)
+                setAuthentication(accessToken)
             }
         }
         filterChain.doFilter(request, response)
+    }
+
+    private fun setAuthentication(accessToken: JwtToken) {
+        val payload = tokenService.validateAndGetPayload(accessToken)
+        val authorities = payload.scp.map(::SimpleGrantedAuthority)
+        val user = DiscordUserDetail(
+            id = payload.sub.toLong(),
+            userName = payload.name,
+            avatarUrl = payload.avatarUrl,
+            role = payload.scp
+                .filter { it.startsWith("ROLE_") }
+                .map(MemberRole::valueOf)
+                .single(),
+            userAttr = emptyMap(),
+            authorities = payload.scp
+                .filter { !it.startsWith("ROLE_") }
+        )
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(user, accessToken.token, authorities)
     }
 
     private fun parseToken(request: HttpServletRequest): JwtToken? {

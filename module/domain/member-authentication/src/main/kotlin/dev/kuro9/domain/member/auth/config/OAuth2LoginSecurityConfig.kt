@@ -58,7 +58,17 @@ class OAuth2LoginSecurityConfig {
                         .maxAge(0.seconds.toJavaDuration())
                         .build()
 
+                    val expiredRefreshTokenCookie = ResponseCookie.from("refreshToken", "")
+                        .httpOnly(true)
+                        .secure(cookieConfigProperties.secure)
+                        .domain(cookieConfigProperties.domain)
+                        .sameSite("Lax")
+                        .path("/")
+                        .maxAge(0.seconds.toJavaDuration())
+                        .build()
+
                     response.addHeader(HttpHeaders.SET_COOKIE, expiredAccessTokenCookie.toString())
+                    response.addHeader(HttpHeaders.SET_COOKIE, expiredRefreshTokenCookie.toString())
                     response.status = HttpStatus.OK.value()
                 }
             }
