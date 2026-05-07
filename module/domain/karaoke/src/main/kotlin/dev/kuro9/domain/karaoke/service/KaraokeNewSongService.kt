@@ -32,7 +32,7 @@ class KaraokeNewSongService(
                 serviceMap.values
                     .map { async(CoroutineName("KaraokeNew:${it.supportBrand}")) { it.fetchNewReleaseSongs() } }
                     .awaitAll()
-                    .flatMap { it }
+                    .flatten()
             }
         }
     }

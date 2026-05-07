@@ -237,6 +237,8 @@ class GoogleAiChatAbstractHandler(
 
             else -> {
                 val httpCode = when (exception) {
+                    is com.google.genai.errors.ClientException -> exception.code()
+
                     is org.apache.http.HttpException -> {
                         exception.message?.dropWhile { it == ' ' }?.take(3)?.toIntOrNull() ?: throw exception
                     }

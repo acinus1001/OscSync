@@ -46,7 +46,7 @@ class F1NewsService(private val repo: F1NewsRepo) {
         repo.save(news)
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = [Throwable::class])
     fun updateSummary(id: Long, summary: String) {
         val entity = repo.findById(id) ?: return
         repo.updateContentSummary(entity, summary)

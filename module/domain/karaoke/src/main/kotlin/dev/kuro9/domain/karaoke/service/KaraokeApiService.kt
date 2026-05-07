@@ -23,7 +23,7 @@ class KaraokeApiService {
             json(minifyJson)
         }
         install(Logging)
-        
+
         defaultRequest {
             accept(ContentType.Application.Json)
         }
@@ -67,6 +67,7 @@ class KaraokeApiService {
             title = title,
             singer = singer,
             releaseDate = runCatching { LocalDate.parse(release) }.getOrElse { LocalDate(1970, 1, 1) },
+            seq = -1,
         )
     }
 }

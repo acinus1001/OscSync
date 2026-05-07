@@ -35,6 +35,8 @@ dependencies {
     implementation(projects.module.internal.smartappClient)
     implementation(projects.module.internal.errorHandler)
     implementation(projects.module.internal.mahjongCalc)
+    implementation(projects.module.internal.itunesClient)
+    implementation(projects.module.internal.musicClientConnecter)
 
     implementation(projects.module.domain.database)
     implementation(projects.module.domain.webhook)

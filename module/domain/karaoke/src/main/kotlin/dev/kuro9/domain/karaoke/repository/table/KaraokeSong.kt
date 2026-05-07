@@ -18,6 +18,8 @@ object KaraokeSongs : CompositeIdTable("karaoke_songs") {
 
     val createdAt = datetime("created_at")
 
+    val seq = integer("seq").databaseGenerated()
+
     override val primaryKey = PrimaryKey(brand, songNo)
 }
 
@@ -30,4 +32,5 @@ class KaraokeSongEntity(pk: EntityID<CompositeID>) : CompositeEntity(pk) {
     val singer by KaraokeSongs.singer
     val releaseDate by KaraokeSongs.releaseDate
     val createdAt by KaraokeSongs.createdAt
+    val seq by KaraokeSongs.seq
 }

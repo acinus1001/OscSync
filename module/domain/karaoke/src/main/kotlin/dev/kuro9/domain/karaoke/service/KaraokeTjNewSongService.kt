@@ -44,7 +44,7 @@ class KaraokeTjNewSongService(
         val songs = response.body<TjNewSongResponseDto>()
 
         return songs.resultData.items
-            .filter { it.pro in 52894..53000 || it.pro in 52400..52499 || it.indexTitle.isJapanese() }
+            .filter { it.pro in 52894..53000 || it.pro in 52400..52599 || it.indexTitle.isJapanese() }
             .map {
                 KaraokeSongDto(
                     brand = supportBrand,
@@ -52,6 +52,7 @@ class KaraokeTjNewSongService(
                     title = it.indexTitle,
                     singer = it.indexSong,
                     releaseDate = it.publishdate,
+                    seq = -1,
                 )
             }
     }
@@ -72,6 +73,7 @@ class KaraokeTjNewSongService(
         title = title,
         singer = singer,
         releaseDate = releaseDate,
+        seq = seq,
     )
 
     private fun String.isJapanese(): Boolean {
