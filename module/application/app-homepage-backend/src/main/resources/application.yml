@@ -8,6 +8,10 @@ dev:
     discord:
       api:
         token: ${DISCORD_TOKEN}
+    cookie:
+      redirect-front-uri: https://kuro9.dev
+      domain: kuro9.dev
+      secure: true
 
 ---
 # dev env
@@ -22,15 +26,3 @@ dev:
       domain: localhost
       secure: false
 
----
-# prod env
-spring:
-  config:
-    activate:
-      on-profile: prod
-dev:
-  kuro9:
-    cookie:
-      redirect-front-uri: https://kuro9.dev
-      domain: kuro9.dev
-      secure: true
