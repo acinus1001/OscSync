@@ -16,7 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 object SmartAppPagedLinkInfoSerializer : KSerializer<SmartAppResponse.Paged.LinkInfo> {
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor = buildSerialDescriptor(
-        SmartAppResponse.Paged.LinkInfo::class.qualifiedName!!,
+        "SmartAppResponse.Paged.LinkInfo",
         StructureKind.OBJECT
     ) {
         element("next", JsonObject.serializer().descriptor, isOptional = true)

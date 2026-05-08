@@ -62,7 +62,7 @@ private fun NavMenus() {
         MenuItem(routeState.nowPage == Route.HOME, "Home") { routeState.navigate(Route.HOME) }
         MenuItem(routeState.nowPage == Route.ABOUT, "About") { routeState.navigate(Route.ABOUT) }
         MenuItem(routeState.nowPage == Route.CONTACT, "Contact") { routeState.navigate(Route.CONTACT) }
-        MenuItem(routeState.nowPage == Route.SERVICES, "Services") { routeState.navigate(Route.SERVICES) }
+        MenuItem(routeState.nowPage == Route.Services.ROOT, "Services") { routeState.navigate(Route.Services.ROOT) }
     }
 }
 

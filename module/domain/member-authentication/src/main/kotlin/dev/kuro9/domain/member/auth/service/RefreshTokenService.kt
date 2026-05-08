@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 class RefreshTokenService {
 
     fun saveToken(userId: Long, token: String, expiresAt: LocalDateTime, createdAt: LocalDateTime) {
-        RefreshTokens.upsert {
+        RefreshTokens.upsert(RefreshTokens.member) {
             it[RefreshTokens.member] = userId
             it[RefreshTokens.token] = token
             it[RefreshTokens.expiresAt] = expiresAt
