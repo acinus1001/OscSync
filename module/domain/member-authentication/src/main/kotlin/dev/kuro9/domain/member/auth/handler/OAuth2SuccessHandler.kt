@@ -1,6 +1,7 @@
 package dev.kuro9.domain.member.auth.handler
 
 import dev.kuro9.domain.member.auth.config.CookieConfigProperties
+import dev.kuro9.domain.member.auth.interfaces.AuthorizationSuccessHandler
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -17,7 +18,8 @@ import kotlin.time.toJavaDuration
 @[Component Order(Int.MAX_VALUE)]
 class OAuth2SuccessHandler(
     private val tokenService: JwtTokenService,
-    private val cookieProperties: CookieConfigProperties
+    private val cookieProperties: CookieConfigProperties,
+    private val authorizationSuccessHandlerList: List<AuthorizationSuccessHandler>
 ) : AuthenticationSuccessHandler {
 
     override fun onAuthenticationSuccess(
@@ -25,6 +27,8 @@ class OAuth2SuccessHandler(
         response: HttpServletResponse,
         authentication: Authentication
     ) {
+        val userId = tokenService.getUserId(authentication)
+        authorizationSuccessHandlerList.forEach { it.onSuccess(userId) }
         val tokenResponse = tokenService.makeTokenResponse(authentication)
 
         val accessTokenCookie = ResponseCookie.from("accessToken", tokenResponse.accessToken)

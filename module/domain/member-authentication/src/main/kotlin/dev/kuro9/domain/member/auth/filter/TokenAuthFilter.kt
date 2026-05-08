@@ -2,6 +2,7 @@ package dev.kuro9.domain.member.auth.filter
 
 import dev.kuro9.domain.member.auth.config.CookieConfigProperties
 import dev.kuro9.domain.member.auth.enumurate.MemberRole
+import dev.kuro9.domain.member.auth.interfaces.AuthorizationSuccessHandler
 import dev.kuro9.domain.member.auth.jwt.JwtToken
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
@@ -23,6 +24,7 @@ import kotlin.time.toJavaDuration
 class TokenAuthFilter(
     private val tokenService: JwtTokenService,
     private val cookieProperties: CookieConfigProperties,
+    private val authorizationSuccessHandlerList: List<AuthorizationSuccessHandler>
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -38,6 +40,10 @@ class TokenAuthFilter(
                     return@run
                 }
 
+                if (tokenService.isRefreshable(refreshToken)) {
+                    val userId = tokenService.getUserIdWithNoCheck(refreshToken.let(::JwtToken))
+                    authorizationSuccessHandlerList.forEach { it.onSuccess(userId) }
+                }
                 val tokenResponse = tokenService.refreshToken(refreshToken)
 
                 val accessTokenCookie = ResponseCookie.from("accessToken", tokenResponse.accessToken)
