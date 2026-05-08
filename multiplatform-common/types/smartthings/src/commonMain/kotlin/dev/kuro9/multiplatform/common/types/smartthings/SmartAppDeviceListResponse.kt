@@ -1,6 +1,6 @@
-package dev.kuro9.internal.smartapp.api.dto.response
+package dev.kuro9.multiplatform.common.types.smartthings
 
-import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponseObject.DeviceInfo
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppResponseObject.DeviceInfo
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

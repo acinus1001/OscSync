@@ -1,10 +1,10 @@
 @file:OptIn(ExperimentalTime::class)
 
-package dev.kuro9.internal.smartapp.api.dto.response
+package dev.kuro9.multiplatform.common.types.smartthings
 
-import dev.kuro9.multiplatform.common.serialization.serializer.instant.UnixTimestamp
 import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 interface SmartAppResponseObject {
 
@@ -22,7 +22,7 @@ interface SmartAppResponseObject {
 
         val components: List<Component>,
 
-        val createTime: UnixTimestamp,
+        val createTime: Instant,
 
         val parentDeviceId: String?,
     ) {

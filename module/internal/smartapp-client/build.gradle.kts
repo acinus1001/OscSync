@@ -11,4 +11,5 @@ dependencies {
 
     implementation(projects.module.common.logger)
     implementation(projects.module.common.network)
+    implementation(projects.multiplatformCommon.types.smartthings)
 }

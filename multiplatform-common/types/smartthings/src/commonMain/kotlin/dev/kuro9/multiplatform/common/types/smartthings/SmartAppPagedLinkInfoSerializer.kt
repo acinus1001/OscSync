@@ -1,6 +1,5 @@
-package dev.kuro9.internal.smartapp.api.response
+package dev.kuro9.multiplatform.common.types.smartthings
 
-import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponse
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer

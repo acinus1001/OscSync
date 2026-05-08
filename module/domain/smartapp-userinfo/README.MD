@@ -1,0 +1,1 @@
+COL_AES_KEY, COL_AES_SALT 환경변수 필요. (db 토큰 암호화)
