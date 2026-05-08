@@ -42,6 +42,7 @@ kotlin {
         jsMain.dependencies {
 //            implementation(compose.runtime)
             implementation(projects.moduleFront.internal.memberClient)
+
             implementation(projects.multiplatformCommon.network)
             implementation(projects.multiplatformCommon.types.member)
 

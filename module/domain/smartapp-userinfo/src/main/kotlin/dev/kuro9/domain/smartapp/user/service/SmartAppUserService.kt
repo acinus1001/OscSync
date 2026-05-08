@@ -109,6 +109,9 @@ class SmartAppUserService(
         return deviceName
     }
 
+    /**
+     * @return 성공 여부
+     */
     @Throws(NotSupportException::class)
     suspend fun executeDevice(
         userId: Long,

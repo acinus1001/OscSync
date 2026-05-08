@@ -21,17 +21,22 @@ class HomepageBackendSecurityConfig {
         http {
             securityMatcher(
                 "/health",
-                "/services/mahjong/**"
+                "/services/mahjong/**",
+                "/services/iot/**",
             )
             authorizeHttpRequests {
-                authorize("/health", authenticated)
+                authorize("/health", permitAll)
                 authorize("/services/mahjong/**", withAuthority(MemberHomepageAuthority.Mahjong))
+                authorize("/services/iot/**", withAuthority(MemberHomepageAuthority.Iot))
             }
         }
 
         return http.build()
     }
 
+    /**
+     * 주어진 Authority 및 ROLE_ROOT 에 한해 접근 권한 허용
+     */
     private fun withAuthority(authority: MemberHomepageAuthority): AuthorizationManager<RequestAuthorizationContext> {
         return AuthorizationManager { auth: Supplier<Authentication>, _: RequestAuthorizationContext ->
             val auth = auth.get()
