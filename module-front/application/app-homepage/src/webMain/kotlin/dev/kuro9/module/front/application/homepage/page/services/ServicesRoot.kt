@@ -1,9 +1,11 @@
 package dev.kuro9.module.front.application.homepage.page.services
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteState
 import dev.kuro9.module.front.application.homepage.state.user.UserState
+import dev.kuro9.module.front.application.homepage.state.user.UserViewModel
 import kotlinx.browser.window
 import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
@@ -11,6 +13,10 @@ import org.koin.compose.koinInject
 @Composable
 fun ServicesRoot(routeState: RouteState) {
     val userState: UserState = koinInject()
+    val userViewModel: UserViewModel = koinInject()
+    LaunchedEffect(Unit) {
+        userViewModel.refreshMyInfo()
+    }
 
     H3 { Text("서비스 목록") }
     Hr()
