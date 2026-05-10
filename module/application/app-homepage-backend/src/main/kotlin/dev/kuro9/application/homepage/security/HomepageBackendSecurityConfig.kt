@@ -23,9 +23,13 @@ class HomepageBackendSecurityConfig {
                 "/health",
                 "/services/mahjong/**",
                 "/services/iot/**",
+
+                "/webhook/smartapp",
             )
+            csrf { disable() }
             authorizeHttpRequests {
                 authorize("/health", permitAll)
+                authorize("/webhook/smartapp", permitAll)
                 authorize("/services/mahjong/**", withAuthority(MemberHomepageAuthority.Mahjong))
                 authorize("/services/iot/**", withAuthority(MemberHomepageAuthority.Iot))
             }

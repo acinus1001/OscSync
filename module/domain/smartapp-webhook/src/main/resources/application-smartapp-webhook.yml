@@ -1,0 +1,5 @@
+dev:
+  kuro9:
+    smartapp:
+      smart-app-client-id: ${SMART_APP_CLIENT_ID}
+      smart-app-client-secret: ${SMART_APP_CLIENT_SECRET}

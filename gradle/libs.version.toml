@@ -127,6 +127,10 @@ slf4j-api-extensions = { module = "io.github.harryjhin:slf4j-api-extensions", ve
 
 apache-commons-exec = { module = "org.apache.commons:commons-exec", version = "1.6.0" }
 
+smartapp-core = { module = "com.smartthings.sdk:smartapp-core", version = "0.0.4-PREVIEW" }
+smartthings-client = { module = "com.smartthings.sdk:smartthings-client", version = "0.0.4-PREVIEW" }
+smartapp-spring = { module = "com.smartthings.sdk:smartapp-spring", version = "0.0.4-PREVIEW" }
+
 
 
 [bundles]
@@ -143,3 +147,4 @@ mvi-kotlin-decomposed = [
     "mvi-kotlin-timetravel",
     "mvi-kotlin-extensions-coroutines",
 ]
+smartapp-sdk = ["smartapp-core", "smartapp-spring"]
