@@ -103,6 +103,7 @@ class OAuth2LoginSecurityConfig {
             allowedOrigins = listOf(
                 "http://localhost:8080",
                 "http://localhost:8090",
+                "https://kuro9.dev",
             )
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
             allowedHeaders = listOf("*")

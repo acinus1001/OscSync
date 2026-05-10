@@ -2,9 +2,9 @@ package dev.kuro9.application.homepage.iot.controller
 
 import dev.kuro9.application.homepage.utils.ROOT_USER_ID
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
-import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevice
 import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
 import dev.kuro9.multiplatform.common.types.app.homepage.iot.DeviceSwitchRequest
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

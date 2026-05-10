@@ -1,5 +1,6 @@
 package dev.kuro9.domain.smartapp.user.repository
 
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere

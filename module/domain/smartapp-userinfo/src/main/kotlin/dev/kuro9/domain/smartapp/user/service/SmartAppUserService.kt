@@ -3,7 +3,6 @@ package dev.kuro9.domain.smartapp.user.service
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.*
 import dev.kuro9.domain.smartapp.user.exception.SmartAppUserException.CredentialNotFoundException
-import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevice
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDeviceEntity
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevices
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserRepo
@@ -12,6 +11,7 @@ import dev.kuro9.internal.smartapp.api.exception.ApiNotSuccessException
 import dev.kuro9.internal.smartapp.api.service.SmartAppApiService
 import dev.kuro9.multiplatform.common.types.smartthings.SmartAppDeviceListResponse
 import dev.kuro9.multiplatform.common.types.smartthings.SmartAppResponseObject
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.core.eq
