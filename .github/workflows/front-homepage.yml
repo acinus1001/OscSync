@@ -64,7 +64,7 @@ jobs:
 
             rm -rf ${{ env.REMOTE_TARGET_DIR }}/*
 
-            tar -xzf ${{ env.REMOTE_BASE_DIR }}/frontend.tar.gz \
+            tar -xzf ${{ env.REMOTE_BASE_DIR }}/deploy/frontend.tar.gz \
               -C ${{ env.REMOTE_TARGET_DIR }}
 
             rm ${{ env.REMOTE_BASE_DIR }}/frontend.tar.gz
