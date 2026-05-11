@@ -19,13 +19,6 @@ import org.koin.compose.koinInject
 import org.w3c.dom.EventSource
 import org.w3c.dom.EventSourceInit
 
-private fun eventSourceInit(
-    withCredentials: Boolean,
-): EventSourceInit =
-    js("{}").unsafeCast<EventSourceInit>().also {
-        it.withCredentials = withCredentials
-    }
-
 @Composable
 fun IotRoot() {
     val serverInfo: ServerInfo = koinInject()
@@ -50,7 +43,7 @@ fun IotRoot() {
     DisposableEffect(Unit) {
         val eventSource = EventSource(
             "${serverInfo.protocol.name}://${serverInfo.host}:${serverInfo.port}/services/iot/noti/subscribe",
-            eventSourceInit(withCredentials = true)
+            EventSourceInit(withCredentials = true)
         )
 
         eventSource.onmessage = { event ->
