@@ -7,4 +7,5 @@ data class UserInfoApiResponse(
     val userId: Long,
     val userName: String,
     val userAvatarUrl: String?,
+    val authorities: List<String>,
 )

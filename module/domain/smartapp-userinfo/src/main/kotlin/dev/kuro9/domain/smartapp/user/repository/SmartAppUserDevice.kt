@@ -1,6 +1,7 @@
 package dev.kuro9.domain.smartapp.user.repository
 
 import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.dao.id.CompositeID
 import org.jetbrains.exposed.v1.core.dao.id.CompositeIdTable
@@ -60,13 +61,3 @@ class SmartAppUserDeviceEntity(pk: EntityID<CompositeID>) : CompositeEntity(pk) 
         updatedAt = updatedAt
     )
 }
-
-data class SmartAppUserDevice(
-    val userId: Long,
-    val deviceId: String,
-    val deviceComponent: String,
-    val deviceCapability: String,
-    val deviceName: String,
-    val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime,
-) : java.io.Serializable

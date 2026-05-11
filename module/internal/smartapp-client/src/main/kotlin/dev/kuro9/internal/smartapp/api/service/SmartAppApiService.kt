@@ -3,10 +3,10 @@ package dev.kuro9.internal.smartapp.api.service
 import dev.kuro9.internal.smartapp.api.client.SmartAppApiClient
 import dev.kuro9.internal.smartapp.api.dto.request.SmartAppDeviceCommandRequest
 import dev.kuro9.internal.smartapp.api.dto.request.SmartAppToken
-import dev.kuro9.internal.smartapp.api.dto.response.SmartAppDeviceListResponse
-import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponse
-import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponseObject
 import dev.kuro9.internal.smartapp.api.exception.ApiNotSuccessException
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppDeviceListResponse
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppResponse
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppResponseObject
 import org.springframework.stereotype.Service
 
 @Service

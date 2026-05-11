@@ -1,6 +1,5 @@
-package dev.kuro9.internal.smartapp.api.response
+package dev.kuro9.multiplatform.common.types.smartthings
 
-import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponse
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -17,7 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 object SmartAppPagedLinkInfoSerializer : KSerializer<SmartAppResponse.Paged.LinkInfo> {
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor = buildSerialDescriptor(
-        SmartAppResponse.Paged.LinkInfo::class.qualifiedName!!,
+        "SmartAppResponse.Paged.LinkInfo",
         StructureKind.OBJECT
     ) {
         element("next", JsonObject.serializer().descriptor, isOptional = true)

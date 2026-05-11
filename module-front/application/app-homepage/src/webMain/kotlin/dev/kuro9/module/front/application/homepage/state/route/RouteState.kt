@@ -10,21 +10,46 @@ class RouteState {
         ?: Route.HOME)
         private set;
 
+    init {
+        window.onpopstate = {
+            nowPage = Route.fromPath(window.location.pathname) ?: Route.HOME
+        }
+    }
+
     fun navigate(route: Route) {
         window.history.pushState(null, "", route.path)
         nowPage = route
     }
 }
 
-enum class Route(val path: String) {
-    HOME("/"),
-    ABOUT("/about"),
-    CONTACT("/contact"),
-    SERVICES("/services"),
-    PROFILE("/profile"),
-    ;
+sealed class Route(val path: String) {
+    object HOME : Route("/")
+    object ABOUT : Route("/about")
+    object CONTACT : Route("/contact")
+    sealed interface Services {
+        object ROOT : Route("/services"), Services
+        object IOT : Route("/services/iot"), Services
+    }
+
+    object PROFILE : Route("/profile")
 
     companion object {
-        fun fromPath(path: String): Route? = entries.find { it.path == path }
+        fun fromPath(path: String): Route? {
+            when (path) {
+                "/" -> return HOME
+                "/about" -> return ABOUT
+                "/contact" -> return CONTACT
+                "/services" -> return Services.ROOT
+                "/profile" -> return PROFILE
+            }
+
+            when {
+                path.startsWith("/services") -> when (path) {
+                    "/services/iot" -> return Services.IOT
+                }
+            }
+
+            return null
+        }
     }
 }

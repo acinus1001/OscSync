@@ -49,8 +49,7 @@ dependencies {
     implementation(projects.module.domain.chessCom)
     implementation(projects.module.domain.inquiry)
 
-
-    implementation(projects.module.domain.memberAuthentication)
+    implementation(projects.multiplatformCommon.types.smartthings)
 }
 
 

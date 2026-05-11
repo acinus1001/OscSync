@@ -3,18 +3,18 @@ package dev.kuro9.domain.smartapp.user.service
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException
 import dev.kuro9.domain.smartapp.user.exception.SmartAppDeviceException.*
 import dev.kuro9.domain.smartapp.user.exception.SmartAppUserException.CredentialNotFoundException
-import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevice
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDeviceEntity
 import dev.kuro9.domain.smartapp.user.repository.SmartAppUserDevices
+import dev.kuro9.domain.smartapp.user.repository.SmartAppUserRepo
 import dev.kuro9.internal.smartapp.api.dto.request.SmartAppDeviceCommandRequest
-import dev.kuro9.internal.smartapp.api.dto.response.SmartAppDeviceListResponse
-import dev.kuro9.internal.smartapp.api.dto.response.SmartAppResponseObject.DeviceInfo
 import dev.kuro9.internal.smartapp.api.exception.ApiNotSuccessException
 import dev.kuro9.internal.smartapp.api.service.SmartAppApiService
-import org.jetbrains.exposed.v1.core.and
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppDeviceListResponse
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppResponseObject
+import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.upsert
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
@@ -23,13 +23,16 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class SmartAppUserService(
+    private val userRepo: SmartAppUserRepo,
     private val userCredentialService: SmartAppCredentialService,
     private val apiClient: SmartAppApiService,
 ) {
 
     @Throws(CredentialNotFoundException::class)
     suspend fun getUserDevices(userId: Long): SmartAppDeviceListResponse {
-        return apiClient.listDevices(userCredentialService.getUserCredential(userId))
+        return apiClient.listDevices(withContext(Dispatchers.IO) {
+            userCredentialService.getUserCredential(userId)
+        })
     }
 
     fun getUserRegisteredDevices(userId: Long): List<SmartAppUserDeviceEntity> {
@@ -40,9 +43,11 @@ class SmartAppUserService(
     }
 
     @Throws(CredentialNotFoundException::class)
-    suspend fun getUserDevice(userId: Long, deviceId: String): DeviceInfo {
+    suspend fun getUserDevice(userId: Long, deviceId: String): SmartAppResponseObject.DeviceInfo {
         return apiClient.getDeviceInfo(
-            smartAppToken = userCredentialService.getUserCredential(userId),
+            smartAppToken = withContext(Dispatchers.IO) {
+                userCredentialService.getUserCredential(userId)
+            },
             deviceId = deviceId,
         )
     }
@@ -56,13 +61,13 @@ class SmartAppUserService(
         deviceCapabilityId: String,
         deviceName: String,
     ) {
-        SmartAppUserDevices.upsert {
-            it[SmartAppUserDevices.userId] = userId
-            it[SmartAppUserDevices.deviceId] = deviceId
-            it[SmartAppUserDevices.deviceComponent] = deviceComponentId
-            it[SmartAppUserDevices.deviceCapability] = deviceCapabilityId
-            it[SmartAppUserDevices.deviceName] = deviceName
-        }
+        userRepo.registerDevice(
+            userId = userId,
+            deviceId = deviceId,
+            deviceComponentId = deviceComponentId,
+            deviceCapabilityId = deviceCapabilityId,
+            deviceName = deviceName
+        )
     }
 
     /**
@@ -104,6 +109,9 @@ class SmartAppUserService(
         return deviceName
     }
 
+    /**
+     * @return 성공 여부
+     */
     @Throws(NotSupportException::class)
     suspend fun executeDevice(
         userId: Long,
@@ -159,12 +167,9 @@ class SmartAppUserService(
      *
      * @return 삭제 row 존재 여부
      */
-    @Transactional
     @CacheEvict(cacheNames = ["smartapp-registered-devices"], key = "#userId")
     suspend fun deleteDeviceByName(userId: Long, deviceName: String): Boolean {
-        return (SmartAppUserDevices.userId eq userId)
-            .and { SmartAppUserDevices.deviceName eq deviceName }
-            .let { op -> SmartAppUserDevices.deleteWhere { op } } != 0
+        return userRepo.deleteDeviceByName(userId, deviceName)
 
     }
 
@@ -172,27 +177,20 @@ class SmartAppUserService(
         userId: Long,
         deviceName: String,
     ): SmartAppUserDeviceEntity? {
-        return (SmartAppUserDevices.userId eq userId)
-            .and { SmartAppUserDevices.deviceName eq deviceName }
-            .and { SmartAppUserDevices.deviceComponent eq "main" }
-            .and { SmartAppUserDevices.deviceCapability eq "switch" }
-            .let(SmartAppUserDeviceEntity::find)
-            .singleOrNull()
+        return userRepo.getRegisteredDeviceByName(userId, deviceName)
     }
 
     @Cacheable("smartapp-registered-devices", key = "#userId")
     fun getRegisteredDevices(userId: Long): List<SmartAppUserDevice> {
-        return SmartAppUserDeviceEntity
-            .find { SmartAppUserDevices.userId eq userId }
-            .notForUpdate()
-            .toList()
-            .map { it.toDto() }
+        return userRepo.getRegisteredDevices(userId)
     }
 
+    @Transactional
     fun saveUserCredential(userId: Long, smartAppToken: String) {
         userCredentialService.saveUserCredential(userId, smartAppToken)
     }
 
+    @Transactional
     fun deleteUserCredential(userId: Long) {
         userCredentialService.deleteUserCredential(userId)
     }

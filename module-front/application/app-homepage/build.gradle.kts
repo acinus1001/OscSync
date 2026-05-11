@@ -42,8 +42,12 @@ kotlin {
         jsMain.dependencies {
 //            implementation(compose.runtime)
             implementation(projects.moduleFront.internal.memberClient)
+
             implementation(projects.multiplatformCommon.network)
+            implementation(projects.multiplatformCommon.serialization)
             implementation(projects.multiplatformCommon.types.member)
+            implementation(projects.multiplatformCommon.types.smartthings)
+            implementation(projects.multiplatformCommon.types.appHomepage)
 
             implementation(libs.compose.html)
 

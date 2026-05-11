@@ -26,6 +26,8 @@ dependencies {
     implementation(projects.multiplatformCommon.network)
     implementation(projects.multiplatformCommon.date)
     implementation(projects.multiplatformCommon.types.discordApi)
+    implementation(projects.multiplatformCommon.types.smartthings)
+    implementation(projects.multiplatformCommon.types.appHomepage)
 
     implementation(projects.module.common.network)
     implementation(projects.module.common.logger)
@@ -35,23 +37,9 @@ dependencies {
     implementation(projects.module.internal.discordApi)
 
     implementation(projects.module.domain.database)
-    implementation(projects.module.domain.inquiry)
-
+    implementation(projects.module.domain.cache)
     implementation(projects.module.domain.memberAuthentication)
+    implementation(projects.module.domain.inquiry)
+    implementation(projects.module.domain.smartappUserinfo)
+    implementation(projects.module.domain.smartappWebhook)
 }
-
-
-//tasks.named<Jar>("jar") {
-//    manifest {
-//        attributes(
-//            "Main-Class" to "dev.kuro9.HomepageBackendApplicationKt",
-//            "Implementation-Title" to project.name,
-//            "Implementation-Version" to project.version,
-//        )
-//    }
-//}
-//
-//tasks.register<Copy>("copyDependency") {
-//    from(configurations.runtimeClasspath.get())
-//    into("${layout.buildDirectory.get()}/libs/lib")
-//}

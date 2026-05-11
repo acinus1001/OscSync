@@ -19,6 +19,7 @@ class UserController {
             userId = userInfo.id,
             userName = userInfo.username,
             userAvatarUrl = userInfo.avatarUrl,
+            authorities = userInfo.getAuthorities().map { it.authority },
         )
     }
 }

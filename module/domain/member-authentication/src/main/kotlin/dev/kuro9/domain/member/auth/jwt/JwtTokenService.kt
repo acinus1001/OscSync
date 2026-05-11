@@ -37,6 +37,11 @@ class JwtTokenService(
     private val accessTokenExpireDuration = 30.minutes
     private val refreshTokenExpireDuration = 7.days
 
+    fun getUserId(authentication: Authentication): Long {
+        val userDetail = authentication.principal as DiscordUserDetail
+        return userDetail.id
+    }
+
     fun makeTokenResponse(authentication: Authentication): JwtTokenResponse {
         val userDetail = authentication.principal as DiscordUserDetail
         val now = Clock.System.now()
@@ -71,6 +76,19 @@ class JwtTokenService(
             accessToken = accessToken.token,
             refreshToken = refreshToken.token
         )
+    }
+
+    fun isRefreshable(refreshTokenStr: String): Boolean {
+        val payload = validateAndGetRefreshPayload(JwtToken(refreshTokenStr))
+
+        if (payload.type != "REFRESH") return false
+
+        refreshTokenService
+            .findByToken(refreshTokenStr)
+            ?.takeIf { it.expiresAt > LocalDateTime.now() }
+            ?: return false
+
+        return true
     }
 
     @Transactional
@@ -148,6 +166,10 @@ class JwtTokenService(
         )
     }
 
+    fun getUserIdWithNoCheck(accessToken: JwtToken): Long {
+        return accessToken.getPayload<JwtPayloadV1>().sub.toLong()
+    }
+
     @Throws(JwtValidationException::class, SerializationException::class)
     fun validateAndGetPayload(token: JwtToken): JwtPayloadV1 {
         return token.validateAndGetPayload(properties.key)
@@ -178,6 +200,16 @@ class JwtTokenService(
         )
 
         return JwtToken("$encodedHeader.$payload.$signature")
+    }
+
+    private inline fun <reified T : JwtBasicPayload> JwtToken.getPayload(): T {
+        val (_, encodedPayload, _) = this.token.split('.')
+
+        val payload = noPaddingBase64.decode(encodedPayload)
+            .toString(Charsets.UTF_8)
+            .let<String, T>(minifyJson::decodeFromString)
+
+        return payload
     }
 
     @Throws(JwtValidationException::class, SerializationException::class)

@@ -3,6 +3,7 @@ spring:
     include:
       - member
       - database
+      - smartapp-webhook
 dev:
   kuro9:
     discord:
