@@ -39,7 +39,7 @@ class HomepageBackendSecurityConfig {
 
             info { "auth: $auth, authorities: $authorities" }
 
-            if (auth is AnonymousAuthenticationToken || auth.isAuthenticated)
+            if (auth is AnonymousAuthenticationToken || !auth.isAuthenticated)
                 return@AuthorizationManager AuthorizationDecision(false)
             if (MemberRole.ROLE_ROOT.name in authorities) return@AuthorizationManager AuthorizationDecision(true)
 
