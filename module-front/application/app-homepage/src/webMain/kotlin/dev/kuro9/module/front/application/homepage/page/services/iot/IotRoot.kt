@@ -2,10 +2,15 @@ package dev.kuro9.module.front.application.homepage.page.services.iot
 
 import androidx.compose.runtime.*
 import dev.kuro9.module.front.application.homepage.network.iot.IotApiService
+import dev.kuro9.module.front.application.homepage.state.route.Route
+import dev.kuro9.module.front.application.homepage.state.route.RouteState
 import dev.kuro9.multiplatform.common.network.ServerInfo
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
 import dev.kuro9.multiplatform.common.types.smartthings.event.SmartAppDeviceEvent
+import io.ktor.client.plugins.*
+import io.ktor.http.*
+import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.css.*
@@ -26,6 +31,7 @@ fun IotRoot() {
     val serverInfo: ServerInfo = koinInject()
     val iotApiService: IotApiService = koinInject()
     val scope = rememberCoroutineScope()
+    val routeState: RouteState = koinInject()
 
     val devices = remember { mutableStateMapOf<String, SmartAppUserDevice>() }
     val deviceStates = remember { mutableStateMapOf<String, Boolean?>() }
@@ -95,9 +101,9 @@ fun IotRoot() {
                         Td(attrs = { style { padding(8.px); textAlign("center") } }) {
                             Text(
                                 when (currentState) {
-                                    true -> "켜짐"
-                                    false -> "꺼짐"
-                                    null -> "모름"
+                                    true -> "ON"
+                                    false -> "OFF"
+                                    null -> "-"
                                 }
                             )
                         }
@@ -116,12 +122,14 @@ fun IotRoot() {
                                         name(device.deviceId)
                                         onClick {
                                             scope.launch {
-                                                iotApiService.executeRootDevices(device.deviceId, true)
+                                                handleApiException(routeState) {
+                                                    iotApiService.executeRootDevices(device.deviceId, true)
+                                                }
                                             }
                                         }
                                     }
                                 )
-                                Text("켜기")
+                                Text("ON")
                             }
 
                             Label {
@@ -131,17 +139,49 @@ fun IotRoot() {
                                         name(device.deviceId)
                                         onClick {
                                             scope.launch {
-                                                iotApiService.executeRootDevices(device.deviceId, false)
+                                                handleApiException(routeState) {
+                                                    iotApiService.executeRootDevices(device.deviceId, false)
+                                                }
                                             }
                                         }
                                     }
                                 )
-                                Text("끄기")
+                                Text("OFF")
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+private suspend fun handleApiException(routeState: RouteState, action: suspend () -> Unit) {
+    try {
+        action()
+    } catch (e: ClientRequestException) {
+        e.printStackTrace()
+
+        when (e.response.status) {
+            HttpStatusCode.Forbidden -> {
+                window.alert("권한이 없습니다. 메인 페이지로 이동합니다.")
+                routeState.navigate(Route.HOME)
+                return
+            }
+
+            HttpStatusCode.Unauthorized -> {
+                window.alert("인증되지 않은 사용자입니다. 메인 페이지로 이동합니다.")
+                routeState.navigate(Route.HOME)
+                return
+            }
+        }
+
+        window.alert("알 수 없는 클라이언트 오류가 발생했습니다.")
+    } catch (e: ServerResponseException) {
+        e.printStackTrace()
+        window.alert("알 수 없는 서버 오류가 발생하였습니다.")
+    } catch (e: Exception) {
+        e.printStackTrace()
+        window.alert("알 수 없는 오류가 발생하였습니다.")
     }
 }
