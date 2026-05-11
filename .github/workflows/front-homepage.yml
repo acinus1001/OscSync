@@ -9,6 +9,7 @@ jobs:
 
     env:
       REMOTE_TARGET_DIR: "/var/services/homes/github-cd/frontend-homepage/pages/kuro9-dev"
+    environment: APP_HOMEPAGE_BACKEND
 
     steps:
       - name: Checkout
