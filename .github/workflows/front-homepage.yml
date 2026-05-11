@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      REMOTE_BASE_DIR: "/var/services/homes/github-cd/frontend-homepage"
       REMOTE_TARGET_DIR: "/var/services/homes/github-cd/frontend-homepage/pages/kuro9-dev"
     environment: APP_HOMEPAGE_BACKEND
 
@@ -27,7 +28,12 @@ jobs:
       - name: Build Frontend
         run: ./gradlew :module-front:application:app-homepage:jsBrowserDistribution -Dmode=prod
 
-      - name: Copy Frontend Files to Remote Server
+      - name: Archive Frontend Files
+        run: |
+          cd module-front/application/app-homepage/build/dist/js/productionExecutable
+          tar -czf frontend.tar.gz .
+
+      - name: Copy Frontend Archive to Remote Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -35,14 +41,12 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
 
-          source: "module-front/application/app-homepage/build/dist/js/productionExecutable/*"
-          target: "${{ env.REMOTE_TARGET_DIR }}"
+          source: "module-front/application/app-homepage/build/dist/js/productionExecutable/frontend.tar.gz"
+          target: "${{ env.REMOTE_BASE_DIR }}"
 
-          strip_components: 6
           overwrite: true
-          rm: true
 
-      - name: Reload Nginx
+      - name: Deploy Frontend
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -51,5 +55,16 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
 
           script: |
-            docker exec nginx-kuro9-main nginx -t
-            docker exec nginx-kuro9-main nginx -s reload
+            set -e
+
+            mkdir -p ${{ env.REMOTE_TARGET_DIR }}
+
+            rm -rf ${{ env.REMOTE_TARGET_DIR }}/*
+
+            tar -xzf ${{ env.REMOTE_BASE_DIR }}/frontend.tar.gz \
+              -C ${{ env.REMOTE_TARGET_DIR }}
+
+            rm ${{ env.REMOTE_BASE_DIR }}/frontend.tar.gz
+
+            /usr/local/bin/docker exec nginx-kuro9-main nginx -t
+            /usr/local/bin/docker exec nginx-kuro9-main nginx -s reload
