@@ -6,6 +6,7 @@ import dev.kuro9.domain.member.auth.interfaces.AuthorizationSuccessHandler
 import dev.kuro9.domain.member.auth.jwt.JwtToken
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
+import io.github.harryjhin.slf4j.extension.info
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,10 +15,12 @@ import org.springframework.http.ResponseCookie
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.jwt.JwtValidationException
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 @Component
@@ -44,7 +47,35 @@ class TokenAuthFilter(
                     val userId = tokenService.getUserIdWithNoCheck(refreshToken.let(::JwtToken))
                     authorizationSuccessHandlerList.forEach { it.onSuccess(userId) }
                 }
-                val tokenResponse = tokenService.refreshToken(refreshToken)
+                val tokenResponse = try {
+                    tokenService.refreshToken(refreshToken)
+                } catch (e: JwtValidationException) {
+                    info { "not valid refresh token. clear cookies and context." }
+
+                    val accessTokenCookie = ResponseCookie.from("accessToken", "")
+                        .httpOnly(true)
+                        .secure(cookieProperties.secure)
+                        .domain(cookieProperties.domain)
+                        .sameSite("Lax")
+                        .path("/")
+                        .maxAge(0.seconds.toJavaDuration())
+                        .build()
+
+                    val refreshTokenCookie = ResponseCookie.from("refreshToken", "")
+                        .httpOnly(true)
+                        .secure(cookieProperties.secure)
+                        .domain(cookieProperties.domain)
+                        .sameSite("Lax")
+                        .path("/")
+                        .maxAge(0.seconds.toJavaDuration())
+                        .build()
+
+                    response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                    response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+
+                    SecurityContextHolder.clearContext()
+                    return@run
+                }
 
                 val accessTokenCookie = ResponseCookie.from("accessToken", tokenResponse.accessToken)
                     .httpOnly(true)
