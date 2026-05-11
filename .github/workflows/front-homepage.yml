@@ -31,7 +31,7 @@ jobs:
       - name: Archive Frontend Files
         run: |
           cd module-front/application/app-homepage/build/dist/js/productionExecutable
-          tar -czf frontend.tar.gz .
+          tar -czf /tmp/frontend.tar.gz .
 
       - name: Copy Frontend Archive to Remote Server
         uses: appleboy/scp-action@v0.1.7
@@ -41,7 +41,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
 
-          source: "module-front/application/app-homepage/build/dist/js/productionExecutable/frontend.tar.gz"
+          source: "module-front/application/app-homepage/build/dist/js/productionExecutable/tmp/frontend.tar.gz"
           target: "${{ env.REMOTE_BASE_DIR }}"
 
           overwrite: true
