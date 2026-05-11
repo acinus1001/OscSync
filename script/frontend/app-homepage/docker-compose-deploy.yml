@@ -1,0 +1,11 @@
+services:
+  nginx:
+    container_name: nginx-kuro9-main
+    image: nginx:latest
+    restart: unless-stopped
+    ports:
+      - "60080:80"
+    volumes:
+      - /volume2/ssd/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /volume2/ssd/docker/nginx/servers:/etc/nginx/servers:ro
+      - /volume2/ssd/docker/nginx/pages:/etc/nginx/pages:ro
