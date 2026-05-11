@@ -6,6 +6,8 @@ services:
       - ${ENV_FILE_LOC}
     networks:
       - database
+    ports:
+      - "60080:8080"
 
 networks:
   database:
