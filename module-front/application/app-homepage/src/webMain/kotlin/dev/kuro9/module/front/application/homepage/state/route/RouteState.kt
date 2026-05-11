@@ -10,6 +10,12 @@ class RouteState {
         ?: Route.HOME)
         private set;
 
+    init {
+        window.onpopstate = {
+            nowPage = Route.fromPath(window.location.pathname) ?: Route.HOME
+        }
+    }
+
     fun navigate(route: Route) {
         window.history.pushState(null, "", route.path)
         nowPage = route
