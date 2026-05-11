@@ -1,10 +1,10 @@
 package dev.kuro9.domain.member.auth.config
 
 import dev.kuro9.domain.member.auth.filter.TokenAuthFilter
+import dev.kuro9.domain.member.auth.interfaces.AuthorizeHttpRequestHandler
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2UserService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
@@ -29,13 +29,13 @@ import kotlin.time.toJavaDuration
 class OAuth2LoginSecurityConfig {
 
     @Bean
-    @Order(Int.MAX_VALUE)
     fun securityFilterChain(
         http: HttpSecurity,
         oAuth2UserService: DiscordOAuth2UserService,
         oAuth2SuccessHandler: AuthenticationSuccessHandler,
         tokenAuthFilter: TokenAuthFilter,
         cookieConfigProperties: CookieConfigProperties,
+        authorizeHandlerList: List<AuthorizeHttpRequestHandler>
     ): SecurityFilterChain {
         http {
             csrf { disable() }
@@ -77,6 +77,10 @@ class OAuth2LoginSecurityConfig {
                 authorize(HttpMethod.OPTIONS, "/**", permitAll)
                 authorize("/error", permitAll)
                 authorize("/users/me", authenticated)
+
+                for (handler in authorizeHandlerList) {
+                    handler.applyCustomAuthorize(this)
+                }
 
                 authorize(anyRequest, denyAll)
             }

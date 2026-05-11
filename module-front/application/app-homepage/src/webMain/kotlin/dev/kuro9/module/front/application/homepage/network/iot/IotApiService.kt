@@ -8,8 +8,8 @@ import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.resources.*
-import io.ktor.client.request.setBody
+import io.ktor.client.plugins.cookies.*
+import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 
@@ -17,6 +17,9 @@ class IotApiService(private val serverInfo: ServerInfo) {
     private val httpClient = httpClient {
         install(ContentNegotiation) {
             json(minifyJson)
+        }
+        install(HttpCookies) {
+            storage = AcceptAllCookiesStorage()
         }
 
         defaultRequest {

@@ -1,5 +1,6 @@
 package dev.kuro9.module.front.application.homepage
 
+import dev.kuro9.module.front.application.homepage.network.iot.IotApiService
 import dev.kuro9.module.front.application.homepage.state.route.RouteState
 import dev.kuro9.module.front.application.homepage.state.user.UserState
 import dev.kuro9.module.front.application.homepage.state.user.UserViewModel
@@ -16,4 +17,5 @@ val module = module {
     singleOf(::RouteState)
     singleOf(::UserState)
     singleOf(::UserViewModel)
+    singleOf(::IotApiService)
 }

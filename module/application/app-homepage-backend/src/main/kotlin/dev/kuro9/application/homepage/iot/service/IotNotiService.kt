@@ -1,6 +1,7 @@
 package dev.kuro9.application.homepage.iot.service
 
 import dev.kuro9.common.logger.infoLog
+import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.kuro9.multiplatform.common.types.smartthings.event.SmartAppDeviceEvent
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
@@ -44,6 +45,6 @@ class IotNotiService {
     @EventListener(SmartAppDeviceEvent::class)
     fun onSmartAppDeviceEvent(event: SmartAppDeviceEvent) {
         infoLog("smartapp device event: $event")
-        send(event.toString())
+        send(minifyJson.encodeToString(event))
     }
 }

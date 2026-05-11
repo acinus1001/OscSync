@@ -1,14 +1,15 @@
 package dev.kuro9.application.homepage.security
 
 import dev.kuro9.domain.member.auth.enumurate.MemberRole
+import dev.kuro9.domain.member.auth.interfaces.AuthorizeHttpRequestHandler
 import io.github.harryjhin.slf4j.extension.info
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Primary
 import org.springframework.http.HttpMethod
 import org.springframework.security.authorization.AuthorizationDecision
 import org.springframework.security.authorization.AuthorizationManager
+import org.springframework.security.config.annotation.web.AuthorizeHttpRequestsDsl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.core.Authentication
@@ -20,7 +21,6 @@ import java.util.function.Supplier
 @Configuration
 class HomepageBackendSecurityConfig {
 
-    @[Primary Bean]
     fun homepageFilterChain(
         http: HttpSecurity,
         @Qualifier("corsConfigurationSource") cors: CorsConfigurationSource
@@ -46,6 +46,19 @@ class HomepageBackendSecurityConfig {
         }
 
         return http.build()
+    }
+
+    @Bean
+    fun homepageAuthorizeRequests(): AuthorizeHttpRequestHandler = object : AuthorizeHttpRequestHandler {
+        override fun applyCustomAuthorize(action: AuthorizeHttpRequestsDsl) {
+            action.apply {
+                authorize("/health", permitAll)
+                authorize("/webhook/smartapp", permitAll)
+                authorize("/services/iot/noti/subscribe", permitAll)
+                authorize("/services/mahjong/**", withAuthority(MemberHomepageAuthority.Mahjong))
+                authorize("/services/iot/**", withAuthority(MemberHomepageAuthority.Iot))
+            }
+        }
     }
 
     /**

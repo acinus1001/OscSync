@@ -5,6 +5,7 @@ import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.domain.smartapp.user.service.SmartAppUserService
 import dev.kuro9.multiplatform.common.types.app.homepage.iot.DeviceSwitchRequest
 import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
+import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -22,18 +23,20 @@ class IotController(
     }
 
     @PutMapping("/root/devices/{deviceId}/switch")
-    suspend fun switchRootDevice(
+    fun switchRootDevice(
         @AuthenticationPrincipal user: DiscordUserDetail,
         @PathVariable deviceId: String,
         @RequestBody body: DeviceSwitchRequest,
     ): ResponseEntity<Nothing> {
-        val isSucceeded = iotService.executeDevice(
-            userId = ROOT_USER_ID,
-            deviceId = deviceId,
-            deviceComponentId = "main",
-            deviceCapabilityId = "switch",
-            desireState = body.desireState
-        )
+        val isSucceeded = runBlocking {
+            iotService.executeDevice(
+                userId = ROOT_USER_ID,
+                deviceId = deviceId,
+                deviceComponentId = "main",
+                deviceCapabilityId = "switch",
+                desireState = body.desireState
+            )
+        }
 
         return ResponseEntity(if (isSucceeded) HttpStatus.NO_CONTENT else HttpStatus.INTERNAL_SERVER_ERROR)
     }
