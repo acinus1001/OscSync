@@ -8,5 +8,5 @@ spring:
       minimum-idle: 4
       maximum-pool-size: 24
   exposed:
-    generate-ddl: true
+    generate-ddl: false
     show-sql: true
