@@ -4,6 +4,7 @@ spring:
       - member
       - database
       - smartapp-webhook
+      - redis
 dev:
   kuro9:
     discord:
