@@ -12,6 +12,7 @@ import io.ktor.client.plugins.*
 import io.ktor.http.*
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.web.attributes.disabled
 import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
@@ -28,6 +29,7 @@ fun IotRoot() {
 
     val devices = remember { mutableStateMapOf<String, SmartAppUserDevice>() }
     val deviceStates = remember { mutableStateMapOf<String, Boolean?>() }
+    var isNetworkWaiting = remember { mutableStateOf(false) } // api 응답 오기 전까지 다른 버튼 비활성화 용도
 
     LaunchedEffect(Unit) {
         val deviceList = iotApiService.getRootIotDevices()
@@ -113,10 +115,14 @@ fun IotRoot() {
                                     checked = currentState == true,
                                     attrs = {
                                         name(device.deviceId)
+                                        if (isNetworkWaiting.value) disabled()
                                         onClick {
+                                            if (isNetworkWaiting.value) return@onClick
                                             scope.launch {
                                                 handleApiException(routeState) {
+                                                    isNetworkWaiting.value = true
                                                     iotApiService.executeRootDevices(device.deviceId, true)
+                                                    isNetworkWaiting.value = false
                                                 }
                                             }
                                         }
@@ -130,10 +136,14 @@ fun IotRoot() {
                                     checked = currentState == false,
                                     attrs = {
                                         name(device.deviceId)
+                                        if (isNetworkWaiting.value) disabled()
                                         onClick {
+                                            if (isNetworkWaiting.value) return@onClick
                                             scope.launch {
                                                 handleApiException(routeState) {
+                                                    isNetworkWaiting.value = true
                                                     iotApiService.executeRootDevices(device.deviceId, false)
+                                                    isNetworkWaiting.value = false
                                                 }
                                             }
                                         }
