@@ -18,10 +18,6 @@ object RefreshTokens : LongIdTable("refresh_token") {
         onDelete = ReferenceOption.CASCADE,
         onUpdate = ReferenceOption.CASCADE,
     )
-
-    init {
-        uniqueIndex(member)
-    }
 }
 
 class RefreshTokenEntity(id: EntityID<Long>) : LongEntity(id) {

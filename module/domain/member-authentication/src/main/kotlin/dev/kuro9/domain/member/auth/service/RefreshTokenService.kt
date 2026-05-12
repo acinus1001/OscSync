@@ -5,7 +5,7 @@ import dev.kuro9.domain.member.auth.repository.RefreshTokens
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.upsert
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 class RefreshTokenService {
 
     fun saveToken(userId: Long, token: String, expiresAt: LocalDateTime, createdAt: LocalDateTime) {
-        RefreshTokens.upsert(RefreshTokens.member) {
+        RefreshTokens.insert {
             it[RefreshTokens.member] = userId
             it[RefreshTokens.token] = token
             it[RefreshTokens.expiresAt] = expiresAt
