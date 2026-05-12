@@ -7,6 +7,7 @@ import com.smartthings.sdk.smartapp.core.models.EventType
 import com.smartthings.sdk.smartapp.core.models.ExecutionRequest
 import com.smartthings.sdk.smartapp.core.models.ExecutionResponse
 import dev.kuro9.multiplatform.common.types.smartthings.event.SmartAppDeviceEvent
+import io.github.harryjhin.slf4j.extension.debug
 import io.github.harryjhin.slf4j.extension.info
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -17,7 +18,9 @@ class SmartAppEventHandler(
 ) : EventHandler {
 
     override fun handle(executionRequest: ExecutionRequest): ExecutionResponse {
-        info { "EVENT: executionRequest = $executionRequest" }
+        info { "EVENT: smartAppEventHandler" }
+        debug { "$executionRequest" }
+        
         if (executionRequest.eventData == null)
             return Response.status(400)
 
