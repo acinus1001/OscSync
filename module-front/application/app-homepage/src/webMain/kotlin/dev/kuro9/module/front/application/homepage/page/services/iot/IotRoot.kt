@@ -1,9 +1,9 @@
 package dev.kuro9.module.front.application.homepage.page.services.iot
 
 import androidx.compose.runtime.*
-import dev.kuro9.module.front.application.homepage.network.iot.IotApiService
+import dev.kuro9.module.front.application.homepage.network.IotApiService
 import dev.kuro9.module.front.application.homepage.state.route.Route
-import dev.kuro9.module.front.application.homepage.state.route.RouteState
+import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.multiplatform.common.network.ServerInfo
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
@@ -25,11 +25,11 @@ fun IotRoot() {
     val serverInfo: ServerInfo = koinInject()
     val iotApiService: IotApiService = koinInject()
     val scope = rememberCoroutineScope()
-    val routeState: RouteState = koinInject()
+    val routeState: RouteViewModel = koinInject()
 
     val devices = remember { mutableStateMapOf<String, SmartAppUserDevice>() }
     val deviceStates = remember { mutableStateMapOf<String, Boolean?>() }
-    var isNetworkWaiting = remember { mutableStateOf(false) } // api 응답 오기 전까지 다른 버튼 비활성화 용도
+    val isNetworkWaiting = remember { mutableStateOf(false) } // api 응답 오기 전까지 다른 버튼 비활성화 용도
 
     LaunchedEffect(Unit) {
         val deviceList = iotApiService.getRootIotDevices()
@@ -159,7 +159,7 @@ fun IotRoot() {
     }
 }
 
-private suspend fun handleApiException(routeState: RouteState, action: suspend () -> Unit) {
+private suspend fun handleApiException(routeState: RouteViewModel, action: suspend () -> Unit) {
     try {
         action()
     } catch (e: ClientRequestException) {

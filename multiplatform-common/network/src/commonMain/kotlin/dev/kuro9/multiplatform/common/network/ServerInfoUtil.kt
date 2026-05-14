@@ -13,4 +13,10 @@ data class ServerInfo(
     val host: String,
     val port: Int,
     val protocol: URLProtocol,
-)
+) {
+    fun getServerUrl() = "${protocol.name}://$host:$port"
+
+    override fun toString(): String {
+        return getServerUrl()
+    }
+}

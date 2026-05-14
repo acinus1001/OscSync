@@ -1,22 +1,16 @@
 package dev.kuro9.module.front.application.homepage.page.services
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import dev.kuro9.module.front.application.homepage.state.route.Route
-import dev.kuro9.module.front.application.homepage.state.route.RouteState
+import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.module.front.application.homepage.state.user.UserState
-import dev.kuro9.module.front.application.homepage.state.user.UserViewModel
 import kotlinx.browser.window
 import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
 
 @Composable
-fun ServicesRoot(routeState: RouteState) {
+fun ServicesRoot(routeState: RouteViewModel) {
     val userState: UserState = koinInject()
-    val userViewModel: UserViewModel = koinInject()
-    LaunchedEffect(Unit) {
-        userViewModel.refreshMyInfo()
-    }
 
     H3 { Text("서비스 목록") }
     Hr()
@@ -24,8 +18,7 @@ fun ServicesRoot(routeState: RouteState) {
         Li {
             A(attrs = {
                 onClick {
-                    if (userState.userInfo?.authorities?.any { it in listOf("ROLE_ROOT", "AUTHORITY_HOMEPAGE_IOT") }
-                            ?: false) {
+                    if (userState.hasIotRule()) {
                         routeState.navigate(Route.Services.IOT)
                         return@onClick
                     }
@@ -39,9 +32,13 @@ fun ServicesRoot(routeState: RouteState) {
                     return@onClick
                 }
             }) {
-                Text("[로그인/권한 필요] 내방 조명 스위치")
+                Text("${if (userState.hasIotRule()) "" else "[권한 필요] "}내방 조명 스위치")
             }
         }
     }
 
+}
+
+private fun UserState.hasIotRule(): Boolean {
+    return this.userInfo?.authorities?.any { it in listOf("ROLE_ROOT", "AUTHORITY_HOMEPAGE_IOT") } ?: false
 }

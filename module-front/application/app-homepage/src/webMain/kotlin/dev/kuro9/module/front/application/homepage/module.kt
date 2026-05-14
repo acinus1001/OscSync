@@ -1,7 +1,9 @@
 package dev.kuro9.module.front.application.homepage
 
-import dev.kuro9.module.front.application.homepage.network.iot.IotApiService
-import dev.kuro9.module.front.application.homepage.state.route.RouteState
+import dev.kuro9.module.front.application.homepage.network.AuthResourceApiService
+import dev.kuro9.module.front.application.homepage.network.AuthResourceManageApiService
+import dev.kuro9.module.front.application.homepage.network.IotApiService
+import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.module.front.application.homepage.state.user.UserState
 import dev.kuro9.module.front.application.homepage.state.user.UserViewModel
 import dev.kuro9.module.front.internal.member.service.MemberApiService
@@ -14,8 +16,10 @@ val module = module {
     single<ServerInfo> { getServerInfo() }
     single<MemberApiService> { MemberApiService(get<ServerInfo>().host, get<ServerInfo>().port) }
 
-    singleOf(::RouteState)
+    singleOf(::RouteViewModel)
     singleOf(::UserState)
     singleOf(::UserViewModel)
     singleOf(::IotApiService)
+    singleOf(::AuthResourceApiService)
+    singleOf(::AuthResourceManageApiService)
 }

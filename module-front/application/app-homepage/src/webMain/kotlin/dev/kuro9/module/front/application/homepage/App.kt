@@ -6,15 +6,16 @@ import dev.kuro9.module.front.application.homepage.page.About
 import dev.kuro9.module.front.application.homepage.page.Contact
 import dev.kuro9.module.front.application.homepage.page.Index
 import dev.kuro9.module.front.application.homepage.page.Profile
+import dev.kuro9.module.front.application.homepage.page.admin.AdminRouter
 import dev.kuro9.module.front.application.homepage.page.services.ServicesRouter
 import dev.kuro9.module.front.application.homepage.state.route.Route
-import dev.kuro9.module.front.application.homepage.state.route.RouteState
+import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import org.jetbrains.compose.web.dom.Hr
 import org.koin.compose.koinInject
 
 @Composable
 fun App() {
-    val routeState: RouteState = koinInject()
+    val routeState: RouteViewModel = koinInject()
     NavBar()
     Hr()
 
@@ -23,6 +24,7 @@ fun App() {
         Route.ABOUT -> About()
         Route.CONTACT -> Contact()
         is Route.Services -> ServicesRouter(routeState)
+        is Route.Admin -> AdminRouter(routeState)
         Route.PROFILE -> Profile()
     }
 }
