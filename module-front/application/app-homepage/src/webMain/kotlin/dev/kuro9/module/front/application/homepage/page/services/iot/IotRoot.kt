@@ -22,8 +22,8 @@ import org.w3c.dom.EventSource
 import org.w3c.dom.EventSourceInit
 
 @Composable
-fun IotRoot() {
-    requireAnyAuthority("AUTHORITY_HOMEPAGE_IOT")
+fun IotRoot() = requireAnyAuthority("AUTHORITY_HOMEPAGE_IOT") { isLoading ->
+    if (isLoading) return@requireAnyAuthority
 
     val serverInfo: ServerInfo = koinInject()
     val iotApiService: IotApiService = koinInject()

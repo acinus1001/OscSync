@@ -29,8 +29,8 @@ enum class ManageMode { TEXT, IMAGE }
 
 @OptIn(ExperimentalUuidApi::class)
 @Composable
-fun AdminResourceManage() {
-    requireAnyAuthority("ROLE_ROOT")
+fun AdminResourceManage() = requireAnyAuthority("ROLE_ROOT") { isLoading ->
+    if (isLoading) return@requireAnyAuthority
 
     // API 서비스 및 코루틴 스코프 설정
     val scope = rememberCoroutineScope()

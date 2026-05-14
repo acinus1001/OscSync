@@ -7,4 +7,5 @@ import dev.kuro9.multiplatform.common.types.member.UserInfoApiResponse
 
 class UserState {
     var userInfo: UserInfoApiResponse? by mutableStateOf(null)
+    var isLoaded: Boolean by mutableStateOf(false)
 }

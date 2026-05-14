@@ -7,9 +7,9 @@ import dev.kuro9.module.front.application.homepage.utils.requireAnyAuthority
 import org.jetbrains.compose.web.dom.*
 
 @Composable
-fun AdminRoot(routeState: RouteViewModel) {
-    requireAnyAuthority("ROLE_ROOT")
-    
+fun AdminRoot(routeState: RouteViewModel) = requireAnyAuthority("ROLE_ROOT") { isLoading ->
+    if (isLoading) return@requireAnyAuthority
+
     H3 { Text("어드민 메뉴") }
     Hr()
     Ul {
