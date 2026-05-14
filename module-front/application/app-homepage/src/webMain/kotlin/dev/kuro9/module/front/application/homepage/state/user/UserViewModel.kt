@@ -39,6 +39,7 @@ class UserViewModel(
             e.printStackTrace()
         } finally {
             userState.isLoaded = true
+            println("refreshMyInfo : isLoaded: ${userState.isLoaded}")
         }
     }
 

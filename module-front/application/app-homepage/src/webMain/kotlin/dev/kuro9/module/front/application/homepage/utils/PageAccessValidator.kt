@@ -21,15 +21,19 @@ fun requireAnyAuthority(
         return
     }
 
-    if ("ROLE_ROOT" in user.userInfo!!.authorities) return
-    if (authority.any { it in user.userInfo!!.authorities }) return
+    val hasAuthority =
+        "ROLE_ROOT" in user.userInfo!!.authorities ||
+                authority.any { it in user.userInfo!!.authorities }
 
-    LaunchedEffect(Unit) {
-        window.alert("권한이 없습니다. 권한이 있다고 생각되는 경우 재로그인 또는 관리자에게 문의 바랍니다.")
-        route.navigate(Route.HOME)
+    if (!hasAuthority) {
+        LaunchedEffect(Unit) {
+            window.alert("권한이 없습니다. 권한이 있다고 생각되는 경우 재로그인 또는 관리자에게 문의 바랍니다.")
+            route.navigate(Route.HOME)
+        }
+        return
     }
 
-    content(user.isLoaded)
+    content(user.isLoaded.not())
 }
 
 @Composable
