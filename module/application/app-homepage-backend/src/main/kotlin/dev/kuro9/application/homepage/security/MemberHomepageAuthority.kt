@@ -13,6 +13,10 @@ sealed class MemberHomepageAuthority : MemberAuthority() {
         override val authorityName = "IOT"
     }
 
+    object Vr : MemberHomepageAuthority() {
+        override val authorityName = "VR"
+    }
+
     data class User(val userId: Long) : MemberHomepageAuthority() {
         override val authorityName = "USER"
         override fun toString() = "${super.toString()}_$userId"
