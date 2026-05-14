@@ -3,7 +3,7 @@ package dev.kuro9.module.front.application.homepage.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import dev.kuro9.module.front.application.homepage.state.route.Route
-import dev.kuro9.module.front.application.homepage.state.route.RouteState
+import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.module.front.application.homepage.state.user.UserEffect
 import dev.kuro9.module.front.application.homepage.state.user.UserState
 import dev.kuro9.module.front.application.homepage.state.user.UserViewModel
@@ -51,7 +51,7 @@ private fun Logo() {
 
 @Composable
 private fun NavMenus() {
-    val routeState: RouteState = koinInject()
+    val routeState: RouteViewModel = koinInject()
     Div(attrs = {
         style {
             display(DisplayStyle.Flex)
@@ -68,7 +68,7 @@ private fun NavMenus() {
 
 @Composable
 private fun UtilButtons() {
-    val routeState: RouteState = koinInject()
+    val routeState: RouteViewModel = koinInject()
     val userViewModel: UserViewModel = koinInject()
     val userState: UserState = koinInject()
     LaunchedEffect(Unit) {

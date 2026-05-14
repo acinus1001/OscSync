@@ -6,7 +6,8 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlin.serialization)
+            implementation(projects.multiplatformCommon.date)
+            implementation(projects.multiplatformCommon.serialization)
         }
     }
 }

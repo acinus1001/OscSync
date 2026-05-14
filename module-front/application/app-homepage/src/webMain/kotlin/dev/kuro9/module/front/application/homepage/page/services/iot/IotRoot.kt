@@ -1,9 +1,10 @@
 package dev.kuro9.module.front.application.homepage.page.services.iot
 
 import androidx.compose.runtime.*
-import dev.kuro9.module.front.application.homepage.network.iot.IotApiService
+import dev.kuro9.module.front.application.homepage.network.IotApiService
 import dev.kuro9.module.front.application.homepage.state.route.Route
-import dev.kuro9.module.front.application.homepage.state.route.RouteState
+import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
+import dev.kuro9.module.front.application.homepage.utils.requireAnyAuthority
 import dev.kuro9.multiplatform.common.network.ServerInfo
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
@@ -12,6 +13,7 @@ import io.ktor.client.plugins.*
 import io.ktor.http.*
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.web.attributes.disabled
 import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
@@ -21,13 +23,16 @@ import org.w3c.dom.EventSourceInit
 
 @Composable
 fun IotRoot() {
+    requireAnyAuthority("AUTHORITY_HOMEPAGE_IOT")
+
     val serverInfo: ServerInfo = koinInject()
     val iotApiService: IotApiService = koinInject()
     val scope = rememberCoroutineScope()
-    val routeState: RouteState = koinInject()
+    val routeState: RouteViewModel = koinInject()
 
     val devices = remember { mutableStateMapOf<String, SmartAppUserDevice>() }
     val deviceStates = remember { mutableStateMapOf<String, Boolean?>() }
+    val isNetworkWaiting = remember { mutableStateOf(false) } // api 응답 오기 전까지 다른 버튼 비활성화 용도
 
     LaunchedEffect(Unit) {
         val deviceList = iotApiService.getRootIotDevices()
@@ -113,10 +118,14 @@ fun IotRoot() {
                                     checked = currentState == true,
                                     attrs = {
                                         name(device.deviceId)
+                                        if (isNetworkWaiting.value) disabled()
                                         onClick {
+                                            if (isNetworkWaiting.value) return@onClick
                                             scope.launch {
                                                 handleApiException(routeState) {
+                                                    isNetworkWaiting.value = true
                                                     iotApiService.executeRootDevices(device.deviceId, true)
+                                                    isNetworkWaiting.value = false
                                                 }
                                             }
                                         }
@@ -130,10 +139,14 @@ fun IotRoot() {
                                     checked = currentState == false,
                                     attrs = {
                                         name(device.deviceId)
+                                        if (isNetworkWaiting.value) disabled()
                                         onClick {
+                                            if (isNetworkWaiting.value) return@onClick
                                             scope.launch {
                                                 handleApiException(routeState) {
+                                                    isNetworkWaiting.value = true
                                                     iotApiService.executeRootDevices(device.deviceId, false)
+                                                    isNetworkWaiting.value = false
                                                 }
                                             }
                                         }
@@ -149,7 +162,7 @@ fun IotRoot() {
     }
 }
 
-private suspend fun handleApiException(routeState: RouteState, action: suspend () -> Unit) {
+private suspend fun handleApiException(routeState: RouteViewModel, action: suspend () -> Unit) {
     try {
         action()
     } catch (e: ClientRequestException) {

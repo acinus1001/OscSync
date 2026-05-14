@@ -25,6 +25,10 @@ class HomepageBackendSecurityConfig {
                 authorize("/services/iot/noti/subscribe", permitAll)
                 authorize("/services/mahjong/**", withAuthority(MemberHomepageAuthority.Mahjong))
                 authorize("/services/iot/**", withAuthority(MemberHomepageAuthority.Iot))
+
+                authorize("/resources/strings/*", authenticated)
+                authorize("/resources/images/*", authenticated)
+                authorize("/resources/admin/**", hasRole("ROOT"))
             }
         }
     }

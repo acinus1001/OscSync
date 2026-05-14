@@ -12,4 +12,9 @@ sealed class MemberHomepageAuthority : MemberAuthority() {
     object Iot : MemberHomepageAuthority() {
         override val authorityName = "IOT"
     }
+
+    data class User(val userId: Long) : MemberHomepageAuthority() {
+        override val authorityName = "USER"
+        override fun toString() = "${super.toString()}_$userId"
+    }
 }

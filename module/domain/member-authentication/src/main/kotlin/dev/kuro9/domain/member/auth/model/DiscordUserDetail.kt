@@ -15,6 +15,18 @@ data class DiscordUserDetail(
 
     val userAttr: Map<String, Any?>
 ) : UserDetails, OAuth2User {
+    fun hasAnyPermissionOf(vararg authority: String): Boolean {
+        if (role == MemberRole.ROLE_ROOT) return true
+
+        return (authorities + role.name).intersect(authorities.toSet()).isNotEmpty()
+    }
+
+    fun hasAllPermissionOf(vararg authority: String): Boolean {
+        if (role == MemberRole.ROLE_ROOT) return true
+
+        return (authorities + role.name).containsAll(authority.toSet())
+    }
+
     override fun getAttributes() = userAttr
 
     override fun getAuthorities(): Collection<GrantedAuthority> {
