@@ -6,8 +6,10 @@ import dev.kuro9.module.front.application.homepage.network.AuthResourceManageApi
 import dev.kuro9.multiplatform.common.network.ServerInfo
 import dev.kuro9.multiplatform.common.types.app.homepage.common.ImageResourceListResponse
 import dev.kuro9.multiplatform.common.types.app.homepage.common.StringResourceListResponse
+import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.attributes.InputType
+import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.dom.*
 import org.khronos.webgl.ArrayBuffer
@@ -53,9 +55,31 @@ fun AdminResourceManage() {
     Div {
         // --- 상단 모드 선택 ---
         H1 { Text("Admin Resource Management") }
-        Button(attrs = { onClick { currentMode = ManageMode.TEXT } }) { Text("텍스트 관리") }
-        Button(attrs = { onClick { currentMode = ManageMode.IMAGE } }) { Text("이미지 관리") }
 
+        Hr()
+        Div {
+            Label {
+                RadioInput(
+                    checked = currentMode == ManageMode.TEXT,
+                    attrs = {
+                        name("TEXT")
+                        onClick { currentMode = ManageMode.TEXT }
+                    }
+                )
+                Text("TEXT RESOURCES")
+            }
+
+            Label {
+                RadioInput(
+                    checked = currentMode == ManageMode.IMAGE,
+                    attrs = {
+                        name("IMAGE")
+                        onClick { currentMode = ManageMode.IMAGE }
+                    }
+                )
+                Text("IMAGE RESOURCES")
+            }
+        }
         Hr()
 
         // --- 텍스트 관리 섹션 ---
@@ -83,6 +107,7 @@ fun AdminResourceManage() {
                                     description = desc,
                                 )
                                 loadData() // 갱신
+                                window.alert("수정 완료")
                             }
                         })
                     }
@@ -127,6 +152,7 @@ fun AdminResourceManage() {
                                     description = desc,
                                 )
                                 loadData() // 갱신
+                                window.alert("수정 완료")
                             }
                         })
                     }
@@ -281,9 +307,11 @@ fun StringRow(
             }
         }
         Td {
-            Input(type = InputType.Text) {
+            TextArea {
                 value(strValue)
                 onInput { strValue = it.value }
+                attr("rows", "1")
+                attr("style", "width: 360px; min-height: 120px; resize: both;")
             }
         }
         Td {
@@ -320,10 +348,12 @@ fun NewStringRow(onAdd: (description: String?, allowed: List<String>, value: Str
             }
         }
         Td {
-            Input(type = InputType.Text) {
+            TextArea {
                 value(newStr)
                 onInput { newStr = it.value }
                 placeholder("Value")
+                attr("rows", "1")
+                attr("style", "width: 360px; min-height: 120px; resize: both;")
             }
         }
         Td {
