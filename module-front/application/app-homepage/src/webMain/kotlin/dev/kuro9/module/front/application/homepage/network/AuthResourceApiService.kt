@@ -12,16 +12,14 @@ import io.ktor.utils.io.charsets.*
 class AuthResourceApiService(serverInfo: ServerInfo) {
     private val httpClient = getDefaultHttpClient(serverInfo)
 
-    suspend fun getStringResource(id: String): String {
-        return httpClient.get("/resources/strings") {
-            url {
-                appendPathSegments(id)
-            }
-        }.bodyAsText(Charsets.UTF_8)
-    }
-
-    suspend inline fun <reified T> getJsonResources(id: String, nullOn401Or403: Boolean = true): T? {
-        val data = runCatching { minifyJson.decodeFromString<T>(getStringResource(id)) }
+    suspend fun getStringResource(id: String, nullOn401Or403: Boolean = true): String? {
+        val data = runCatching {
+            httpClient.get("/resources/strings") {
+                url {
+                    appendPathSegments(id)
+                }
+            }.bodyAsText(Charsets.UTF_8)
+        }
 
         return when (nullOn401Or403) {
             true -> data.recover { e ->
@@ -35,11 +33,28 @@ class AuthResourceApiService(serverInfo: ServerInfo) {
         }
     }
 
-    suspend fun getImageResource(id: String): ByteArray {
-        return httpClient.get("/resources/images") {
-            url {
-                appendPathSegments(id)
-            }
-        }.bodyAsBytes()
+    suspend inline fun <reified T> getJsonResources(id: String, nullOn401Or403: Boolean = true): T? {
+        return getStringResource(id, nullOn401Or403)?.let { minifyJson.decodeFromString<T>(it) }
+    }
+
+    suspend fun getImageResource(id: String, nullOn401Or403: Boolean = true): ByteArray? {
+        val data = runCatching {
+            httpClient.get("/resources/images") {
+                url {
+                    appendPathSegments(id)
+                }
+            }.bodyAsBytes()
+        }
+
+        return when (nullOn401Or403) {
+            true -> data.recover { e ->
+                if (e !is ClientRequestException) throw e
+                if (e.response.status !in listOf(HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden)) throw e
+
+                null
+            }.getOrThrow()
+
+            false -> data.getOrThrow()
+        }
     }
 }

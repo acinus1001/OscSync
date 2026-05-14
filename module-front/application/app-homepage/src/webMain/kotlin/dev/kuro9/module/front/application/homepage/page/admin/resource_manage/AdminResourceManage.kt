@@ -3,6 +3,7 @@ package dev.kuro9.module.front.application.homepage.page.admin.resource_manage
 import androidx.compose.runtime.*
 import dev.kuro9.module.front.application.homepage.components.CopyableText
 import dev.kuro9.module.front.application.homepage.network.AuthResourceManageApiService
+import dev.kuro9.module.front.application.homepage.utils.requireAnyAuthority
 import dev.kuro9.multiplatform.common.network.ServerInfo
 import dev.kuro9.multiplatform.common.types.app.homepage.common.ImageResourceListResponse
 import dev.kuro9.multiplatform.common.types.app.homepage.common.StringResourceListResponse
@@ -11,6 +12,10 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.attributes.placeholder
+import org.jetbrains.compose.web.attributes.rows
+import org.jetbrains.compose.web.css.minHeight
+import org.jetbrains.compose.web.css.px
+import org.jetbrains.compose.web.css.width
 import org.jetbrains.compose.web.dom.*
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
@@ -25,6 +30,8 @@ enum class ManageMode { TEXT, IMAGE }
 @OptIn(ExperimentalUuidApi::class)
 @Composable
 fun AdminResourceManage() {
+    requireAnyAuthority("ROLE_ROOT")
+
     // API 서비스 및 코루틴 스코프 설정
     val scope = rememberCoroutineScope()
 
@@ -88,7 +95,7 @@ fun AdminResourceManage() {
             Table(attrs = { }) {
                 Thead {
                     Tr {
-                        Th { Text("ID") }
+                        Th { Text("ID(Click to Copy)") }
                         Th { Text("Description") }
                         Th { Text("Authority") }
                         Th { Text("Value") }
@@ -198,7 +205,7 @@ fun ImageRow(
     var allowed: List<String> by remember { mutableStateOf(element.allowed) }
 
     Tr {
-        Td { Text(element.externalId.toString()) }
+        Td { CopyableText(element.externalId.toString()) }
         Td {
             Input(type = InputType.Text) {
                 value(desc ?: "")
@@ -310,8 +317,12 @@ fun StringRow(
             TextArea {
                 value(strValue)
                 onInput { strValue = it.value }
-                attr("rows", "1")
-                attr("style", "width: 360px; min-height: 120px; resize: both;")
+                rows(1)
+                style {
+                    width(360.px)
+                    minHeight(15.px)
+                    property("resize", "vertical")
+                }
             }
         }
         Td {
@@ -352,8 +363,12 @@ fun NewStringRow(onAdd: (description: String?, allowed: List<String>, value: Str
                 value(newStr)
                 onInput { newStr = it.value }
                 placeholder("Value")
-                attr("rows", "1")
-                attr("style", "width: 360px; min-height: 120px; resize: both;")
+                rows(1)
+                style {
+                    width(360.px)
+                    minHeight(15.px)
+                    property("resize", "vertical")
+                }
             }
         }
         Td {

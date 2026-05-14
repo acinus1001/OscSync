@@ -3,10 +3,13 @@ package dev.kuro9.module.front.application.homepage.page.admin
 import androidx.compose.runtime.Composable
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
+import dev.kuro9.module.front.application.homepage.utils.requireAnyAuthority
 import org.jetbrains.compose.web.dom.*
 
 @Composable
 fun AdminRoot(routeState: RouteViewModel) {
+    requireAnyAuthority("ROLE_ROOT")
+    
     H3 { Text("어드민 메뉴") }
     Hr()
     Ul {

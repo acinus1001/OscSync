@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import dev.kuro9.module.front.application.homepage.network.IotApiService
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
+import dev.kuro9.module.front.application.homepage.utils.requireAnyAuthority
 import dev.kuro9.multiplatform.common.network.ServerInfo
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.kuro9.multiplatform.common.types.smartthings.SmartAppUserDevice
@@ -22,6 +23,8 @@ import org.w3c.dom.EventSourceInit
 
 @Composable
 fun IotRoot() {
+    requireAnyAuthority("AUTHORITY_HOMEPAGE_IOT")
+
     val serverInfo: ServerInfo = koinInject()
     val iotApiService: IotApiService = koinInject()
     val scope = rememberCoroutineScope()
