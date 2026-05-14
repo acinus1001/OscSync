@@ -37,6 +37,8 @@ class UserViewModel(
             } else e.printStackTrace()
         } catch (e: Exception) {
             e.printStackTrace()
+        } finally {
+            userState.isLoaded = true
         }
     }
 
