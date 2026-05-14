@@ -50,6 +50,29 @@ class AuthorizationRoleApplyHandler(
 
                 // todo
             }
+
+            // VR
+            run {
+                if (member.authorities.any { it.authority == MemberHomepageAuthority.Vr.toString() }) return@run
+
+                // 기타 사용자
+                if (member.id.value in listOf(893385640874500108L, 281001713815781378L)) {
+                    authoritiesToAdd += MemberHomepageAuthority.Vr
+                    return@run
+                }
+
+                val guildMemberInfo = try {
+                    discordApiService.getGuildMemberInfo(guildId = 891599899420946463L, userId = userId)
+                } catch (e: DiscordApiException.NotFound) {
+                    info { "not on guild." }
+                    return@run
+                } catch (e: Exception) {
+                    error(e) { "Failed to get guild member info. userId: $userId" }
+                    return@run
+                }
+
+                authoritiesToAdd += MemberHomepageAuthority.Vr
+            }
         }
 
         MemberAuthorities.batchInsert(authoritiesToAdd, ignore = true) {
