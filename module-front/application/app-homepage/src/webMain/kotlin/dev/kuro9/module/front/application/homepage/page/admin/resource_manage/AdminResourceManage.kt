@@ -73,7 +73,7 @@ fun AdminResourceManage() = requireAnyAuthority("ROLE_ROOT") { isLoading ->
                         onClick { currentMode = ManageMode.TEXT }
                     }
                 )
-                Text("TEXT RESOURCES")
+                Text("TEXT")
             }
 
             Label {
@@ -84,7 +84,7 @@ fun AdminResourceManage() = requireAnyAuthority("ROLE_ROOT") { isLoading ->
                         onClick { currentMode = ManageMode.IMAGE }
                     }
                 )
-                Text("IMAGE RESOURCES")
+                Text("IMAGE")
             }
         }
         Hr()
