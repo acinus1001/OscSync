@@ -25,5 +25,5 @@ class MahjongGameResultEntity(id: EntityID<Long>) : LongEntity(id) {
     var userId by MahjongGameResults.userId
     var rank by MahjongGameResults.rank
 
-    val game by MahjongGameEntity referencedOn MahjongGameResults.game
+    var game by MahjongGameEntity referencedOn MahjongGameResults.game
 }
