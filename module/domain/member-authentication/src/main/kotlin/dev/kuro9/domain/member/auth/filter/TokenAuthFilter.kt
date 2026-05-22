@@ -50,7 +50,7 @@ class TokenAuthFilter(
                 val tokenResponse = try {
                     tokenService.refreshToken(refreshToken)
                 } catch (e: JwtValidationException) {
-                    info { "not valid refresh token. clear cookies and context." }
+                    info(e) { "not valid refresh token. clear cookies and context. message=${e.message}" }
 
                     val accessTokenCookie = ResponseCookie.from("accessToken", "")
                         .httpOnly(true)
