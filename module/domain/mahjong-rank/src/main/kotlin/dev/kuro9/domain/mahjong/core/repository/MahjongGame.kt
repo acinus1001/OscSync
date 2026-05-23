@@ -1,5 +1,7 @@
 package dev.kuro9.domain.mahjong.core.repository
 
+import dev.kuro9.multiplatform.common.date.util.now
+import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 import org.jetbrains.exposed.v1.dao.LongEntity
@@ -8,8 +10,8 @@ import org.jetbrains.exposed.v1.datetime.datetime
 
 object MahjongGames : LongIdTable("mahjong_game") {
     val guildId = long("guild_id")
-    val createdAt = datetime("created_at")
-    val updatedAt = datetime("updated_at")
+    val createdAt = datetime("created_at").clientDefault { LocalDateTime.now() }
+    val updatedAt = datetime("updated_at").clientDefault { LocalDateTime.now() }
     val createdBy = long("created_by")
     val updatedBy = long("updated_by")
 }

@@ -10,6 +10,7 @@ import org.jetbrains.exposed.v1.dao.LongEntityClass
 object MahjongGameResults : LongIdTable("mahjong_game_result") {
     val userId = long("user_id")
     val rank = integer("rank").check { it.between(1..4) }
+    val score = integer("score")
 
     val game = reference(
         "game_id",
@@ -17,6 +18,11 @@ object MahjongGameResults : LongIdTable("mahjong_game_result") {
         onDelete = ReferenceOption.CASCADE,
         onUpdate = ReferenceOption.CASCADE,
     )
+
+    init {
+        uniqueIndex(game, userId)
+        uniqueIndex(game, rank)
+    }
 }
 
 class MahjongGameResultEntity(id: EntityID<Long>) : LongEntity(id) {
@@ -24,6 +30,23 @@ class MahjongGameResultEntity(id: EntityID<Long>) : LongEntity(id) {
 
     var userId by MahjongGameResults.userId
     var rank by MahjongGameResults.rank
+    var score by MahjongGameResults.score
 
     var game by MahjongGameEntity referencedOn MahjongGameResults.game
 }
+
+data class MahjongGameResultModel(
+    val userId: Long,
+    val rank: Int,
+    val score: Int,
+) : Comparable<MahjongGameResultModel> {
+    override fun compareTo(other: MahjongGameResultModel): Int = rank.compareTo(other.rank)
+
+    init {
+        require(rank in 1..4) { "Rank must be between 1 and 4" }
+        require(score >= 0) { "Score must be non-negative" }
+    }
+}
+
+fun MahjongGameResultEntity.toModel(): MahjongGameResultModel =
+    MahjongGameResultModel(userId = userId, rank = rank, score = score)
