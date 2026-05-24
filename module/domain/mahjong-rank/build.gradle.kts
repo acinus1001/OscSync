@@ -15,4 +15,5 @@ dependencies {
     implementation(projects.multiplatformCommon.date)
 
     implementation(projects.module.domain.database)
+    implementation(projects.module.domain.cache)
 }
