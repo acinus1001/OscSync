@@ -14,7 +14,9 @@ object MahjongMonthStats : LongIdTable("mahjong_month_stat") {
 
     val yearMonth = varchar("year_month", 6).transform(YearMonthStringTransformer)
 
-    val rank = integer("rank")
+    val umaRank = integer("uma_rank")
+    val gameCountRank = integer("game_count_rank")
+
     val totalUmaSum = decimal("total_uma_sum", 9, 1)
     val totalGameCount = integer("total_game_count")
 
@@ -47,7 +49,10 @@ class MahjongMonthStatEntity(pk: EntityID<Long>) : LongEntity(pk) {
     var totalStat by MahjongMonthStatEntity referencedOn MahjongMonthStats.totalStat
 
     var yearMonth by MahjongMonthStats.yearMonth
-    var rank by MahjongMonthStats.rank
+
+    var umaRank by MahjongMonthStats.umaRank
+    var gameCountRank by MahjongMonthStats.gameCountRank
+
     var totalUmaSum by MahjongMonthStats.totalUmaSum
     var totalGameCount by MahjongMonthStats.totalGameCount
 

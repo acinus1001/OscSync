@@ -10,6 +10,9 @@ import org.jetbrains.exposed.v1.datetime.datetime
 
 object MahjongGames : LongIdTable("mahjong_game") {
     val guildId = long("guild_id")
+
+    val scoreSetting = reference("score_setting", MahjongScoreSettings)
+
     val createdAt = datetime("created_at").clientDefault { LocalDateTime.now() }
     val updatedAt = datetime("updated_at").clientDefault { LocalDateTime.now() }
     val createdBy = long("created_by")
@@ -20,6 +23,9 @@ class MahjongGameEntity(pk: EntityID<Long>) : LongEntity(pk) {
     companion object : LongEntityClass<MahjongGameEntity>(MahjongGames)
 
     var guildId by MahjongGames.guildId
+
+    var scoreSetting by MahjongScoreSettingEntity referencedOn MahjongGames.scoreSetting
+
     var createdAt by MahjongGames.createdAt
     var updatedAt by MahjongGames.updatedAt
     var createdBy by MahjongGames.createdBy

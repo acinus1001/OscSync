@@ -5,10 +5,11 @@ import kotlinx.datetime.LocalDateTime
 
 sealed interface MahjongRankEvent {
     val targetGuildId: Long
+    val createdAt: LocalDateTime
 
     data class NewGameResult(
         override val targetGuildId: Long,
-        val createdAt: LocalDateTime,
+        override val createdAt: LocalDateTime,
         val userScoreList: List<MahjongGameResultModel>,
     ) : MahjongRankEvent {
         val firstPlace = userScoreList[0]
@@ -19,7 +20,7 @@ sealed interface MahjongRankEvent {
 
     data class ModifyGameResult(
         override val targetGuildId: Long,
-        val createdAt: LocalDateTime,
+        override val createdAt: LocalDateTime,
         val userScoreList: List<MahjongGameResultModel>,
         val modifiedDataSet: Set<MahjongGameResultModel>,
     ) : MahjongRankEvent {

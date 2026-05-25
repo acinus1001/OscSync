@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(rollbackFor = [Exception::class])
 class MahjongRankService(
+    private val scoreService: MahjongScoreSettingService,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
 
@@ -55,10 +56,31 @@ class MahjongRankService(
     fun save(
         createdUserId: Long,
         createdGuildId: Long,
+        firstPlace: MahjongGameResultModel,
+        secondPlace: MahjongGameResultModel,
+        thirdPlace: MahjongGameResultModel,
+        fourthPlace: MahjongGameResultModel,
+    ): MahjongGameEntity = save(
+        createdUserId = createdUserId,
+        createdGuildId = createdGuildId,
+        userScoreList = listOf(firstPlace, secondPlace, thirdPlace, fourthPlace)
+    )
+
+    fun save(
+        createdUserId: Long,
+        createdGuildId: Long,
         userScoreList: List<MahjongGameResultModel>,
     ): MahjongGameEntity {
+        require(userScoreList.size == 4) { "userScoreList must have 4 elements" }
+        require(userScoreList.distinctBy { it.userId }.size == userScoreList.size) { "userScoreList must have unique userId" }
+        require(userScoreList.sortedByDescending { it.score }
+            .map { it.rank } == (1..4).toList()) { "userScoreList must have sorted rank from 1 to 4" }
+
+        val latestScoreSetting = scoreService.getLatestScoreSetting(createdGuildId)
+
         val game = MahjongGameEntity.new {
             this.guildId = createdGuildId
+            this.scoreSetting = latestScoreSetting
             this.createdBy = createdUserId
             this.updatedBy = createdUserId
         }

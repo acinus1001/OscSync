@@ -2,6 +2,7 @@ package dev.kuro9.domain.mahjong.core.repository
 
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 import org.jetbrains.exposed.v1.dao.LongEntity
@@ -12,7 +13,9 @@ object MahjongTotalStats : LongIdTable("mahjong_total_stat") {
     val guildId = long("guild_id")
     val userId = long("user_id")
 
-    val rank = integer("rank")
+    val umaRank = integer("uma_rank")
+    val gameCountRank = integer("game_count_rank")
+
     val totalUmaSum = decimal("total_uma_sum", 9, 1)
     val totalGameCount = integer("total_game_count")
 
@@ -45,7 +48,9 @@ class MahjongTotalStatEntity(pk: EntityID<Long>) : LongEntity(pk) {
     var guildId by MahjongTotalStats.guildId
     var userId by MahjongTotalStats.userId
 
-    var rank by MahjongTotalStats.rank
+    var umaRank by MahjongTotalStats.umaRank
+    var gameCountRank by MahjongTotalStats.gameCountRank
+
     var totalUmaSum by MahjongTotalStats.totalUmaSum
     var totalGameCount by MahjongTotalStats.totalGameCount
 
@@ -67,5 +72,7 @@ class MahjongTotalStatEntity(pk: EntityID<Long>) : LongEntity(pk) {
     var createdAt by MahjongTotalStats.createdAt
     var updatedAt by MahjongTotalStats.updatedAt
 
-    val monthStats by MahjongMonthStatEntity referrersOn MahjongMonthStats.totalStat
+    val monthStats by MahjongMonthStatEntity
+        .referrersOn(MahjongMonthStats.totalStat)
+        .orderBy(MahjongMonthStats.yearMonth to SortOrder.DESC)
 }
