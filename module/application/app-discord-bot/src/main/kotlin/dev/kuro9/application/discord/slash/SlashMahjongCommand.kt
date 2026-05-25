@@ -1,5 +1,10 @@
 package dev.kuro9.application.discord.slash
 
+import dev.kuro9.application.discord.service.DiscordUserNameService
+import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
+import dev.kuro9.domain.mahjong.core.service.MahjongRankService
+import dev.kuro9.domain.mahjong.core.service.MahjongScoreSettingService
+import dev.kuro9.domain.mahjong.core.service.MahjongStatService
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.internal.mahjong.calc.enums.MjKaze
 import dev.kuro9.internal.mahjong.calc.enums.MjYaku
@@ -11,47 +16,92 @@ import dev.kuro9.internal.mahjong.calc.utils.MjScoreUtil
 import dev.kuro9.internal.mahjong.calc.utils.MjScoreVo
 import dev.kuro9.internal.mahjong.image.MjHandPictureService
 import dev.minn.jda.ktx.coroutines.await
-import dev.minn.jda.ktx.interactions.commands.Command
-import dev.minn.jda.ktx.interactions.commands.option
-import dev.minn.jda.ktx.interactions.commands.subcommand
+import dev.minn.jda.ktx.interactions.commands.*
 import dev.minn.jda.ktx.messages.Embed
+import dev.minn.jda.ktx.messages.MessageEdit
 import io.github.harryjhin.slf4j.extension.error
 import kotlinx.coroutines.*
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.yearMonth
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.components.separator.Separator.Spacing
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.utils.FileUpload
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.io.ByteArrayOutputStream
+import java.math.RoundingMode
 import javax.imageio.ImageIO
 
 @Component
-class SlashMjCalculateCommand(
+class SlashMahjongCommand(
     private val mjCalculateService: MjCalculateService,
     private val mjImageService: MjHandPictureService,
+    private val mahjongRankService: MahjongRankService,
+    private val mahjongStatService: MahjongStatService,
+    private val mahjongScoreSettingService: MahjongScoreSettingService,
+    private val userNameService: DiscordUserNameService,
 ) : SlashCommandComponent {
     override val commandData: SlashCommandData = Command("mj", "마작 관련 명령어") {
-        subcommand("calculate", "부수/판수, 역 계산.") {
-            option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
-            option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
-            option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
-            option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
-            option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
-            option<String>("bakaze", "장풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
-            option<String>("zikaze", "자풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+        group("util", "마작 관련 유틸성 명령어") {
+            subcommand("calculate", "부수/판수, 역 계산.") {
+                option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
+                option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
+                option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
+                option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+                option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+                option<String>("bakaze", "장풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+                option<String>("zikaze", "자풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+            }
+
+            subcommand("image", "손패 이미지를 생성합니다.") {
+                option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
+                option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
+                option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
+                option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+                option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+                option<String>("bakaze", "장풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+                option<String>("zikaze", "자풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+            }
         }
 
-        subcommand("image", "손패 이미지를 생성합니다.") {
-            option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
-            option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
-            option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
-            option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
-            option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
-            option<String>("bakaze", "장풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
-            option<String>("zikaze", "자풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+        group("record", "마작 기록 관련 명령어") {
+            restrict(guild = true)
+            subcommand("setting", "기록 시 반영될 우마/오카 및 반환점 등의 설정을 변경합니다. 설정은 소급적용되지 않습니다.") {
+                restrict(guild = true, Permission.ADMINISTRATOR)
+                option<Int>("uma_1st", "1위 우마. (참고용 : 작혼 = +15)", required = true)
+                option<Int>("uma_2nd", "2위 우마. (참고용 : 작혼 = +5)", required = true)
+                option<Int>("uma_3rd", "3위 우마. (참고용 : 작혼 = -5)", required = true)
+                option<Int>("uma_4th", "4위 우마. (참고용 : 작혼 = -15)", required = true)
+                option<Int>(
+                    "start-point",
+                    "시작점수. (참고용 : 작혼 = 25000) // 시작점수와 반환점수가 다를 경우 1위 오카 지급이 활성화됩니다.",
+                    required = true
+                )
+                option<Int>(
+                    "return-point",
+                    "반환점수. (참고용 : 작혼 = 25000) // 시작점수와 반환점수가 다를 경우 1위 오카 지급이 활성화됩니다.",
+                    required = true
+                )
+            }
+            subcommand("setting-list", "현재 서버에 적용 중인 기록 설정을 가져옵니다.")
+            subcommand("add", "대국 결과를 기록합니다.") {
+                option<User>("user_1st", "1위 유저", required = true)
+                option<Int>("score_1st", "1위 점수", required = true)
+                option<User>("user_2nd", "2위 유저", required = true)
+                option<Int>("score_2nd", "2위 점수", required = true)
+                option<User>("user_3rd", "3위 유저", required = true)
+                option<Int>("score_3rd", "3위 점수", required = true)
+                option<User>("user_4th", "4위 유저", required = true)
+                option<Int>("score_4th", "4위 점수", required = true)
+            }
         }
     }
 
@@ -59,13 +109,22 @@ class SlashMjCalculateCommand(
         val deferReply: Deferred<InteractionHook> = event.asyncDeferReply()
 
         runCatching {
-            when (event.subcommandName) {
-                "calculate" -> calculateScore(event, deferReply)
-                "image" -> generateImage(event, deferReply)
+            when (event.subcommandGroup) {
+                "util" -> when (event.subcommandName) {
+                    "calculate" -> return calculateScore(event, deferReply)
+                    "image" -> return generateImage(event, deferReply)
+                }
 
-                else -> throw NotImplementedError("Unknown command=${event.fullCommandName}")
+                "record" -> when (event.subcommandName) {
+                    "setting" -> return recordSetting(event, deferReply)
+                    "setting-list" -> return recordSettingList(event, deferReply)
+                    "test", "add" -> return recordAdd(event, deferReply)
+                }
             }
+
+            throw NotImplementedError("Unknown command=${event.fullCommandName}")
         }.onFailure { t ->
+            error(t) { "handle event error: ${event.fullCommandName}" }
             deferReply.await().editOriginalEmbeds(getDefaultExceptionEmbed(t)).await()
             return
         }
@@ -242,6 +301,147 @@ class SlashMjCalculateCommand(
         val fileUpload = FileUpload.fromData(handImage, "hand.png")
         deferReply.await().sendFiles(fileUpload).await()
         deferReply.await().editOriginalEmbeds(resultEmbed).await()
+    }
+
+    private suspend fun recordSetting(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        val uma1st = event.getOption("uma_1st")?.asInt ?: 15
+        val uma2nd = event.getOption("uma_2nd")?.asInt ?: 5
+        val uma3rd = event.getOption("uma_3rd")?.asInt ?: -5
+        val uma4th = event.getOption("uma_4th")?.asInt ?: -15
+        val startPoint = event.getOption("start-point")?.asInt ?: 25000
+        val returnPoint = event.getOption("return-point")?.asInt ?: 25000
+
+        withContext(Dispatchers.IO) {
+            mahjongScoreSettingService.postNewScoreSetting(
+                guildId = event.guild!!.idLong,
+                userId = event.user.idLong,
+                startScore = startPoint,
+                returnScore = returnPoint,
+                umaFirst = uma1st,
+                umaSecond = uma2nd,
+                umaThird = uma3rd,
+                umaFourth = uma4th,
+            )
+        }
+
+        Embed {
+            title = "200 OK"
+            description = "다음 기록부터 적용됩니다."
+            field {
+                name = "설정 추가자"
+                value = event.user.asMention
+                inline = true
+            }
+            field {
+                name = "시작점수"
+                value = startPoint.toString()
+                inline = true
+            }
+            field {
+                name = "반환점수"
+                value = returnPoint.toString()
+                inline = true
+            }
+            field {
+                name = "우마"
+                value = "`[${uma1st}, ${uma2nd}, ${uma3rd}, ${uma4th}]`"
+                inline = true
+            }
+            field {
+                name = "오카"
+                value = "`${((returnPoint - startPoint) * 4 / 1000.0)}`"
+                inline = true
+            }
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
+    }
+
+    private suspend fun recordSettingList(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+
+        val settingList = withContext(Dispatchers.IO) {
+            mahjongScoreSettingService.getAllScoreSetting(event.guild!!.idLong)
+        }
+
+        MessageEdit(useComponentsV2 = true) {
+            container {
+                text("### 기록 Score 설정 변경 내역")
+                separator { spacing = Spacing.LARGE }
+                for ((i, setting) in settingList.withIndex()) {
+                    text(
+                        "- ${if (i == 0) "**[적용중]** " else ""} 시작 `${setting.startScore}` / 반환 `${setting.returnScore}` 우마 `[${setting.umaFirst}, ${setting.umaSecond}, ${setting.umaThird}, ${setting.umaFourth}]` // <t:${
+                            setting.createdAt.toInstant(
+                                TimeZone.of("Asia/Seoul")
+                            ).epochSeconds
+                        }:f> 이후 적용"
+                    )
+                }
+            }
+        }.let { deferReply.await().editOriginal(it).await() }
+    }
+
+    private suspend fun recordAdd(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        val user1st = event.getOption("user_1st")!!.asUser
+        val user2nd = event.getOption("user_2nd")!!.asUser
+        val user3rd = event.getOption("user_3rd")!!.asUser
+        val user4th = event.getOption("user_4th")!!.asUser
+        val score1st = event.getOption("score_1st")!!.asInt
+        val score2nd = event.getOption("score_2nd")!!.asInt
+        val score3rd = event.getOption("score_3rd")!!.asInt
+        val score4th = event.getOption("score_4th")!!.asInt
+
+        val game: MahjongGameEntity = withContext(Dispatchers.IO) {
+            mahjongRankService.save(
+                createdUserId = event.user.idLong,
+                createdGuildId = event.guild!!.idLong,
+                firstScore = score1st,
+                secondScore = score2nd,
+                thirdScore = score3rd,
+                fourthScore = score4th,
+                firstUserId = user1st.idLong,
+                secondUserId = user2nd.idLong,
+                thirdUserId = user3rd.idLong,
+                fourthUserId = user4th.idLong,
+            )
+        }
+
+        suspendTransaction {
+            MessageEdit(useComponentsV2 = true) {
+                container {
+                    text("### 패보 기록 완료")
+                    separator { spacing = Spacing.LARGE }
+                    for ((i, gameDetail) in game.results.withIndex()) {
+                        text(
+                            "${i + 1}. ${userNameService.getUserName(gameDetail.userId)} / ${"%,d".format(gameDetail.score)} / ${
+                                "%+,.1f".format(gameDetail.point.setScale(1, RoundingMode.DOWN))
+                            }"
+                        )
+                    }
+                }
+                container {
+                    text("### 기록 메타데이터")
+                    separator { spacing = Spacing.SMALL }
+                    $$"""
+                        - 기록 ID : $${game.id.value}
+                        - 국 번호 (전체) : 제 $${
+                        mahjongStatService.getGameCount(
+                            guildId = event.guild!!.idLong,
+                            ofGameId = game.id.value
+                        )
+                    } 국
+                        - 국 번호 (금월) : 제 $${
+                        mahjongStatService.getMonthGameCount(
+                            guildId = event.guild!!.idLong,
+                            yearMonth = game.createdAt.date.yearMonth,
+                            ofGameId = game.id.value
+                        )
+                    } 국
+                        - 기록 설정
+                          - 우마 : [ $${game.scoreSetting.umaFirst}, $${game.scoreSetting.umaSecond}, $${game.scoreSetting.umaThird}, $${game.scoreSetting.umaFourth} ]
+                          - 시작점 / 반환점 : [ $${game.scoreSetting.startScore} / $${game.scoreSetting.returnScore} ]
+                        - 기록 일자 : <t:$${game.createdAt.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:f>
+                    """.trimIndent().let(::text)
+                }
+            }
+        }.let { deferReply.await().editOriginal(it).await() }
     }
 
     private fun MjScoreUtil.MjScore.toKrString(): String? = when (this) {

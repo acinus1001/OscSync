@@ -22,6 +22,12 @@ class MahjongScoreSettingService {
             }
     }
 
+    fun getAllScoreSetting(guildId: Long): List<MahjongScoreSettingEntity> {
+        return MahjongScoreSettingEntity.find(MahjongScoreSettings.guildId eq guildId)
+            .orderBy(MahjongScoreSettings.id to SortOrder.DESC)
+            .toList()
+    }
+
     fun postNewScoreSetting(
         guildId: Long,
         userId: Long,
@@ -33,7 +39,7 @@ class MahjongScoreSettingService {
         umaSecond: Int,
         umaThird: Int,
         umaFourth: Int,
-    ) {
+    ): MahjongScoreSettingEntity {
         val latestSetting = MahjongScoreSettingEntity.find(MahjongScoreSettings.guildId eq guildId)
             .orderBy(MahjongScoreSettings.id to SortOrder.DESC)
             .limit(1)
@@ -47,10 +53,11 @@ class MahjongScoreSettingService {
                 latestSetting.umaSecond == umaSecond &&
                 latestSetting.umaThird == umaThird &&
                 latestSetting.umaFourth == umaFourth
-            ) return
+            ) return latestSetting
         }
 
-        MahjongScoreSettingEntity.new(guildId) {
+        return MahjongScoreSettingEntity.new {
+            this.guildId = guildId
             this.startScore = startScore
             this.returnScore = returnScore
             this.umaFirst = umaFirst

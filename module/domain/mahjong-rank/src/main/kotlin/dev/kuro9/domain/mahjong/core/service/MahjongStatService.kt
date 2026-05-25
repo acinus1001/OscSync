@@ -1,8 +1,10 @@
 package dev.kuro9.domain.mahjong.core.service
 
+import dev.kuro9.domain.database.between
 import dev.kuro9.domain.mahjong.core.event.MahjongRankEvent
 import dev.kuro9.domain.mahjong.core.repository.*
 import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.date.util.toRangeOfMonth
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.YearMonth
@@ -10,15 +12,18 @@ import kotlinx.datetime.yearMonth
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.upsert
 import org.jetbrains.exposed.v1.jdbc.upsertReturning
-import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 import java.math.BigDecimal
 
 @Service
@@ -31,7 +36,23 @@ class MahjongStatService {
         ).singleOrNull()
     }
 
-    @[Async Transactional EventListener]
+    fun getGameCount(guildId: Long, ofGameId: Long? = null): Long {
+        return MahjongGameEntity.find((MahjongGames.guildId eq guildId).let {
+            if (ofGameId == null) return@let it
+            return@let it and (MahjongGames.id lessEq ofGameId)
+        }).count()
+    }
+
+    fun getMonthGameCount(guildId: Long, yearMonth: YearMonth, ofGameId: Long? = null): Long {
+        return MahjongGameEntity.find(
+            (MahjongGames.guildId eq guildId).and(MahjongGames.createdAt.between(yearMonth.toRangeOfMonth())).let {
+                if (ofGameId == null) return@let it
+                return@let it and (MahjongGames.id lessEq ofGameId)
+            }).count()
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @[Async TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)]
     fun handleGameDataEvent(event: MahjongRankEvent) {
         info { "new rank event received" }
 
@@ -96,7 +117,7 @@ class MahjongStatService {
             it[this.tobiRate] = BigDecimal.valueOf(tobiCount.toDouble() / totalGameCount * 100)
 
             it[this.avgPlace] =
-                BigDecimal.valueOf((1 * firstPlaceCount + 2 * secondPlaceCount + 3 * thirdPlaceCount + 4 * fourthPlaceCount).toDouble() / totalGameCount * 100)
+                BigDecimal.valueOf(((1 * firstPlaceCount) + (2 * secondPlaceCount) + (3 * thirdPlaceCount) + (4 * fourthPlaceCount)).toDouble() / totalGameCount)
             it[this.avgUma] = BigDecimal.valueOf(totalUmaSum.toDouble() / totalGameCount)
 
             it[this.updatedAt] = LocalDateTime.now()
@@ -119,6 +140,7 @@ class MahjongStatService {
             where = { (MahjongMonthStats.totalStat eq totalStat.id) and (MahjongMonthStats.yearMonth eq yearMonth) }
         ) {
             it[this.totalStat] = totalStat.id
+            it[this.yearMonth] = yearMonth
 
             it[this.umaRank] = -1
             it[this.gameCountRank] = -1
@@ -139,7 +161,7 @@ class MahjongStatService {
             it[this.tobiRate] = BigDecimal.valueOf(monthTobiCount.toDouble() / monthTotalGameCount * 100)
 
             it[this.avgPlace] =
-                BigDecimal.valueOf((1 * monthFirstPlaceCount + 2 * monthSecondPlaceCount + 3 * monthThirdPlaceCount + 4 * monthFourthPlaceCount).toDouble() / monthTotalGameCount * 100)
+                BigDecimal.valueOf(((1 * monthFirstPlaceCount) + (2 * monthSecondPlaceCount) + (3 * monthThirdPlaceCount) + (4 * monthFourthPlaceCount)).toDouble() / monthTotalGameCount)
             it[this.avgUma] = BigDecimal.valueOf(monthTotalUmaSum.toDouble() / monthTotalGameCount)
 
             it[this.updatedAt] = LocalDateTime.now()

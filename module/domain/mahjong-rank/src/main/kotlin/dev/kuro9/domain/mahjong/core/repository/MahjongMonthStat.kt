@@ -46,7 +46,7 @@ object MahjongMonthStats : LongIdTable("mahjong_month_stat") {
 class MahjongMonthStatEntity(pk: EntityID<Long>) : LongEntity(pk) {
     companion object : LongEntityClass<MahjongMonthStatEntity>(MahjongMonthStats)
 
-    var totalStat by MahjongMonthStatEntity referencedOn MahjongMonthStats.totalStat
+    var totalStat by MahjongTotalStatEntity referencedOn MahjongMonthStats.totalStat
 
     var yearMonth by MahjongMonthStats.yearMonth
 

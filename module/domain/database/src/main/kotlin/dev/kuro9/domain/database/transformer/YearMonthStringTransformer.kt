@@ -1,6 +1,7 @@
 package dev.kuro9.domain.database.transformer
 
 import kotlinx.datetime.YearMonth
+import kotlinx.datetime.number
 import org.jetbrains.exposed.v1.core.ColumnTransformer
 
 object YearMonthStringTransformer : ColumnTransformer<String, YearMonth> {
@@ -9,7 +10,7 @@ object YearMonthStringTransformer : ColumnTransformer<String, YearMonth> {
     }
 
     override fun unwrap(value: YearMonth): String {
-        return "${value.year}${value.month.toString().padStart(2, '0')}"
+        return "${value.year}${value.month.number.toString().padStart(2, '0')}"
     }
 
     override fun wrap(value: String): YearMonth {

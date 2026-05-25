@@ -48,6 +48,7 @@ dependencies {
     implementation(projects.module.domain.f1News)
     implementation(projects.module.domain.chessCom)
     implementation(projects.module.domain.inquiry)
+    implementation(projects.module.domain.mahjongRank)
 
     implementation(projects.multiplatformCommon.types.smartthings)
 }

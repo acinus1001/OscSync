@@ -34,23 +34,11 @@ class MahjongRankService(
         createdUserId = createdUserId,
         createdGuildId = createdGuildId,
         userScoreList = listOf(
-            firstUserId to firstScore,
-            secondUserId to secondScore,
-            thirdUserId to thirdScore,
-            fourthUserId to fourthScore,
+            MahjongGameResultModel(userId = firstUserId, rank = 1, score = firstScore),
+            MahjongGameResultModel(userId = secondUserId, rank = 2, score = secondScore),
+            MahjongGameResultModel(userId = thirdUserId, rank = 3, score = thirdScore),
+            MahjongGameResultModel(userId = fourthUserId, rank = 4, score = fourthScore),
         )
-    )
-
-    fun save(
-        createdUserId: Long,
-        createdGuildId: Long,
-        userScoreList: List<Pair<Long, Int>>,
-    ): MahjongGameEntity = save(
-        createdUserId = createdUserId,
-        createdGuildId = createdGuildId,
-        userScoreList = userScoreList.mapIndexed { index, (userId, score) ->
-            MahjongGameResultModel(userId, index + 1, score)
-        }
     )
 
     fun save(
@@ -101,7 +89,7 @@ class MahjongRankService(
             )
         )
 
-        return game
+        return game.load(MahjongGameEntity::results, MahjongGameEntity::scoreSetting)
     }
 
     fun modify(
@@ -149,7 +137,7 @@ class MahjongRankService(
 
     @Transactional(readOnly = true)
     fun getGameById(id: Long): MahjongGameEntity? =
-        MahjongGameEntity.findById(id)?.load(MahjongGameEntity::results)
+        MahjongGameEntity.findById(id)?.load(MahjongGameEntity::results, MahjongGameEntity::scoreSetting)
 
 
 }

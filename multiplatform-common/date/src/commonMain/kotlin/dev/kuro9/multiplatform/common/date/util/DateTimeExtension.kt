@@ -17,6 +17,10 @@ fun LocalTime.Companion.now(timeZone: TimeZone = TimeZone.of("Asia/Seoul")): Loc
 
 fun LocalDate.toRangeOfDay(): ClosedRange<LocalDateTime> = atTime(0, 0)..atTime(23, 59, 59, 59)
 
+fun YearMonth.toRangeOfMonth(): ClosedRange<LocalDateTime> {
+    return this.firstDay.atTime(0, 0)..this.lastDay.atTime(23, 59, 59, 999999999)
+}
+
 fun ClosedRange<LocalDate>.toDateTimeRange(): ClosedRange<LocalDateTime> =
     start.atTime(0, 0)..endInclusive.atTime(23, 59, 59, 59)
 
