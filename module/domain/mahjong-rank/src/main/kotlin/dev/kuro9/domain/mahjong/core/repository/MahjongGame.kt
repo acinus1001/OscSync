@@ -14,6 +14,9 @@ object MahjongGames : LongIdTable("mahjong_game") {
 
     val scoreSetting = reference("score_setting", MahjongScoreSettings)
 
+    val image = blob("image").nullable()
+    val imageMime = varchar("image_mime", 50).nullable()
+
     val createdAt = datetime("created_at").clientDefault { LocalDateTime.now() }
     val updatedAt = datetime("updated_at").clientDefault { LocalDateTime.now() }
     val createdBy = long("created_by")
@@ -26,6 +29,8 @@ class MahjongGameEntity(pk: EntityID<Long>) : LongEntity(pk) {
     var guildId by MahjongGames.guildId
 
     var scoreSetting by MahjongScoreSettingEntity referencedOn MahjongGames.scoreSetting
+    var image by MahjongGames.image
+    var imageMime by MahjongGames.imageMime
 
     var createdAt by MahjongGames.createdAt
     var updatedAt by MahjongGames.updatedAt

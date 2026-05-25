@@ -1,6 +1,7 @@
 package dev.kuro9.domain.mahjong.core.repository
 
 import dev.kuro9.domain.database.between
+import dev.kuro9.domain.mahjong.core.enums.MahjongSeki
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
@@ -12,6 +13,7 @@ object MahjongGameResults : LongIdTable("mahjong_game_result") {
     val userId = long("user_id")
     val rank = integer("rank").check { it.between(1..4) }
     val score = integer("score")
+    val seki = enumeration<MahjongSeki>("seki").nullable()
 
     val game = reference(
         "game_id",
@@ -32,6 +34,7 @@ class MahjongGameResultEntity(id: EntityID<Long>) : LongEntity(id) {
     var userId by MahjongGameResults.userId
     var rank by MahjongGameResults.rank
     var score by MahjongGameResults.score
+    var seki by MahjongGameResults.seki
 
     var game by MahjongGameEntity referencedOn MahjongGameResults.game
 
@@ -49,6 +52,7 @@ data class MahjongGameResultModel(
     val userId: Long,
     val rank: Int,
     val score: Int,
+    val seki: MahjongSeki?,
 ) : Comparable<MahjongGameResultModel> {
     override fun compareTo(other: MahjongGameResultModel): Int = rank.compareTo(other.rank)
 
@@ -58,4 +62,4 @@ data class MahjongGameResultModel(
 }
 
 fun MahjongGameResultEntity.toModel(): MahjongGameResultModel =
-    MahjongGameResultModel(userId = userId, rank = rank, score = score)
+    MahjongGameResultModel(userId = userId, rank = rank, score = score, seki = seki)

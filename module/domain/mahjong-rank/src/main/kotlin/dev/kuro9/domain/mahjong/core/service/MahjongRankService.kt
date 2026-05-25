@@ -1,14 +1,22 @@
 package dev.kuro9.domain.mahjong.core.service
 
+import dev.kuro9.domain.mahjong.core.dto.MahjongGameDetailInput
+import dev.kuro9.domain.mahjong.core.enums.MahjongSeki
 import dev.kuro9.domain.mahjong.core.event.MahjongRankEvent
 import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
 import dev.kuro9.domain.mahjong.core.repository.MahjongGameResultEntity
 import dev.kuro9.domain.mahjong.core.repository.MahjongGameResultModel
 import dev.kuro9.domain.mahjong.core.repository.toModel
 import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.network.httpClient
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
+import org.jetbrains.exposed.v1.core.statements.api.ExposedBlob
 import org.jetbrains.exposed.v1.dao.load
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,66 +26,42 @@ class MahjongRankService(
     private val scoreService: MahjongScoreSettingService,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
+    private val httpClient = httpClient()
 
     fun save(
         createdUserId: Long,
         createdGuildId: Long,
-        firstUserId: Long,
-        firstScore: Int,
-        secondUserId: Long,
-        secondScore: Int,
-        thirdUserId: Long,
-        thirdScore: Int,
-        fourthUserId: Long,
-        fourthScore: Int,
-    ) = save(
-        createdUserId = createdUserId,
-        createdGuildId = createdGuildId,
-        userScoreList = listOf(
-            MahjongGameResultModel(userId = firstUserId, rank = 1, score = firstScore),
-            MahjongGameResultModel(userId = secondUserId, rank = 2, score = secondScore),
-            MahjongGameResultModel(userId = thirdUserId, rank = 3, score = thirdScore),
-            MahjongGameResultModel(userId = fourthUserId, rank = 4, score = fourthScore),
-        )
-    )
-
-    fun save(
-        createdUserId: Long,
-        createdGuildId: Long,
-        firstPlace: MahjongGameResultModel,
-        secondPlace: MahjongGameResultModel,
-        thirdPlace: MahjongGameResultModel,
-        fourthPlace: MahjongGameResultModel,
-    ): MahjongGameEntity = save(
-        createdUserId = createdUserId,
-        createdGuildId = createdGuildId,
-        userScoreList = listOf(firstPlace, secondPlace, thirdPlace, fourthPlace)
-    )
-
-    fun save(
-        createdUserId: Long,
-        createdGuildId: Long,
-        userScoreList: List<MahjongGameResultModel>,
+        imageUrl: String? = null,
+        imageMediaType: MediaType? = MediaType.APPLICATION_OCTET_STREAM,
+        vararg userScoreList: MahjongGameDetailInput,
     ): MahjongGameEntity {
         require(userScoreList.size == 4) { "userScoreList must have 4 elements" }
-        require(userScoreList.distinctBy { it.userId }.size == userScoreList.size) { "userScoreList must have unique userId" }
-        require(userScoreList.sortedByDescending { it.score }
-            .map { it.rank } == (1..4).toList()) { "userScoreList must have sorted rank from 1 to 4" }
+        require(userScoreList.distinctBy { it.userId }.size == userScoreList.size) { "유저는 중복될 수 없습니다." }
+        require(userScoreList.map { it.seki }
+            .toSet() == MahjongSeki.entries.toSet() || userScoreList.all { it.seki == null }) {
+            "userScoreList must have unique seki or null"
+        }
+        require(userScoreList.sumOf { it.score } == 10_0000) { "점수 합은 10만점 이어야 합니다." }
+
+        val imageBytes = imageUrl?.let { runBlocking { httpClient.get(it).readRawBytes() } }
 
         val latestScoreSetting = scoreService.getLatestScoreSetting(createdGuildId)
 
         val game = MahjongGameEntity.new {
             this.guildId = createdGuildId
             this.scoreSetting = latestScoreSetting
+            this.image = imageBytes?.let(::ExposedBlob)
+            this.imageMime = imageMediaType?.toString()
             this.createdBy = createdUserId
             this.updatedBy = createdUserId
         }
-        for ((userId, rank, score) in userScoreList) {
+        for ((userId: Long, score: Int, seki: MahjongSeki?) in userScoreList) {
             MahjongGameResultEntity.new {
                 this.game = game
                 this.userId = userId
                 this.score = score
-                this.rank = rank
+                this.rank = userScoreList.sortedByDescending { it.score }.indexOfFirst { it.userId == userId } + 1
+                this.seki = seki
             }
         }
 
@@ -85,7 +69,7 @@ class MahjongRankService(
             MahjongRankEvent.NewGameResult(
                 targetGuildId = game.guildId,
                 createdAt = game.createdAt,
-                userScoreList = userScoreList.sorted()
+                userScoreList = game.results.map { it.toModel() }.sorted()
             )
         )
 

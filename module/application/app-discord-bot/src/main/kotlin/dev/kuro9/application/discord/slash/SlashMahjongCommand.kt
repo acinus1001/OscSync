@@ -1,6 +1,8 @@
 package dev.kuro9.application.discord.slash
 
 import dev.kuro9.application.discord.service.DiscordUserNameService
+import dev.kuro9.domain.mahjong.core.dto.MahjongGameDetailInput
+import dev.kuro9.domain.mahjong.core.enums.MahjongSeki
 import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
 import dev.kuro9.domain.mahjong.core.service.MahjongRankService
 import dev.kuro9.domain.mahjong.core.service.MahjongScoreSettingService
@@ -34,9 +36,12 @@ import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.utils.FileUpload
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.springframework.http.MediaType
+import org.springframework.http.MediaTypeFactory
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.math.RoundingMode
 import javax.imageio.ImageIO
 
@@ -93,14 +98,16 @@ class SlashMahjongCommand(
             }
             subcommand("setting-list", "현재 서버에 적용 중인 기록 설정을 가져옵니다.")
             subcommand("add", "대국 결과를 기록합니다.") {
-                option<User>("user_1st", "1위 유저", required = true)
-                option<Int>("score_1st", "1위 점수", required = true)
-                option<User>("user_2nd", "2위 유저", required = true)
-                option<Int>("score_2nd", "2위 점수", required = true)
-                option<User>("user_3rd", "3위 유저", required = true)
-                option<Int>("score_3rd", "3위 점수", required = true)
-                option<User>("user_4th", "4위 유저", required = true)
-                option<Int>("score_4th", "4위 점수", required = true)
+                option<User>("user_tou", "동가 (東)", required = true)
+                option<Int>("score_tou", "동가 점수", required = true)
+                option<User>("user_nan", "남가 (南)", required = true)
+                option<Int>("score_nan", "남가 점수", required = true)
+                option<User>("user_sha", "서가 (西)", required = true)
+                option<Int>("score_sha", "서가 점수", required = true)
+                option<User>("user_pei", "북가 (北)", required = true)
+                option<Int>("score_pei", "북가 점수", required = true)
+
+                option<File>("image", "대국 결과 이미지 파일", required = false)
             }
         }
     }
@@ -118,7 +125,7 @@ class SlashMahjongCommand(
                 "record" -> when (event.subcommandName) {
                     "setting" -> return recordSetting(event, deferReply)
                     "setting-list" -> return recordSettingList(event, deferReply)
-                    "test", "add" -> return recordAdd(event, deferReply)
+                    "add" -> return recordAdd(event, deferReply)
                 }
             }
 
@@ -383,28 +390,51 @@ class SlashMahjongCommand(
     }
 
     private suspend fun recordAdd(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
-        val user1st = event.getOption("user_1st")!!.asUser
-        val user2nd = event.getOption("user_2nd")!!.asUser
-        val user3rd = event.getOption("user_3rd")!!.asUser
-        val user4th = event.getOption("user_4th")!!.asUser
-        val score1st = event.getOption("score_1st")!!.asInt
-        val score2nd = event.getOption("score_2nd")!!.asInt
-        val score3rd = event.getOption("score_3rd")!!.asInt
-        val score4th = event.getOption("score_4th")!!.asInt
+        val userTou = event.getOption("user_tou")!!.asUser
+        val scoreTou = event.getOption("score_tou")!!.asInt
+        val userNan = event.getOption("user_nan")!!.asUser
+        val scoreNan = event.getOption("score_nan")!!.asInt
+        val userSha = event.getOption("user_sha")!!.asUser
+        val scoreSha = event.getOption("score_sha")!!.asInt
+        val userPei = event.getOption("user_pei")!!.asUser
+        val scorePei = event.getOption("score_pei")!!.asInt
+        val image = event.getOption("image")?.asAttachment?.also {
+            // 확장자 체크
+            if (it.isImage.not()) {
+                Embed {
+                    title = "400 Bad Request"
+                    description = "이미지 파일만 업로드 가능합니다."
+                    color = Color.RED.rgb
+                }.let { deferReply.await().editOriginalEmbeds(it).await() }
+                return
+            }
+        }
 
-        val game: MahjongGameEntity = withContext(Dispatchers.IO) {
-            mahjongRankService.save(
-                createdUserId = event.user.idLong,
-                createdGuildId = event.guild!!.idLong,
-                firstScore = score1st,
-                secondScore = score2nd,
-                thirdScore = score3rd,
-                fourthScore = score4th,
-                firstUserId = user1st.idLong,
-                secondUserId = user2nd.idLong,
-                thirdUserId = user3rd.idLong,
-                fourthUserId = user4th.idLong,
-            )
+        val imageMimeType: MediaType? = image?.fileExtension?.let {
+            MediaTypeFactory.getMediaType("image.$it")
+                .orElse(MediaType.APPLICATION_OCTET_STREAM)
+        }
+
+        val game: MahjongGameEntity = try {
+            withContext(Dispatchers.IO) {
+                mahjongRankService.save(
+                    createdUserId = event.user.idLong,
+                    createdGuildId = event.guild!!.idLong,
+                    imageUrl = image?.proxyUrl,
+                    imageMediaType = imageMimeType,
+                    MahjongGameDetailInput(userId = userTou.idLong, score = scoreTou, seki = MahjongSeki.TOU),
+                    MahjongGameDetailInput(userId = userNan.idLong, score = scoreNan, seki = MahjongSeki.NAN),
+                    MahjongGameDetailInput(userId = userSha.idLong, score = scoreSha, seki = MahjongSeki.SHA),
+                    MahjongGameDetailInput(userId = userPei.idLong, score = scorePei, seki = MahjongSeki.PEI),
+                )
+            }
+        } catch (e: IllegalArgumentException) {
+            Embed {
+                title = "400 Bad Request"
+                description = e.message
+                color = Color.RED.rgb
+            }.let { deferReply.await().editOriginalEmbeds(it).await() }
+            return
         }
 
         suspendTransaction {
@@ -413,11 +443,29 @@ class SlashMahjongCommand(
                     text("### 패보 기록 완료")
                     separator { spacing = Spacing.LARGE }
                     for ((i, gameDetail) in game.results.withIndex()) {
+                        coroutineScope { launch { userNameService.putUserNameCache(gameDetail.userId) } } // userName 캐싱용
                         text(
-                            "${i + 1}. ${userNameService.getUserName(gameDetail.userId)} / ${"%,d".format(gameDetail.score)} / ${
+                            "${i + 1}. [${gameDetail.seki?.kanji}] / <@${gameDetail.userId}> / ${
+                                "%,d".format(
+                                    gameDetail.score
+                                )
+                            } / ${
                                 "%+,.1f".format(gameDetail.point.setScale(1, RoundingMode.DOWN))
                             }"
                         )
+                    }
+
+                    if (game.image != null || game.imageMime != null) {
+                        val extension = game.imageMime!!.let { MediaType.parseMediaType(it) }
+                        separator { spacing = Spacing.LARGE }
+                        mediaGallery {
+                            item(
+                                FileUpload.fromData(
+                                    game.image!!.bytes,
+                                    "image.${extension.getExtensionFromMediaType()}"
+                                )
+                            )
+                        }
                     }
                 }
                 container {
@@ -545,6 +593,18 @@ class SlashMahjongCommand(
             str.contains("3z") -> MjKaze.SHA
             str.contains("4z") -> MjKaze.PEI
             else -> throw IllegalArgumentException("알 수 없는 풍패입니다. 입력값: $str")
+        }
+    }
+
+    private fun MediaType.getExtensionFromMediaType(): String {
+        return when (this) {
+            MediaType.IMAGE_JPEG -> "jpg"
+            MediaType.IMAGE_PNG -> "png"
+            MediaType.IMAGE_GIF -> "gif"
+            MediaType.parseMediaType("image/webp") -> "webp"
+            MediaType.parseMediaType("image/heic") -> "heic"
+            MediaType.parseMediaType("image/tiff") -> "tiff"
+            else -> subtype // 기본적으로 subtype 반환
         }
     }
 }
