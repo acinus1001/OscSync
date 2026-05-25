@@ -364,16 +364,20 @@ class SlashMahjongCommand(
         MessageEdit(useComponentsV2 = true) {
             container {
                 text("### 기록 Score 설정 변경 내역")
+                text("-# 설정은 소급 적용되지 않습니다.")
                 separator { spacing = Spacing.LARGE }
-                for ((i, setting) in settingList.withIndex()) {
-                    text(
-                        "- ${if (i == 0) "**[적용중]** " else ""} 시작 `${setting.startScore}` / 반환 `${setting.returnScore}` 우마 `[${setting.umaFirst}, ${setting.umaSecond}, ${setting.umaThird}, ${setting.umaFourth}]` // <t:${
-                            setting.createdAt.toInstant(
-                                TimeZone.of("Asia/Seoul")
-                            ).epochSeconds
-                        }:f> 이후 적용"
-                    )
-                }
+                buildString {
+                    for ((i, setting) in settingList.withIndex()) {
+                        appendLine(
+                            "- ${if (i == 0) "**[적용중]** " else ""} 시작 `${setting.startScore}` / 반환 `${setting.returnScore}` 우마 `[${setting.umaFirst}, ${setting.umaSecond}, ${setting.umaThird}, ${setting.umaFourth}]` // <t:${
+                                setting.createdAt.toInstant(
+                                    TimeZone.of("Asia/Seoul")
+                                ).epochSeconds
+                            }:f> 이후 적용"
+                        )
+                    }
+                }.let(::text)
+
             }
         }.let { deferReply.await().editOriginal(it).await() }
     }
