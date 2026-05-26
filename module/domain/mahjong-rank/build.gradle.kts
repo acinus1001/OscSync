@@ -9,6 +9,11 @@ dependencies {
     implementation(libs.spring.boot.starter.web)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
+    implementation(libs.spring.boot.starter.aop)
+
+    runtimeOnly(libs.aspectj.runtime)
+    runtimeOnly(libs.aspectj.weaver)
+
 
     implementation(projects.module.common.logger)
     implementation(projects.multiplatformCommon.serialization)

@@ -57,14 +57,29 @@ class MahjongStatService {
         info { "new rank event received" }
 
         when (event) {
-            is MahjongRankEvent.NewGameResult -> event.userScoreList
-            is MahjongRankEvent.ModifyGameResult -> event.userScoreList
-        }.forEach { gameResult ->
-            calculateUserStat(
-                userId = gameResult.userId,
-                guildId = event.targetGuildId,
-                yearMonth = event.createdAt.date.yearMonth,
-            )
+            is MahjongRankEvent.NewGameResult -> event.userScoreList.forEach { gameResult ->
+                calculateUserStat(
+                    userId = gameResult.userId,
+                    guildId = event.targetGuildId,
+                    yearMonth = event.createdAt.date.yearMonth,
+                )
+            }
+
+            is MahjongRankEvent.ModifyGameResult -> event.userScoreList.forEach { gameResult ->
+                calculateUserStat(
+                    userId = gameResult.userId,
+                    guildId = event.targetGuildId,
+                    yearMonth = event.createdAt.date.yearMonth,
+                )
+            }
+
+            is MahjongRankEvent.DeleteGameResult -> event.gameUserIdSet.forEach { userId ->
+                calculateUserStat(
+                    userId = userId,
+                    guildId = event.targetGuildId,
+                    yearMonth = event.gameCreatedAt.date.yearMonth,
+                )
+            }
         }
 
         calculateRank(

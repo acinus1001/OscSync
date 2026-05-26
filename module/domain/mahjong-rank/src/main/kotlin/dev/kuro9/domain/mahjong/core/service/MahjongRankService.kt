@@ -1,9 +1,12 @@
 package dev.kuro9.domain.mahjong.core.service
 
+import dev.kuro9.domain.mahjong.core.dto.MahjongGameDeleteInfo
 import dev.kuro9.domain.mahjong.core.dto.MahjongGameDetailInput
 import dev.kuro9.domain.mahjong.core.enums.MahjongSeki
-import dev.kuro9.domain.mahjong.core.event.MahjongRankEvent
-import dev.kuro9.domain.mahjong.core.repository.*
+import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
+import dev.kuro9.domain.mahjong.core.repository.MahjongGameResultEntity
+import dev.kuro9.domain.mahjong.core.repository.MahjongGameResults
+import dev.kuro9.domain.mahjong.core.repository.MahjongGames
 import dev.kuro9.multiplatform.common.date.util.now
 import dev.kuro9.multiplatform.common.network.httpClient
 import io.ktor.client.request.*
@@ -67,14 +70,6 @@ class MahjongRankService(
             }
         }
 
-        eventPublisher.publishEvent(
-            MahjongRankEvent.NewGameResult(
-                targetGuildId = game.guildId,
-                createdAt = game.createdAt,
-                userScoreList = game.results.map { it.toModel() }.sorted()
-            )
-        )
-
         return game.load(MahjongGameEntity::results, MahjongGameEntity::scoreSetting)
     }
 
@@ -115,14 +110,6 @@ class MahjongRankService(
             }
         }
 
-
-        eventPublisher.publishEvent(
-            MahjongRankEvent.ModifyGameResult(
-                targetGuildId = game.guildId,
-                createdAt = game.createdAt,
-                userScoreList = game.results.map { it.toModel() }.sorted(),
-            )
-        )
         game.refresh(true)
 
         return MahjongGames.selectAll().where(MahjongGames.id eq id).single().let {
@@ -132,8 +119,16 @@ class MahjongRankService(
         }
     }
 
-    fun delete(id: Long) {
-        MahjongGameEntity.findById(id)?.delete()
+    fun delete(id: Long): MahjongGameDeleteInfo? {
+        val game = MahjongGameEntity.findById(id) ?: return null
+        val model = MahjongGameDeleteInfo(
+            guildId = game.guildId,
+            gameId = game.id.value,
+            gameUserIdSet = game.results.map { it.userId }.toSet(),
+            gameCreatedAt = game.createdAt,
+        )
+        game.delete()
+        return model
     }
 
     @Transactional(readOnly = true)

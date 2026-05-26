@@ -28,4 +28,12 @@ sealed interface MahjongRankEvent {
         val thirdPlace = userScoreList[2]
         val fourthPlace = userScoreList[3]
     }
+
+    data class DeleteGameResult(
+        override val targetGuildId: Long,
+        override val createdAt: LocalDateTime,
+        val gameId: Long,
+        val gameUserIdSet: Set<Long>,
+        val gameCreatedAt: LocalDateTime,
+    ) : MahjongRankEvent
 }
