@@ -1,6 +1,7 @@
 package dev.kuro9.domain.mahjong.core.repository
 
 import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.date.util.plus
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
@@ -8,6 +9,7 @@ import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 import org.jetbrains.exposed.v1.dao.LongEntity
 import org.jetbrains.exposed.v1.dao.LongEntityClass
 import org.jetbrains.exposed.v1.datetime.datetime
+import kotlin.time.Duration.Companion.days
 
 object MahjongGames : LongIdTable("mahjong_game") {
     val guildId = long("guild_id")
@@ -21,6 +23,8 @@ object MahjongGames : LongIdTable("mahjong_game") {
     val updatedAt = datetime("updated_at").clientDefault { LocalDateTime.now() }
     val createdBy = long("created_by")
     val updatedBy = long("updated_by")
+
+    val updatableUntil = datetime("updatable_until").clientDefault { LocalDateTime.now() + 3.days }
 }
 
 class MahjongGameEntity(pk: EntityID<Long>) : LongEntity(pk) {
@@ -36,6 +40,8 @@ class MahjongGameEntity(pk: EntityID<Long>) : LongEntity(pk) {
     var updatedAt by MahjongGames.updatedAt
     var createdBy by MahjongGames.createdBy
     var updatedBy by MahjongGames.updatedBy
+
+    var updatableUntil by MahjongGames.updatableUntil
 
     // N+1 발생 시 : `MahjongGameEntity.all().with(MahjongGameEntity::results)` 통해 방지
     val results by MahjongGameResultEntity.referrersOn(MahjongGameResults.game)

@@ -7,6 +7,8 @@ import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
 import dev.kuro9.domain.mahjong.core.service.MahjongRankService
 import dev.kuro9.domain.mahjong.core.service.MahjongScoreSettingService
 import dev.kuro9.domain.mahjong.core.service.MahjongStatService
+import dev.kuro9.internal.discord.handler.model.ButtonInteractionHandler
+import dev.kuro9.internal.discord.handler.model.ModalInteractionHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.internal.mahjong.calc.enums.MjKaze
 import dev.kuro9.internal.mahjong.calc.enums.MjYaku
@@ -17,22 +19,35 @@ import dev.kuro9.internal.mahjong.calc.utils.MjScoreI
 import dev.kuro9.internal.mahjong.calc.utils.MjScoreUtil
 import dev.kuro9.internal.mahjong.calc.utils.MjScoreVo
 import dev.kuro9.internal.mahjong.image.MjHandPictureService
+import dev.kuro9.multiplatform.common.date.util.now
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.*
+import dev.minn.jda.ktx.interactions.components.EntitySelectMenu
+import dev.minn.jda.ktx.interactions.components.Modal
+import dev.minn.jda.ktx.interactions.components.TextDisplay
+import dev.minn.jda.ktx.interactions.components.TextInput
 import dev.minn.jda.ktx.messages.Embed
 import dev.minn.jda.ktx.messages.MessageEdit
 import io.github.harryjhin.slf4j.extension.error
+import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.*
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.yearMonth
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.components.selections.EntitySelectMenu
 import net.dv8tion.jda.api.components.separator.Separator.Spacing
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay
+import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
+import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.utils.FileUpload
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
@@ -44,6 +59,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.math.RoundingMode
 import javax.imageio.ImageIO
+import kotlin.time.Clock
 
 @Component
 class SlashMahjongCommand(
@@ -53,7 +69,7 @@ class SlashMahjongCommand(
     private val mahjongStatService: MahjongStatService,
     private val mahjongScoreSettingService: MahjongScoreSettingService,
     private val userNameService: DiscordUserNameService,
-) : SlashCommandComponent {
+) : SlashCommandComponent, ButtonInteractionHandler, ModalInteractionHandler {
     override val commandData: SlashCommandData = Command("mj", "마작 관련 명령어") {
         group("util", "마작 관련 유틸성 명령어") {
             subcommand("calculate", "부수/판수, 역 계산.") {
@@ -112,6 +128,9 @@ class SlashMahjongCommand(
         }
     }
 
+    private val buttonPrefix = "mj_button"
+    private val modalPrefix = "mj_modal"
+
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
         val deferReply: Deferred<InteractionHook> = event.asyncDeferReply()
 
@@ -135,6 +154,41 @@ class SlashMahjongCommand(
             deferReply.await().editOriginalEmbeds(getDefaultExceptionEmbed(t)).await()
             return
         }
+    }
+
+    override suspend fun handleButtonInteraction(event: ButtonInteractionEvent) {
+
+        val (buttonId, data) = event.componentId.removePrefix("${buttonPrefix}_").split("_")
+            .also { require(it.size == 2) { "올바른 형식이 아닙니다. buttonId: ${event.componentId}" } }
+
+        when (buttonId) {
+            "add-delete" -> recordAddDelete(event, data)
+            "add-modify-user" -> recordAddModifyUser(event, data)
+            "add-modify-score" -> recordAddModifyScore(event, data)
+        }
+    }
+
+    override suspend fun isHandleable(event: ButtonInteractionEvent): Boolean {
+        return event.componentId.startsWith(buttonPrefix)
+    }
+
+    override suspend fun handleModalInteraction(event: ModalInteractionEvent) {
+        val data = event.modalId.split("_")
+        val message = event.channel.asTextChannel().retrieveMessageById(data.last()).await()
+        info { "modal interaction, message=${message.contentRaw}" }
+
+        val (action, gameId, messageId) = event.modalId.removePrefix("${modalPrefix}_").split("_")
+            .also { require(it.size == 3) { "올바른 형식이 아닙니다. modalId: ${event.modalId}" } }
+
+        when (action) {
+            "add-delete" -> confirmRecordDelete(event, gameId.toLong(), messageId.toLong())
+            "modify-user" -> confirmRecordModifyUser(event, gameId.toLong(), messageId.toLong())
+            "modify-score" -> confirmRecordModifyScore(event, gameId.toLong(), messageId.toLong())
+        }
+    }
+
+    override suspend fun isHandleable(event: ModalInteractionEvent): Boolean {
+        return event.modalId.startsWith(modalPrefix)
     }
 
     override suspend fun handleAutoComplete(event: CommandAutoCompleteInteractionEvent) {
@@ -439,9 +493,9 @@ class SlashMahjongCommand(
 
         suspendTransaction {
             MessageEdit(useComponentsV2 = true) {
-                container {
-                    text("### 패보 기록 완료")
-                    separator { spacing = Spacing.LARGE }
+                container(uniqueId = 1000) {
+                    text("### 패보 기록 완료", uniqueId = 1001)
+                    separator(uniqueId = 1101) { spacing = Spacing.LARGE }
                     for ((i, gameDetail) in game.results.withIndex()) {
                         coroutineScope { launch { userNameService.putUserNameCache(gameDetail.userId) } } // userName 캐싱용
                         text(
@@ -452,25 +506,41 @@ class SlashMahjongCommand(
                             } / ${
                                 "%+,.1f".format(gameDetail.point.setScale(1, RoundingMode.DOWN))
                             }"
-                        )
+                        ) { uniqueId = 1201 + i }
                     }
 
                     if (game.image != null || game.imageMime != null) {
                         val extension = game.imageMime!!.let { MediaType.parseMediaType(it) }
-                        separator { spacing = Spacing.LARGE }
-                        mediaGallery {
+                        separator(uniqueId = 1301) { spacing = Spacing.LARGE }
+                        mediaGallery(uniqueId = 1401) {
                             item(
                                 FileUpload.fromData(
                                     game.image!!.bytes,
                                     "image.${extension.getExtensionFromMediaType()}"
-                                )
+                                ),
                             )
                         }
                     }
+                    separator(uniqueId = 1501) { spacing = Spacing.LARGE }
+                    actionRow(uniqueId = 1600) {
+                        dangerButton("${buttonPrefix}_add-delete_${game.id.value}", label = "삭제", uniqueId = 1601)
+
+                        // modal component 5개 제한으로 분리
+                        dangerButton(
+                            "${buttonPrefix}_add-modify-user_${game.id.value}",
+                            label = "대국자 수정",
+                            uniqueId = 1602
+                        )
+                        dangerButton(
+                            "${buttonPrefix}_add-modify-score_${game.id.value}",
+                            label = "점수 수정",
+                            uniqueId = 1603
+                        )
+                    }
                 }
-                container {
-                    text("### 기록 메타데이터")
-                    separator { spacing = Spacing.SMALL }
+                container(uniqueId = 2000) {
+                    text("### 기록 메타데이터", uniqueId = 2001)
+                    separator(uniqueId = 2101) { spacing = Spacing.SMALL }
                     $$"""
                         - 기록 ID : $${game.id.value}
                         - 국 번호 (전체) : 제 $${
@@ -486,14 +556,416 @@ class SlashMahjongCommand(
                             ofGameId = game.id.value
                         )
                     } 국
-                        - 기록 설정
+                        - 적용된 기록 설정
                           - 우마 : [ $${game.scoreSetting.umaFirst}, $${game.scoreSetting.umaSecond}, $${game.scoreSetting.umaThird}, $${game.scoreSetting.umaFourth} ]
                           - 시작점 / 반환점 : [ $${game.scoreSetting.startScore} / $${game.scoreSetting.returnScore} ]
                         - 기록 일자 : <t:$${game.createdAt.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:f>
-                    """.trimIndent().let(::text)
+                        - 삭제 및 수정 기한 : <t:$${game.updatableUntil.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:f>
+                    """.trimIndent().let { text(it, uniqueId = 2201) }
                 }
             }
         }.let { deferReply.await().editOriginal(it).await() }
+    }
+
+    private suspend fun recordAddDelete(event: ButtonInteractionEvent, data: String) = suspendTransaction {
+        val game: MahjongGameEntity =
+            handleModifyPermissionAndGetGame(event, data.toLong()) ?: return@suspendTransaction
+
+        val modal = Modal("${modalPrefix}_add-delete_${data}_${event.messageId}", "대국 삭제") {
+            this.components += TextDisplay {
+                content = buildString {
+                    appendLine("# 대국 정보")
+                    appendLine("## 순위")
+                    for (result in game.results) {
+                        appendLine("${result.rank}. ${result.seki?.kanji} : <@${result.userId}> / ${result.score}")
+                    }
+                    appendLine("## 기타 정보")
+                    appendLine("- ID : ${game.id.value}")
+                    appendLine("- 기록일 : <t:${game.createdAt.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:f>")
+                    appendLine("- 기록자 : <@${game.createdBy}>")
+                }
+            }
+            this.components += TextDisplay {
+                content = "위 정보가 정확하고 삭제가 필요한 기록이라면 전송을 클릭해 주세요. 삭제된 기록은 복구할 수 없습니다."
+            }
+        }
+
+        event.replyModal(modal).await()
+    }
+
+    private suspend fun recordAddModifyUser(event: ButtonInteractionEvent, data: String) = suspendTransaction {
+        val game: MahjongGameEntity =
+            handleModifyPermissionAndGetGame(event, data.toLong()) ?: return@suspendTransaction
+
+        val tou = game.results.first { it.seki == MahjongSeki.TOU }
+        val nan = game.results.first { it.seki == MahjongSeki.NAN }
+        val sha = game.results.first { it.seki == MahjongSeki.SHA }
+        val pei = game.results.first { it.seki == MahjongSeki.PEI }
+
+        val modal = Modal("${modalPrefix}_modify-user_${data}_${event.messageId}", "대국자 수정") {
+            label("동가 (東) : ${tou.score}") {
+                child = EntitySelectMenu("user_tou", types = listOf(EntitySelectMenu.SelectTarget.USER)) {
+                    setDefaultValues(EntitySelectMenu.DefaultValue.user(tou.userId))
+                }
+            }
+            label("남가 (南) : ${nan.score}") {
+                child = EntitySelectMenu("user_nan", types = listOf(EntitySelectMenu.SelectTarget.USER)) {
+                    setDefaultValues(EntitySelectMenu.DefaultValue.user(nan.userId))
+                }
+            }
+            label("서가 (西) : ${sha.score}") {
+                child = EntitySelectMenu("user_sha", types = listOf(EntitySelectMenu.SelectTarget.USER)) {
+                    setDefaultValues(EntitySelectMenu.DefaultValue.user(sha.userId))
+                }
+            }
+            label("북가 (北) : ${pei.score}") {
+                child = EntitySelectMenu("user_pei", types = listOf(EntitySelectMenu.SelectTarget.USER)) {
+                    setDefaultValues(EntitySelectMenu.DefaultValue.user(pei.userId))
+                }
+            }
+        }
+
+        event.replyModal(modal).await()
+    }
+
+    private suspend fun recordAddModifyScore(event: ButtonInteractionEvent, data: String) = suspendTransaction {
+        val game: MahjongGameEntity =
+            handleModifyPermissionAndGetGame(event, data.toLong()) ?: return@suspendTransaction
+
+        val tou = game.results.first { it.seki == MahjongSeki.TOU }
+        val nan = game.results.first { it.seki == MahjongSeki.NAN }
+        val sha = game.results.first { it.seki == MahjongSeki.SHA }
+        val pei = game.results.first { it.seki == MahjongSeki.PEI }
+
+        val touName = userNameService.getUserName(tou.userId)
+        val nanName = userNameService.getUserName(nan.userId)
+        val shaName = userNameService.getUserName(sha.userId)
+        val peiName = userNameService.getUserName(pei.userId)
+
+        val modal = Modal("${modalPrefix}_modify-score_${data}_${event.messageId}", "점수 수정") {
+            label("동가 (東) : $touName") {
+                child = TextInput("score_tou", style = TextInputStyle.SHORT) {
+                    value = tou.score.toString()
+                    requiredLength = 1..10
+                }
+            }
+            label("남가 (南) : $nanName") {
+                child = TextInput("score_nan", style = TextInputStyle.SHORT) {
+                    value = nan.score.toString()
+                    requiredLength = 1..10
+                }
+            }
+            label("서가 (西) : $shaName") {
+                child = TextInput("score_sha", style = TextInputStyle.SHORT) {
+                    value = sha.score.toString()
+                    requiredLength = 1..10
+                }
+            }
+            label("북가 (北) : $peiName") {
+                child = TextInput("score_pei", style = TextInputStyle.SHORT) {
+                    value = pei.score.toString()
+                    requiredLength = 1..10
+                }
+            }
+        }
+
+        event.replyModal(modal).await()
+    }
+
+    private suspend fun confirmRecordDelete(
+        event: ModalInteractionEvent,
+        gameId: Long,
+        messageId: Long,
+    ) = suspendTransaction {
+        handleModifyPermissionAndGetGame(event, gameId) ?: return@suspendTransaction
+        val defer = event.deferEdit().await()
+        val originalMessageAction = event.channel.asTextChannel().retrieveMessageById(messageId)
+
+        withContext(Dispatchers.IO) {
+            mahjongRankService.delete(gameId)
+        }
+
+        val originalMessage = originalMessageAction.await()
+        val (mainComponent, metadataComponent) = originalMessage.componentTree.asDisabled().components
+        val newMain = mainComponent.asContainer()
+            .apply {
+                withSpoiler(true)
+                withAccentColor(Color.RED)
+            }
+            .replace { old ->
+                when (old.uniqueId) {
+                    1001 -> TextDisplay("### [삭제됨] 패보 기록 완료", uniqueId = 1001)
+                    1501, 1600, 1601, 1602, 1603 -> null
+                    else -> old
+                }
+            }
+        val newMeta = metadataComponent.asContainer().replace { old ->
+            when (old.uniqueId) {
+                2201 -> TextDisplay(uniqueId = 2201) {
+                    val oldText = (old as TextDisplay).content
+                    content =
+                        oldText + "\n- 삭제 일자 : <t:${Clock.System.now().epochSeconds}:f>\n- 삭제자 : <@${event.user.id}>"
+                }
+
+                else -> old
+            }
+        }
+        MessageEdit(useComponentsV2 = true) {
+            components += newMain
+            components += newMeta
+        }.let { defer.editOriginal(it).await() }
+        originalMessage.replyEmbeds(Embed {
+            title = "200 OK"
+            description = "패보 기록이 삭제되었습니다."
+        }).await()
+    }
+
+    private suspend fun confirmRecordModifyUser(
+        event: ModalInteractionEvent,
+        gameId: Long,
+        messageId: Long,
+    ) = suspendTransaction {
+        val game = handleModifyPermissionAndGetGame(event, gameId) ?: return@suspendTransaction
+        val defer = event.deferEdit().await()
+        val originalMessage = event.channel.asTextChannel().retrieveMessageById(messageId).await()
+
+        val touUser = event.interaction.getValue("user_tou")!!.asMentions.usersBag.first()
+        val nanUser = event.interaction.getValue("user_nan")!!.asMentions.usersBag.first()
+        val shaUser = event.interaction.getValue("user_sha")!!.asMentions.usersBag.first()
+        val peiUser = event.interaction.getValue("user_pei")!!.asMentions.usersBag.first()
+
+        val (_, modifiedResults) = try {
+            withContext(Dispatchers.IO) {
+                mahjongRankService.modify(
+                    id = game.id.value,
+                    modifyUserId = event.user.idLong,
+                    MahjongGameDetailInput(
+                        userId = touUser.idLong,
+                        score = game.results.first { it.seki == MahjongSeki.TOU }.score,
+                        seki = MahjongSeki.TOU
+                    ),
+                    MahjongGameDetailInput(
+                        userId = nanUser.idLong,
+                        score = game.results.first { it.seki == MahjongSeki.NAN }.score,
+                        seki = MahjongSeki.NAN
+                    ),
+                    MahjongGameDetailInput(
+                        userId = shaUser.idLong,
+                        score = game.results.first { it.seki == MahjongSeki.SHA }.score,
+                        seki = MahjongSeki.SHA
+                    ),
+                    MahjongGameDetailInput(
+                        userId = peiUser.idLong,
+                        score = game.results.first { it.seki == MahjongSeki.PEI }.score,
+                        seki = MahjongSeki.PEI
+                    ),
+                )
+            }
+        } catch (e: IllegalArgumentException) {
+            info { "modify error: $e" }
+            Embed {
+                title = "400 Bad Request"
+                description = e.message
+                color = Color.RED.rgb
+            }.let { originalMessage.replyEmbeds(it).await() }
+            return@suspendTransaction
+        }
+
+        val scoreComponentMap = modifiedResults.withIndex().associate { (i, gameDetail) ->
+            coroutineScope { launch { userNameService.putUserNameCache(gameDetail.userId) } } // userName 캐싱용
+
+            1201 + i to TextDisplay(
+                "${i + 1}. [${gameDetail.seki?.kanji}] / <@${gameDetail.userId}> / ${
+                    "%,d".format(
+                        gameDetail.score
+                    )
+                } / ${
+                    "%+,.1f".format(gameDetail.point.setScale(1, RoundingMode.DOWN))
+                }"
+            ) { uniqueId = 1201 + i }
+        }
+
+        val (mainComponent, metadataComponent) = originalMessage.componentTree.components
+        val newMain = mainComponent.asContainer()
+            .replace { old ->
+                scoreComponentMap[old.uniqueId] ?: old
+            }
+        val newMeta = metadataComponent.asContainer().replace { old ->
+            when (old.uniqueId) {
+                2201 -> TextDisplay(uniqueId = 2201) {
+                    val oldText = (old as TextDisplay).content
+                    content = if (oldText.contains("- 수정 이력")) {
+                        oldText + "\n  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>"
+                    } else {
+                        oldText + "\n- 수정 이력" + "\n  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>"
+                    }
+                }
+
+                else -> old
+            }
+        }
+        MessageEdit(useComponentsV2 = true) {
+            components += newMain
+            components += newMeta
+        }.let { defer.editOriginal(it).await() }
+        originalMessage.replyEmbeds(Embed {
+            title = "200 OK"
+            description = "패보 기록이 수정되었습니다."
+        }).await()
+    }
+
+    private suspend fun confirmRecordModifyScore(
+        event: ModalInteractionEvent,
+        gameId: Long,
+        messageId: Long,
+    ) = suspendTransaction {
+        val game = handleModifyPermissionAndGetGame(event, gameId) ?: return@suspendTransaction
+        val defer = event.deferEdit().await()
+        val originalMessage = event.channel.asTextChannel().retrieveMessageById(messageId).await()
+
+        val touScore =
+            event.interaction.getValue("score_tou")!!.asString.filter { it.isDigit() || it == '-' }.toIntOrNull()
+        val nanScore =
+            event.interaction.getValue("score_nan")!!.asString.filter { it.isDigit() || it == '-' }.toIntOrNull()
+        val shaScore =
+            event.interaction.getValue("score_sha")!!.asString.filter { it.isDigit() || it == '-' }.toIntOrNull()
+        val peiScore =
+            event.interaction.getValue("score_pei")!!.asString.filter { it.isDigit() || it == '-' }.toIntOrNull()
+
+        if (listOf(touScore, nanScore, shaScore, peiScore).any { it == null }) {
+            Embed {
+                title = "400 Bad Request"
+                description = "점수를 읽을 수 없습니다. 숫자 및 '-' 기호만 입력해 주세요. e.g. -13100"
+                color = Color.RED.rgb
+            }.let { originalMessage.replyEmbeds(it).await() }
+            return@suspendTransaction
+        }
+
+        val (_, modifiedResults) = try {
+            withContext(Dispatchers.IO) {
+                mahjongRankService.modify(
+                    id = game.id.value,
+                    modifyUserId = event.user.idLong,
+                    MahjongGameDetailInput(
+                        userId = game.results.first { it.seki == MahjongSeki.TOU }.userId,
+                        score = touScore!!,
+                        seki = MahjongSeki.TOU
+                    ),
+                    MahjongGameDetailInput(
+                        userId = game.results.first { it.seki == MahjongSeki.NAN }.userId,
+                        score = nanScore!!,
+                        seki = MahjongSeki.NAN
+                    ),
+                    MahjongGameDetailInput(
+                        userId = game.results.first { it.seki == MahjongSeki.SHA }.userId,
+                        score = shaScore!!,
+                        seki = MahjongSeki.SHA
+                    ),
+                    MahjongGameDetailInput(
+                        userId = game.results.first { it.seki == MahjongSeki.PEI }.userId,
+                        score = peiScore!!,
+                        seki = MahjongSeki.PEI
+                    ),
+                )
+            }
+        } catch (e: IllegalArgumentException) {
+            info { "modify error: $e" }
+            Embed {
+                title = "400 Bad Request"
+                description = e.message
+                color = Color.RED.rgb
+            }.let { originalMessage.replyEmbeds(it).await() }
+            return@suspendTransaction
+        }
+
+        val scoreComponentMap = modifiedResults.withIndex().associate { (i, gameDetail) ->
+            coroutineScope { launch { userNameService.putUserNameCache(gameDetail.userId) } } // userName 캐싱용
+
+            1201 + i to TextDisplay(
+                "${i + 1}. [${gameDetail.seki?.kanji}] / <@${gameDetail.userId}> / ${
+                    "%,d".format(
+                        gameDetail.score
+                    )
+                } / ${
+                    "%+,.1f".format(gameDetail.point.setScale(1, RoundingMode.DOWN))
+                }"
+            ) { uniqueId = 1201 + i }
+        }
+
+        val (mainComponent, metadataComponent) = originalMessage.componentTree.components
+        val newMain = mainComponent.asContainer()
+            .replace { old ->
+                scoreComponentMap[old.uniqueId] ?: old
+            }
+        val newMeta = metadataComponent.asContainer().replace { old ->
+            when (old.uniqueId) {
+                2201 -> TextDisplay(uniqueId = 2201) {
+                    val oldText = (old as TextDisplay).content
+                    content = if (oldText.contains("- 수정 이력")) {
+                        oldText + "\n  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>"
+                    } else {
+                        oldText + "\n- 수정 이력" + "\n  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>"
+                    }
+                }
+
+                else -> old
+            }
+        }
+        MessageEdit(useComponentsV2 = true) {
+            components += newMain
+            components += newMeta
+        }.let { defer.editOriginal(it).await() }
+        originalMessage.replyEmbeds(Embed {
+            title = "200 OK"
+            description = "패보 기록이 수정되었습니다."
+        }).await()
+    }
+
+    /**
+     * 권한이 없다면 ephemeral로 응답 후 null 반환합니다.
+     */
+    private suspend fun handleModifyPermissionAndGetGame(
+        event: IReplyCallback,
+        gameId: Long
+    ): MahjongGameEntity? {
+        val game: MahjongGameEntity? = withContext(Dispatchers.IO) {
+            mahjongRankService.getGameById(gameId)
+        }
+
+        if (game == null) {
+            event.replyEmbeds(Embed {
+                title = "404 Not Found";
+                description =
+                    "해당 게임을 찾을 수 없습니다. 이미 삭제되었거나 외부에서 변경되었을 경우일 수 있습니다."
+                color = Color.RED.rgb
+            }).setEphemeral(true).await()  // 게임 존재하지 않음. 삭제 등의 케이스.
+            return null
+        }
+
+        val isAllowed = (event.member!!.hasPermission(Permission.ADMINISTRATOR)).or(
+            game.results.any { it.userId == event.user.idLong }
+        )
+
+        if (!isAllowed) {
+            event.replyEmbeds(Embed {
+                title = "403 Forbidden"
+                description =
+                    "해당 대국에 대한 수정 권한이 없습니다. 어드민 및 대국 참여자만 수정 가능합니다."
+                color = Color.RED.rgb
+            }).setEphemeral(true).await()
+            return null
+        }
+
+        if (!event.member!!.hasPermission(Permission.ADMINISTRATOR) && game.updatableUntil < LocalDateTime.now()) {
+            event.replyEmbeds(Embed {
+                title = "403 Forbidden";
+                description = "대국 수정 기간이 만료되었습니다. 관리자에게 문의해 주세요."
+                color = Color.RED.rgb
+            }).setEphemeral(true).await()
+            return null
+        }
+
+        return game
     }
 
     private fun MjScoreUtil.MjScore.toKrString(): String? = when (this) {

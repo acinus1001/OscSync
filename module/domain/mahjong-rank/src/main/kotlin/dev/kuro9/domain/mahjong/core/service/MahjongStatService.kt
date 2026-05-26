@@ -58,7 +58,7 @@ class MahjongStatService {
 
         when (event) {
             is MahjongRankEvent.NewGameResult -> event.userScoreList
-            is MahjongRankEvent.ModifyGameResult -> event.modifiedDataSet
+            is MahjongRankEvent.ModifyGameResult -> event.userScoreList
         }.forEach { gameResult ->
             calculateUserStat(
                 userId = gameResult.userId,

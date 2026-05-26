@@ -22,7 +22,6 @@ sealed interface MahjongRankEvent {
         override val targetGuildId: Long,
         override val createdAt: LocalDateTime,
         val userScoreList: List<MahjongGameResultModel>,
-        val modifiedDataSet: Set<MahjongGameResultModel>,
     ) : MahjongRankEvent {
         val firstPlace = userScoreList[0]
         val secondPlace = userScoreList[1]
