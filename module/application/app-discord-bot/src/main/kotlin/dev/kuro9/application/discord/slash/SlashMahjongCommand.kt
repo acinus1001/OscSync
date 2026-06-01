@@ -2,7 +2,9 @@ package dev.kuro9.application.discord.slash
 
 import dev.kuro9.application.discord.service.DiscordUserNameService
 import dev.kuro9.domain.mahjong.core.dto.MahjongGameDetailInput
+import dev.kuro9.domain.mahjong.core.enums.MahjongLogType
 import dev.kuro9.domain.mahjong.core.enums.MahjongSeki
+import dev.kuro9.domain.mahjong.core.repository.MahjongGameEditLogEntity
 import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
 import dev.kuro9.domain.mahjong.core.service.MahjongRankService
 import dev.kuro9.domain.mahjong.core.service.MahjongScoreSettingService
@@ -562,6 +564,7 @@ class SlashMahjongCommand(
                         - 기록 일자 : <t:$${game.createdAt.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:f>
                         - 삭제 및 수정 기한 : <t:$${game.updatableUntil.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:f>
                     """.trimIndent().let { text(it, uniqueId = 2201) }
+                    text(null, uniqueId = 2202) // 업데이트 로그용 컴포넌트
                 }
             }
         }.let { deferReply.await().editOriginal(it).await() }
@@ -681,9 +684,9 @@ class SlashMahjongCommand(
         val defer = event.deferEdit().await()
         val originalMessageAction = event.channel.asTextChannel().retrieveMessageById(messageId)
 
-        withContext(Dispatchers.IO) {
-            mahjongRankService.delete(gameId)
-        }
+        mahjongRankService.delete(gameId, event.user.idLong)
+        val gameEditLog: List<MahjongGameEditLogEntity> =
+            mahjongRankService.getGameById(gameId, nullsOnDeleted = false)?.editLogs?.toList() ?: emptyList()
 
         val originalMessage = originalMessageAction.await()
         val (mainComponent, metadataComponent) = originalMessage.componentTree.asDisabled().components
@@ -701,10 +704,22 @@ class SlashMahjongCommand(
             }
         val newMeta = metadataComponent.asContainer().replace { old ->
             when (old.uniqueId) {
-                2201 -> TextDisplay(uniqueId = 2201) {
-                    val oldText = (old as TextDisplay).content
-                    content =
-                        oldText + "\n- 삭제 일자 : <t:${Clock.System.now().epochSeconds}:f>\n- 삭제자 : <@${event.user.id}>"
+                2202 -> TextDisplay(uniqueId = 2202) {
+                    content = buildString {
+                        var initModify = false
+                        for (log in gameEditLog) when (log.type) {
+                            MahjongLogType.NEW -> continue
+                            MahjongLogType.MODIFY -> {
+                                if (initModify.not()) {
+                                    initModify = true
+                                    appendLine("- 수정 이력")
+                                }
+                                appendLine("  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>")
+                            }
+
+                            MahjongLogType.DELETE -> appendLine("- 삭제 일자 : <t:${Clock.System.now().epochSeconds}:f>\n- 삭제자 : <@${event.user.id}>")
+                        }
+                    }
                 }
 
                 else -> old
@@ -735,32 +750,30 @@ class SlashMahjongCommand(
         val peiUser = event.interaction.getValue("user_pei")!!.asMentions.usersBag.first()
 
         val (_, modifiedResults) = try {
-            withContext(Dispatchers.IO) {
-                mahjongRankService.modify(
-                    id = game.id.value,
-                    modifyUserId = event.user.idLong,
-                    MahjongGameDetailInput(
-                        userId = touUser.idLong,
-                        score = game.results.first { it.seki == MahjongSeki.TOU }.score,
-                        seki = MahjongSeki.TOU
-                    ),
-                    MahjongGameDetailInput(
-                        userId = nanUser.idLong,
-                        score = game.results.first { it.seki == MahjongSeki.NAN }.score,
-                        seki = MahjongSeki.NAN
-                    ),
-                    MahjongGameDetailInput(
-                        userId = shaUser.idLong,
-                        score = game.results.first { it.seki == MahjongSeki.SHA }.score,
-                        seki = MahjongSeki.SHA
-                    ),
-                    MahjongGameDetailInput(
-                        userId = peiUser.idLong,
-                        score = game.results.first { it.seki == MahjongSeki.PEI }.score,
-                        seki = MahjongSeki.PEI
-                    ),
-                )
-            }
+            mahjongRankService.modify(
+                id = game.id.value,
+                modifyUserId = event.user.idLong,
+                MahjongGameDetailInput(
+                    userId = touUser.idLong,
+                    score = game.results.first { it.seki == MahjongSeki.TOU }.score,
+                    seki = MahjongSeki.TOU
+                ),
+                MahjongGameDetailInput(
+                    userId = nanUser.idLong,
+                    score = game.results.first { it.seki == MahjongSeki.NAN }.score,
+                    seki = MahjongSeki.NAN
+                ),
+                MahjongGameDetailInput(
+                    userId = shaUser.idLong,
+                    score = game.results.first { it.seki == MahjongSeki.SHA }.score,
+                    seki = MahjongSeki.SHA
+                ),
+                MahjongGameDetailInput(
+                    userId = peiUser.idLong,
+                    score = game.results.first { it.seki == MahjongSeki.PEI }.score,
+                    seki = MahjongSeki.PEI
+                ),
+            )
         } catch (e: IllegalArgumentException) {
             info { "modify error: $e" }
             Embed {
@@ -792,12 +805,21 @@ class SlashMahjongCommand(
             }
         val newMeta = metadataComponent.asContainer().replace { old ->
             when (old.uniqueId) {
-                2201 -> TextDisplay(uniqueId = 2201) {
-                    val oldText = (old as TextDisplay).content
-                    content = if (oldText.contains("- 수정 이력")) {
-                        oldText + "\n  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>"
-                    } else {
-                        oldText + "\n- 수정 이력" + "\n  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>"
+                2202 -> TextDisplay(uniqueId = 2202) {
+                    content = buildString {
+                        var initModify = false
+                        for (log in game.editLogs) when (log.type) {
+                            MahjongLogType.NEW -> continue
+                            MahjongLogType.MODIFY -> {
+                                if (initModify.not()) {
+                                    initModify = true
+                                    appendLine("- 수정 이력")
+                                }
+                                appendLine("  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>")
+                            }
+
+                            MahjongLogType.DELETE -> appendLine("- 삭제 일자 : <t:${Clock.System.now().epochSeconds}:f>\n- 삭제자 : <@${event.user.id}>")
+                        }
                     }
                 }
 

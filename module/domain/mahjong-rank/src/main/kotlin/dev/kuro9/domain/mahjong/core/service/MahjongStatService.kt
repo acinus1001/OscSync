@@ -9,10 +9,7 @@ import io.github.harryjhin.slf4j.extension.info
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.YearMonth
 import kotlinx.datetime.yearMonth
-import org.jetbrains.exposed.v1.core.SortOrder
-import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.select
@@ -37,7 +34,7 @@ class MahjongStatService {
     }
 
     fun getGameCount(guildId: Long, ofGameId: Long? = null): Long {
-        return MahjongGameEntity.find((MahjongGames.guildId eq guildId).let {
+        return MahjongGameEntity.find(((MahjongGames.guildId eq guildId).and(MahjongGames.deletedAt.isNull())).let {
             if (ofGameId == null) return@let it
             return@let it and (MahjongGames.id lessEq ofGameId)
         }).count()
@@ -45,10 +42,12 @@ class MahjongStatService {
 
     fun getMonthGameCount(guildId: Long, yearMonth: YearMonth, ofGameId: Long? = null): Long {
         return MahjongGameEntity.find(
-            (MahjongGames.guildId eq guildId).and(MahjongGames.createdAt.between(yearMonth.toRangeOfMonth())).let {
-                if (ofGameId == null) return@let it
-                return@let it and (MahjongGames.id lessEq ofGameId)
-            }).count()
+            (MahjongGames.guildId eq guildId)
+                .and(MahjongGames.createdAt.between(yearMonth.toRangeOfMonth()))
+                .and(MahjongGames.deletedAt.isNull()).let {
+                    if (ofGameId == null) return@let it
+                    return@let it and (MahjongGames.id lessEq ofGameId)
+                }).count()
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -92,7 +91,10 @@ class MahjongStatService {
 
     // 유저 스탯 계산
     private fun calculateUserStat(userId: Long, guildId: Long, yearMonth: YearMonth): MahjongTotalStatEntity {
-        val userGames = MahjongGameResultEntity.find { (MahjongGameResults.userId eq userId) }
+        val userGames = MahjongGameResultEntity.find {
+            (MahjongGameResults.userId eq userId)
+                .and(MahjongGames.deletedAt.isNull())
+        }
             .with(MahjongGameResultEntity::game, MahjongGameEntity::scoreSetting)
 
         // 1. 전체 스탯 계산

@@ -22,7 +22,7 @@ class MahjongRankEventPublishProxy(
         pointcut = "execution(* dev.kuro9.domain.mahjong.core.service.MahjongRankService.save(..))",
         returning = "game",
     )
-    fun afterSave(game: MahjongGameEntity) {
+    fun publishSave(game: MahjongGameEntity) {
         eventPublisher.publishEvent(
             MahjongRankEvent.NewGameResult(
                 targetGuildId = game.guildId,
@@ -36,7 +36,7 @@ class MahjongRankEventPublishProxy(
         pointcut = "execution(* dev.kuro9.domain.mahjong.core.service.MahjongRankService.modify(..))",
         returning = "modifiedResult",
     )
-    fun afterModify(modifiedResult: Pair<MahjongGameEntity, List<MahjongGameResultEntity>>) {
+    fun publishModify(modifiedResult: Pair<MahjongGameEntity, List<MahjongGameResultEntity>>) {
         val (game, results) = modifiedResult
         eventPublisher.publishEvent(
             MahjongRankEvent.ModifyGameResult(
@@ -51,7 +51,7 @@ class MahjongRankEventPublishProxy(
         pointcut = "execution(* dev.kuro9.domain.mahjong.core.service.MahjongRankService.delete(..))",
         returning = "deletedInfo"
     )
-    fun afterDelete(deletedInfo: MahjongGameDeleteInfo) {
+    fun publishDelete(deletedInfo: MahjongGameDeleteInfo) {
         eventPublisher.publishEvent(
             MahjongRankEvent.DeleteGameResult(
                 targetGuildId = deletedInfo.guildId,

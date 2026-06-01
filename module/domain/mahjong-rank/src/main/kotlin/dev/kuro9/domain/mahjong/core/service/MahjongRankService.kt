@@ -17,7 +17,6 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.statements.api.ExposedBlob
 import org.jetbrains.exposed.v1.dao.load
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -26,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(rollbackFor = [Exception::class])
 class MahjongRankService(
     private val scoreService: MahjongScoreSettingService,
-    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val httpClient = httpClient()
 
@@ -119,7 +117,7 @@ class MahjongRankService(
         }
     }
 
-    fun delete(id: Long): MahjongGameDeleteInfo? {
+    fun delete(id: Long, modifyUserId: Long): MahjongGameDeleteInfo? {
         val game = MahjongGameEntity.findById(id) ?: return null
         val model = MahjongGameDeleteInfo(
             guildId = game.guildId,
@@ -127,13 +125,15 @@ class MahjongRankService(
             gameUserIdSet = game.results.map { it.userId }.toSet(),
             gameCreatedAt = game.createdAt,
         )
-        game.delete()
+        game.deletedAt = LocalDateTime.now() // soft delete
+        game.updatedBy = modifyUserId
+        game.updatedAt = LocalDateTime.now()
         return model
     }
 
     @Transactional(readOnly = true)
-    fun getGameById(id: Long): MahjongGameEntity? =
-        MahjongGameEntity.findById(id)?.load(MahjongGameEntity::results, MahjongGameEntity::scoreSetting)
-
-
+    fun getGameById(id: Long, nullsOnDeleted: Boolean = true): MahjongGameEntity? =
+        MahjongGameEntity.findById(id)
+            ?.takeIf { !nullsOnDeleted || it.deletedAt == null }
+            ?.load(MahjongGameEntity::results, MahjongGameEntity::scoreSetting)
 }
