@@ -1380,7 +1380,7 @@ class SlashMahjongCommand(
                     }
                     section {
                         accessory = Thumbnail(user.effectiveAvatarUrl)
-                        text("### [$umaRank] $userName 님의 통계")
+                        text("### [#$umaRank] $userName 님의 통계")
                         text("-# 전체 기록 범위")
                         text("-# 요청자 : ${eventCaller.asMention}")
                     }
