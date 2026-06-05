@@ -4,12 +4,13 @@ import dev.kuro9.application.discord.service.DiscordUserNameService
 import dev.kuro9.domain.mahjong.core.dto.MahjongGameDetailInput
 import dev.kuro9.domain.mahjong.core.enums.MahjongLogType
 import dev.kuro9.domain.mahjong.core.enums.MahjongSeki
-import dev.kuro9.domain.mahjong.core.repository.MahjongGameEditLogEntity
-import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
+import dev.kuro9.domain.mahjong.core.repository.*
 import dev.kuro9.domain.mahjong.core.service.MahjongRankService
 import dev.kuro9.domain.mahjong.core.service.MahjongScoreSettingService
 import dev.kuro9.domain.mahjong.core.service.MahjongStatService
+import dev.kuro9.domain.mahjong.image.service.MahjongScoreGraphService
 import dev.kuro9.internal.discord.handler.model.ButtonInteractionHandler
+import dev.kuro9.internal.discord.handler.model.EntitySelectInteractionHandler
 import dev.kuro9.internal.discord.handler.model.ModalInteractionHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.internal.mahjong.calc.enums.MjKaze
@@ -24,19 +25,15 @@ import dev.kuro9.internal.mahjong.image.MjHandPictureService
 import dev.kuro9.multiplatform.common.date.util.now
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.interactions.commands.*
-import dev.minn.jda.ktx.interactions.components.EntitySelectMenu
-import dev.minn.jda.ktx.interactions.components.Modal
-import dev.minn.jda.ktx.interactions.components.TextDisplay
-import dev.minn.jda.ktx.interactions.components.TextInput
+import dev.minn.jda.ktx.interactions.components.*
 import dev.minn.jda.ktx.messages.Embed
+import dev.minn.jda.ktx.messages.InlineMessage
+import dev.minn.jda.ktx.messages.MessageCreate
 import dev.minn.jda.ktx.messages.MessageEdit
 import io.github.harryjhin.slf4j.extension.error
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.*
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
-import kotlinx.datetime.yearMonth
+import kotlinx.datetime.*
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.components.selections.EntitySelectMenu
 import net.dv8tion.jda.api.components.separator.Separator.Spacing
@@ -47,10 +44,13 @@ import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.EntitySelectInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import net.dv8tion.jda.api.utils.FileUpload
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.springframework.http.MediaType
 import org.springframework.http.MediaTypeFactory
@@ -69,8 +69,9 @@ class SlashMahjongCommand(
     private val mahjongRankService: MahjongRankService,
     private val mahjongStatService: MahjongStatService,
     private val mahjongScoreSettingService: MahjongScoreSettingService,
+    private val mahjongScoreGraphService: MahjongScoreGraphService,
     private val userNameService: DiscordUserNameService,
-) : SlashCommandComponent, ButtonInteractionHandler, ModalInteractionHandler {
+) : SlashCommandComponent, ButtonInteractionHandler, ModalInteractionHandler, EntitySelectInteractionHandler {
     override val commandData: SlashCommandData = Command("mj", "마작 관련 명령어") {
         group("util", "마작 관련 유틸성 명령어") {
             subcommand("calculate", "부수/판수, 역 계산.") {
@@ -126,11 +127,31 @@ class SlashMahjongCommand(
 
                 option<File>("image", "대국 결과 이미지 파일", required = false)
             }
+            subcommand("rank", "서버 내 순위를 확인합니다.")
+        }
+
+        group("stat", "마작 기록을 통한 통계를 가져옵니다.") {
+            restrict(guild = true)
+            subcommand("month", "월별 유저의 통계를 확인합니다.") {
+                option<User>("user", "확인할 유저 선택. 기본값=본인", required = false)
+                option<Int>("year", "확인할 년도 선택. 기본값=현재", required = false)
+                option<Int>("month", "확인할 월 선택. 기본값=현재", required = false)
+            }
+            subcommand("all", "전체 기간에 대한 유저의 통계를 확인합니다.") {
+                option<User>("user", "확인할 유저 선택. 기본값=본인", required = false)
+            }
+        }
+
+        group("rank", "마작 기록을 통한 서버 내 순위를 확인합니다.") {
+            restrict(guild = true)
+            subcommand("month", "월별 서버 내 순위를 확인합니다.")
+            subcommand("all", "전체 기간에 대한 서버 내 순위를 확인합니다.")
         }
     }
 
     private val buttonPrefix = "mj_button"
     private val modalPrefix = "mj_modal"
+    private val selectPrefix = "mj_select"
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
         val deferReply: Deferred<InteractionHook> = event.asyncDeferReply()
@@ -146,6 +167,16 @@ class SlashMahjongCommand(
                     "setting" -> return recordSetting(event, deferReply)
                     "setting-list" -> return recordSettingList(event, deferReply)
                     "add" -> return recordAdd(event, deferReply)
+                }
+
+                "stat" -> when (event.subcommandName) {
+                    "month" -> return recordStatMonth(event, deferReply)
+                    "all" -> return recordStatAll(event, deferReply)
+                }
+
+                "rank" -> when (event.subcommandName) {
+                    "month" -> return recordRankMonth(event, deferReply)
+                    "all" -> return recordRankAll(event, deferReply)
                 }
             }
 
@@ -196,6 +227,21 @@ class SlashMahjongCommand(
         when (event.subcommandName) {
             "calculate", "image" -> handlePaiAutoComplete(event)
             else -> return
+        }
+    }
+
+    override suspend fun isHandleable(event: EntitySelectInteractionEvent): Boolean {
+        return event.componentId.startsWith(selectPrefix)
+    }
+
+    override suspend fun handleEntitySelectInteraction(event: EntitySelectInteractionEvent) {
+        val deferReply = event.deferReply()
+
+        val (action, data) = event.componentId.removePrefix("${selectPrefix}_").split("_")
+
+        when (action) {
+            "stat-month" -> selectStatMonth(event, deferReply, data)
+            "stat-all" -> selectStatAll(event, deferReply, data)
         }
     }
 
@@ -567,6 +613,67 @@ class SlashMahjongCommand(
                 }
             }
         }.let { deferReply.await().editOriginal(it).await() }
+    }
+
+    private suspend fun recordStatMonth(
+        event: SlashCommandInteractionEvent,
+        deferReply: Deferred<InteractionHook>
+    ): Unit = suspendTransaction {
+        val user = event.getOption("user")?.asUser ?: event.user
+        val year = event.getOption("year")?.asInt ?: LocalDate.now().year
+        val month = event.getOption("month")?.asInt ?: LocalDate.now().month.number
+        val yearMonth = YearMonth(year, month)
+
+        val stat: MahjongMonthStatEntity? =
+            mahjongStatService.getUserStatOrNull(userId = user.idLong, guildId = event.guild!!.idLong)
+                ?.monthStats
+                ?.firstOrNull { it.yearMonth == yearMonth }
+
+        if (stat == null) {
+            Embed {
+                title = "404 Not Found"
+                description = "해당 유저의 통계가 존재하지 않습니다. 조회 범위 내 해당 유저의 대국이 존재할 경우 잠시 후 다시 시도해주세요."
+                color = Color.RED.rgb
+            }.let { deferReply.await().editOriginalEmbeds(it).await() }
+            return@suspendTransaction
+        }
+
+        deferReply
+            .await()
+            .editOriginal(MessageEdit(useComponentsV2 = true, builder = stat.getMonthStatMessage(user, event.user)))
+            .await()
+    }
+
+    private suspend fun recordStatAll(
+        event: SlashCommandInteractionEvent,
+        deferReply: Deferred<InteractionHook>
+    ): Unit = suspendTransaction {
+        val user = event.getOption("user")?.asUser ?: event.user
+
+        val stat = mahjongStatService.getUserStatOrNull(userId = user.idLong, guildId = event.guild!!.idLong)
+        if (stat == null) {
+            Embed {
+                title = "404 Not Found"
+                description = "해당 유저의 통계가 존재하지 않습니다. 조회 범위 내 해당 유저의 대국이 존재할 경우 잠시 후 다시 시도해주세요."
+                color = Color.RED.rgb
+            }.let { deferReply.await().editOriginalEmbeds(it).await() }
+            return@suspendTransaction
+        }
+
+        deferReply
+            .await()
+            .editOriginal(MessageEdit(useComponentsV2 = true, builder = stat.getAllStatMessage(user, event.user)))
+            .await()
+    }
+
+    private suspend fun recordRankMonth(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        val year = event.getOption("year")?.asInt ?: LocalDate.now().year
+        val month = event.getOption("month")?.asInt ?: LocalDate.now().month.number
+        TODO()
+    }
+
+    private suspend fun recordRankAll(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        TODO()
     }
 
     private suspend fun recordAddDelete(event: ButtonInteractionEvent, data: String) = suspendTransaction {
@@ -951,6 +1058,68 @@ class SlashMahjongCommand(
         }).await()
     }
 
+    private suspend fun selectStatMonth(
+        event: EntitySelectInteractionEvent,
+        deferReply: ReplyCallbackAction,
+        data: String
+    ): Unit =
+        suspendTransaction {
+            val userSelected = event.values.first().idLong
+            val user = event.jda.retrieveUserById(userSelected)
+            val yearMonth = YearMonth.parse(data)
+            info { "userSelected: $userSelected" }
+
+            val stat: MahjongMonthStatEntity? =
+                mahjongStatService.getUserStatOrNull(userId = userSelected, guildId = event.guild!!.idLong)
+                    ?.monthStats
+                    ?.firstOrNull { it.yearMonth == yearMonth }
+
+            if (stat == null) {
+                Embed {
+                    title = "404 Not Found"
+                    description = "해당 유저의 통계가 존재하지 않습니다. 조회 범위 내 해당 유저의 대국이 존재할 경우 잠시 후 다시 시도해주세요."
+                    color = Color.RED.rgb
+                }.let { deferReply.await().editOriginalEmbeds(it).await() }
+                return@suspendTransaction
+            }
+
+            deferReply.await().sendMessage(
+                MessageCreate(
+                    useComponentsV2 = true,
+                    builder = stat.getMonthStatMessage(user.await(), event.user)
+                )
+            ).await()
+        }
+
+    private suspend fun selectStatAll(
+        event: EntitySelectInteractionEvent,
+        deferReply: ReplyCallbackAction,
+        data: String
+    ): Unit =
+        suspendTransaction {
+            val userSelected = event.values.first().idLong
+            val user = event.jda.retrieveUserById(userSelected)
+            info { "userSelected: $userSelected" }
+
+            val stat = mahjongStatService.getUserStatOrNull(userId = userSelected, guildId = event.guild!!.idLong)
+
+            if (stat == null) {
+                Embed {
+                    title = "404 Not Found"
+                    description = "해당 유저의 통계가 존재하지 않습니다. 조회 범위 내 해당 유저의 대국이 존재할 경우 잠시 후 다시 시도해주세요."
+                    color = Color.RED.rgb
+                }.let { deferReply.await().editOriginalEmbeds(it).await() }
+                return@suspendTransaction
+            }
+
+            deferReply.await().sendMessage(
+                MessageCreate(
+                    useComponentsV2 = true,
+                    builder = stat.getAllStatMessage(user.await(), event.user)
+                )
+            ).await()
+        }
+
     /**
      * 권한이 없다면 ephemeral로 응답 후 null 반환합니다.
      */
@@ -1109,4 +1278,146 @@ class SlashMahjongCommand(
             else -> subtype // 기본적으로 subtype 반환
         }
     }
+
+    private suspend fun MahjongMonthStatEntity.getMonthStatMessage(
+        user: User,
+        eventCaller: User
+    ): InlineMessage<*>.() -> Unit =
+        suspendTransaction {
+            val userName = userNameService.getUserName(user.idLong)
+            val recentData = mahjongRankService
+                .getUserGamesAtRange(
+                    userId = user.idLong,
+                    guildId = totalStat.guildId,
+                    start = yearMonth.firstDay,
+                    endInclusive = yearMonth.lastDay,
+                )
+                .orderBy(MahjongGames.id to SortOrder.DESC)
+                .limit(10)
+                .reversed()
+                .map { game ->
+                    val userResult = game.results.first { it.userId == user.idLong }
+                    userResult.rank to (userResult.score >= 50_000)
+                }
+
+            val image = mahjongScoreGraphService.scoreGraphGen(recentData)
+
+            return@suspendTransaction {
+                container {
+                    accentColor = when (user.idLong) {
+                        400579163959853056L -> Color.WHITE
+                        else -> Color.GRAY
+                    }
+                    section {
+                        accessory = Thumbnail(user.effectiveAvatarUrl)
+                        text("### [#$umaRank] $userName 님의 통계")
+                        text("-# $yearMonth 범위")
+                        text("-# 요청자 : ${eventCaller.asMention}")
+                    }
+                    separator { spacing = Spacing.LARGE }
+                    mediaGallery {
+                        item(FileUpload.fromData(image)).also { image.delete() }
+                    }
+                    separator { spacing = Spacing.LARGE }
+
+                    text {
+                        content = buildString {
+                            appendLine("- 서버 내 포인트 순위 : ${umaRank}위")
+                            appendLine("- 총 포인트 : ${"%+,.1f".format(totalUmaSum)}")
+                            appendLine("- 총합 국 수 : ${totalGameCount}회")
+                            appendLine("- 순위별 확률 및 횟수")
+
+                            appendLine("  - 1위 : ${"%.2f".format(firstPlaceRate)}% (${firstPlaceCount}회)")
+                            appendLine("  - 2위 : ${"%.2f".format(secondPlaceRate)}% (${secondPlaceCount}회)")
+                            appendLine("  - 3위 : ${"%.2f".format(thirdPlaceRate)}% (${thirdPlaceCount}회)")
+                            appendLine("  - 4위 : ${"%.2f".format(fourthPlaceRate)}% (${fourthPlaceCount}회)")
+                            appendLine("  - 들통(토비) : ${"%.2f".format(tobiRate)}% (${tobiCount}회)")
+
+                            appendLine("- 평균 순위 : ${"%.2f".format(avgPlace)}위")
+                            appendLine("- 평균 포인트 : ${"%+,.1f".format(avgUma)}")
+                        }
+                    }
+                    separator { spacing = Spacing.LARGE }
+                    text("-# 마지막 업데이트 일자 : <t:${updatedAt.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:R>")
+                }
+                actionRow {
+                    entitySelectMenu(
+                        types = listOf(EntitySelectMenu.SelectTarget.USER),
+                        customId = "${selectPrefix}_stat-month_${yearMonth}"
+                    ) {
+                        setDefaultValues(EntitySelectMenu.DefaultValue.user(user.idLong))
+                    }
+                }
+            }
+        }
+
+    private suspend fun MahjongTotalStatEntity.getAllStatMessage(
+        user: User,
+        eventCaller: User
+    ): InlineMessage<*>.() -> Unit =
+        suspendTransaction {
+            val userName = userNameService.getUserName(user.idLong)
+            val recentData = mahjongRankService
+                .getUserGamesAtRange(
+                    userId = user.idLong,
+                    guildId = guildId,
+                )
+                .orderBy(MahjongGames.id to SortOrder.DESC)
+                .limit(10)
+                .reversed()
+                .map { game ->
+                    val userResult = game.results.first { it.userId == user.idLong }
+                    userResult.rank to (userResult.score >= 50_000)
+                }
+
+            val image = mahjongScoreGraphService.scoreGraphGen(recentData)
+
+            return@suspendTransaction {
+                container {
+                    accentColor = when (user.idLong) {
+                        400579163959853056L -> Color.WHITE
+                        else -> Color.GRAY
+                    }
+                    section {
+                        accessory = Thumbnail(user.effectiveAvatarUrl)
+                        text("### [$umaRank] $userName 님의 통계")
+                        text("-# 전체 기록 범위")
+                        text("-# 요청자 : ${eventCaller.asMention}")
+                    }
+                    separator { spacing = Spacing.LARGE }
+                    mediaGallery {
+                        item(FileUpload.fromData(image)).also { image.delete() }
+                    }
+                    separator { spacing = Spacing.LARGE }
+
+                    text {
+                        content = buildString {
+                            appendLine("- 서버 내 포인트 순위 : ${umaRank}위")
+                            appendLine("- 총 포인트 : ${"%+,.1f".format(totalUmaSum)}")
+                            appendLine("- 총합 국 수 : ${totalGameCount}회")
+                            appendLine("- 순위별 확률 및 횟수")
+
+                            appendLine("  - 1위 : ${"%.2f".format(firstPlaceRate)}% (${firstPlaceCount}회)")
+                            appendLine("  - 2위 : ${"%.2f".format(secondPlaceRate)}% (${secondPlaceCount}회)")
+                            appendLine("  - 3위 : ${"%.2f".format(thirdPlaceRate)}% (${thirdPlaceCount}회)")
+                            appendLine("  - 4위 : ${"%.2f".format(fourthPlaceRate)}% (${fourthPlaceCount}회)")
+                            appendLine("  - 들통(토비) : ${"%.2f".format(tobiRate)}% (${tobiCount}회)")
+
+                            appendLine("- 평균 순위 : ${"%.2f".format(avgPlace)}위")
+                            appendLine("- 평균 포인트 : ${"%+,.1f".format(avgUma)}")
+                        }
+                    }
+                    separator { spacing = Spacing.LARGE }
+                    text("-# 마지막 업데이트 일자 : <t:${updatedAt.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:R>")
+                }
+                actionRow {
+                    entitySelectMenu(
+                        types = listOf(EntitySelectMenu.SelectTarget.USER),
+                        customId = "${selectPrefix}_stat-all_"
+                    ) {
+                        setDefaultValues(EntitySelectMenu.DefaultValue.user(user.idLong))
+                    }
+                }
+            }
+        }
 }

@@ -72,4 +72,26 @@ class MahjongScoreGraphService(
             ImageIO.write(image, "png", this)
         }
     }
+//
+//    fun statGraphGen() {
+//        val data = mapOf(
+//            "rank" to listOf(31.58, 26.32, 23.68, 18.42),
+//        )
+//        val range by columnOf("1위", "2위", "3위", "4위")
+//        val share by columnOf(0.31, 0.26, 0.23, 0.18)
+//        val df = dataFrameOf(range, share)
+//
+//        df.plot {
+//            pie {
+//                slice(share)
+//                fillColor(range) {
+//                    scale = continuous(KColor.RED..KColor.PURPLE)
+//                }
+//                size = 25.0
+//            }
+//            layout {
+//                style(Style.Void)
+//            }
+//        }
+//    }
 }

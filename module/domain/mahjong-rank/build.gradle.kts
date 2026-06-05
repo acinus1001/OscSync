@@ -22,4 +22,6 @@ dependencies {
 
     implementation(projects.module.domain.database)
     implementation(projects.module.domain.cache)
+
+    implementation(libs.kotlinx.kandy)
 }

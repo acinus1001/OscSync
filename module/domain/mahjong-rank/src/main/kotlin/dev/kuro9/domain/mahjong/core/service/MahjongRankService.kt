@@ -9,11 +9,11 @@ import dev.kuro9.multiplatform.common.network.httpClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.LocalDateTime
-import org.jetbrains.exposed.v1.core.eq
+import kotlinx.datetime.*
+import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.api.ExposedBlob
 import org.jetbrains.exposed.v1.dao.load
-import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.*
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -126,6 +126,59 @@ class MahjongRankService(
         game.updatedBy = modifyUserId
         game.updatedAt = LocalDateTime.now()
         return model
+    }
+
+    @Transactional(readOnly = true)
+    fun getGuildGamesAtRange(
+        guildId: Long,
+        start: LocalDate? = null,
+        endInclusive: LocalDate? = null,
+    ): SizedIterable<MahjongGameEntity> {
+        return MahjongGameEntity.find {
+            (MahjongGames.guildId eq guildId)
+                .and(MahjongGames.deletedAt.isNull())
+                .let {
+                    if (start == null) return@let it
+                    it.and(MahjongGames.createdAt.greaterEq(start.atTime(LocalTime(0, 0, 0, 0))))
+                }
+                .let {
+                    if (endInclusive == null) return@let it
+                    it.and(
+                        MahjongGames.createdAt.less(
+                            endInclusive.plus(1, DateTimeUnit.DAY).atTime(LocalTime(0, 0, 0, 0))
+                        )
+                    )
+                }
+        }
+    }
+
+    @Transactional(readOnly = true)
+    fun getUserGamesAtRange(
+        userId: Long,
+        guildId: Long,
+        start: LocalDate? = null,
+        endInclusive: LocalDate? = null,
+    ): SizedIterable<MahjongGameEntity> {
+        return MahjongGames.innerJoin(MahjongGameResults)
+            .select(MahjongGames.columns)
+            .where {
+                (MahjongGames.guildId eq guildId)
+                    .and(MahjongGames.deletedAt.isNull())
+                    .let {
+                        if (start == null) return@let it
+                        it.and(MahjongGames.createdAt.greaterEq(start.atTime(LocalTime(0, 0, 0, 0))))
+                    }
+                    .let {
+                        if (endInclusive == null) return@let it
+                        it.and(
+                            MahjongGames.createdAt.less(
+                                endInclusive.plus(1, DateTimeUnit.DAY).atTime(LocalTime(0, 0, 0, 0))
+                            )
+                        )
+                    }
+            }
+            .andWhere { MahjongGameResults.userId eq userId }
+            .mapLazy { MahjongGameEntity.wrapRow(it) }
     }
 
     @Transactional(readOnly = true)
