@@ -7,6 +7,7 @@ import dev.kuro9.domain.mahjong.core.repository.MahjongGameEditLogEntity
 import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
 import dev.kuro9.domain.mahjong.core.repository.MahjongGameResultEntity
 import dev.kuro9.multiplatform.common.date.util.now
+import io.github.harryjhin.slf4j.extension.info
 import kotlinx.datetime.LocalDateTime
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
@@ -21,13 +22,13 @@ class MahjongRankModifyLogProxy {
 
     @Around("execution(* dev.kuro9.domain.mahjong.core.service.MahjongRankService.save(..)) && args(createdUserId, createdGuildId, imageUrl, imageMediaType, userScoreList)")
     fun logSave(
+        jointPoint: ProceedingJoinPoint,
         createdUserId: Long,
         createdGuildId: Long,
         imageUrl: String? = null,
         imageMediaType: MediaType? = MediaType.APPLICATION_OCTET_STREAM,
-        vararg userScoreList: MahjongGameDetailInput,
-        jointPoint: ProceedingJoinPoint,
-    ) {
+        userScoreList: Array<out MahjongGameDetailInput>,
+    ): Any? {
         val result = jointPoint.proceed() as MahjongGameEntity
         MahjongGameEditLogEntity.new {
             game = result.id
@@ -62,23 +63,25 @@ class MahjongRankModifyLogProxy {
             createdAt = LocalDateTime.now()
             createdBy = createdUserId
         }
+        return result
     }
 
     @Suppress("UNCHECKED_CAST")
     @Around("execution(* dev.kuro9.domain.mahjong.core.service.MahjongRankService.modify(..)) && args(id, modifyUserId, modifyData)")
     fun logModify(
+        jointPoint: ProceedingJoinPoint,
         id: Long,
         modifyUserId: Long,
-        vararg modifyData: MahjongGameDetailInput,
-        jointPoint: ProceedingJoinPoint,
-    ) {
+        modifyData: Array<out MahjongGameDetailInput>,
+    ): Any? {
+        info { "Modifying game $id" }
         val originalGameResults = MahjongGameEntity.findById(id)?.results?.toList() ?: run {
             // case of game not found
-            jointPoint.proceed()
-            return
+            return jointPoint.proceed()
         }
 
-        val (gameInfo, results) = jointPoint.proceed() as Pair<MahjongGameEntity, List<MahjongGameResultEntity>>
+        val result = jointPoint.proceed() as Pair<MahjongGameEntity, List<MahjongGameResultEntity>>
+        val (gameInfo, results) = result
 
         MahjongGameEditLogEntity.new {
             game = gameInfo.id
@@ -121,6 +124,8 @@ class MahjongRankModifyLogProxy {
             createdAt = LocalDateTime.now()
             createdBy = modifyUserId
         }
+        
+        return result
     }
 
     @Before("execution(* dev.kuro9.domain.mahjong.core.service.MahjongRankService.delete(..)) && args(id, modifyUserId)")

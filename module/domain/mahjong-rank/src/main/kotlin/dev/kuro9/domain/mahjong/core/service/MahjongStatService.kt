@@ -91,15 +91,16 @@ class MahjongStatService {
 
     // 유저 스탯 계산
     private fun calculateUserStat(userId: Long, guildId: Long, yearMonth: YearMonth): MahjongTotalStatEntity {
-        val userGames = MahjongGameResultEntity.find {
-            (MahjongGameResults.userId eq userId)
-                .and(MahjongGames.deletedAt.isNull())
-        }
+        val userGames = MahjongGameResults.innerJoin(MahjongGames).select(MahjongGameResults.columns)
+            .where { MahjongGameResults.userId eq userId }
+            .andWhere { MahjongGames.guildId eq guildId }
+            .andWhere { MahjongGames.deletedAt.isNull() }
+            .map { MahjongGameResultEntity.wrapRow(it) }
             .with(MahjongGameResultEntity::game, MahjongGameEntity::scoreSetting)
 
         // 1. 전체 스탯 계산
         val totalUmaSum = userGames.sumOf(MahjongGameResultEntity::point)
-        val totalGameCount = userGames.count().toInt()
+        val totalGameCount = userGames.count()
 
         val firstPlaceCount = userGames.count { g -> g.rank == 1 }
         val secondPlaceCount = userGames.count { g -> g.rank == 2 }

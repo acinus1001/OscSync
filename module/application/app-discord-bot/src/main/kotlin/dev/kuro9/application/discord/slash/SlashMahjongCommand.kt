@@ -40,7 +40,6 @@ import kotlinx.datetime.yearMonth
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.components.selections.EntitySelectMenu
 import net.dv8tion.jda.api.components.separator.Separator.Spacing
-import net.dv8tion.jda.api.components.textdisplay.TextDisplay
 import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
@@ -564,7 +563,7 @@ class SlashMahjongCommand(
                         - 기록 일자 : <t:$${game.createdAt.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:f>
                         - 삭제 및 수정 기한 : <t:$${game.updatableUntil.toInstant(TimeZone.of("Asia/Seoul")).epochSeconds}:f>
                     """.trimIndent().let { text(it, uniqueId = 2201) }
-                    text(null, uniqueId = 2202) // 업데이트 로그용 컴포넌트
+                    text("- 수정 이력", uniqueId = 2202) // 업데이트 로그용 컴포넌트
                 }
             }
         }.let { deferReply.await().editOriginal(it).await() }
@@ -808,7 +807,7 @@ class SlashMahjongCommand(
                 2202 -> TextDisplay(uniqueId = 2202) {
                     content = buildString {
                         var initModify = false
-                        for (log in game.editLogs) when (log.type) {
+                        for (log in mahjongRankService.getGameLogById(game.id.value)) when (log.type) {
                             MahjongLogType.NEW -> continue
                             MahjongLogType.MODIFY -> {
                                 if (initModify.not()) {
@@ -921,12 +920,21 @@ class SlashMahjongCommand(
             }
         val newMeta = metadataComponent.asContainer().replace { old ->
             when (old.uniqueId) {
-                2201 -> TextDisplay(uniqueId = 2201) {
-                    val oldText = (old as TextDisplay).content
-                    content = if (oldText.contains("- 수정 이력")) {
-                        oldText + "\n  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>"
-                    } else {
-                        oldText + "\n- 수정 이력" + "\n  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>"
+                2202 -> TextDisplay(uniqueId = 2202) {
+                    content = buildString {
+                        var initModify = false
+                        for (log in mahjongRankService.getGameLogById(game.id.value)) when (log.type) {
+                            MahjongLogType.NEW -> continue
+                            MahjongLogType.MODIFY -> {
+                                if (initModify.not()) {
+                                    initModify = true
+                                    appendLine("- 수정 이력")
+                                }
+                                appendLine("  - <@${event.user.id}> / <t:${Clock.System.now().epochSeconds}:f>")
+                            }
+
+                            MahjongLogType.DELETE -> appendLine("- 삭제 일자 : <t:${Clock.System.now().epochSeconds}:f>\n- 삭제자 : <@${event.user.id}>")
+                        }
                     }
                 }
 

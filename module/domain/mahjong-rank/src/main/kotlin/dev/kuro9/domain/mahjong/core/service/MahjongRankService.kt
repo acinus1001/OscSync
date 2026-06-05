@@ -3,10 +3,7 @@ package dev.kuro9.domain.mahjong.core.service
 import dev.kuro9.domain.mahjong.core.dto.MahjongGameDeleteInfo
 import dev.kuro9.domain.mahjong.core.dto.MahjongGameDetailInput
 import dev.kuro9.domain.mahjong.core.enums.MahjongSeki
-import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
-import dev.kuro9.domain.mahjong.core.repository.MahjongGameResultEntity
-import dev.kuro9.domain.mahjong.core.repository.MahjongGameResults
-import dev.kuro9.domain.mahjong.core.repository.MahjongGames
+import dev.kuro9.domain.mahjong.core.repository.*
 import dev.kuro9.multiplatform.common.date.util.now
 import dev.kuro9.multiplatform.common.network.httpClient
 import io.ktor.client.request.*
@@ -136,4 +133,14 @@ class MahjongRankService(
         MahjongGameEntity.findById(id)
             ?.takeIf { !nullsOnDeleted || it.deletedAt == null }
             ?.load(MahjongGameEntity::results, MahjongGameEntity::scoreSetting)
+
+    @Transactional(readOnly = true)
+    fun getGameLogById(gameId: Long): List<MahjongGameEditLogEntity> = // 시간순 정렬됨
+        MahjongGameEntity
+            .find { MahjongGames.id eq gameId }
+            .singleOrNull()
+            ?.takeIf { it.deletedAt == null }
+            ?.editLogs
+            ?.toList()
+            ?: emptyList()
 }
