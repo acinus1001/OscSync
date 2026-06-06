@@ -18,8 +18,8 @@ class MahjongScoreGraphService(
     private val xAxisSequence = generateSequence(37) { it + 82 }
     private val yAxisSequence = generateSequence(195) { it - 46 }
 
-    private val nyanGlassBufferedImage = ImageIO.read(nyanGlassImg.file)
-    private val backgroundBufferedImage = ImageIO.read(backgroundImg.file)
+    private val nyanGlassBufferedImage = nyanGlassImg.inputStream.use { ImageIO.read(it) }
+    private val backgroundBufferedImage = backgroundImg.inputStream.use { ImageIO.read(it) }
 
     /**
      * 패널 위에 그래프를 그립니다.
