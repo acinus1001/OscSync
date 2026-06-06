@@ -100,24 +100,6 @@ class SlashMahjongCommand(
 
         group("record", "마작 기록 관련 명령어") {
             restrict(guild = true)
-            subcommand("setting", "기록 시 반영될 우마/오카 및 반환점 등의 설정을 변경합니다. 설정은 소급적용되지 않습니다.") {
-                restrict(guild = true, Permission.ADMINISTRATOR)
-                option<Int>("uma_1st", "1위 우마. (참고용 : 작혼 = +15)", required = true)
-                option<Int>("uma_2nd", "2위 우마. (참고용 : 작혼 = +5)", required = true)
-                option<Int>("uma_3rd", "3위 우마. (참고용 : 작혼 = -5)", required = true)
-                option<Int>("uma_4th", "4위 우마. (참고용 : 작혼 = -15)", required = true)
-                option<Int>(
-                    "start-point",
-                    "시작점수. (참고용 : 작혼 = 25000) // 시작점수와 반환점수가 다를 경우 1위 오카 지급이 활성화됩니다.",
-                    required = true
-                )
-                option<Int>(
-                    "return-point",
-                    "반환점수. (참고용 : 작혼 = 25000) // 시작점수와 반환점수가 다를 경우 1위 오카 지급이 활성화됩니다.",
-                    required = true
-                )
-            }
-            subcommand("setting-list", "현재 서버에 적용 중인 기록 설정을 가져옵니다.")
             subcommand("add", "대국 결과를 기록합니다.") {
                 option<User>("user_tou", "동가 (東)", required = true)
                 option<Int>("score_tou", "동가 점수", required = true)
@@ -130,7 +112,6 @@ class SlashMahjongCommand(
 
                 option<File>("image", "대국 결과 이미지 파일", required = false)
             }
-            subcommand("rank", "서버 내 순위를 확인합니다.")
         }
 
         group("stat", "마작 기록을 통한 통계를 가져옵니다.") {
@@ -165,7 +146,25 @@ class SlashMahjongCommand(
 
         group("admin", "기타 관리를 위한 명령어입니다.") {
             restrict(guild = true, Permission.ADMINISTRATOR)
-            subcommand("stat-refresh", "통계 재계산")
+            subcommand("stat-refresh", "통계 재계산(사용 불가)")
+            subcommand("setting", "기록 시 반영될 우마/오카 및 반환점 등의 설정을 변경합니다. 설정은 소급적용되지 않습니다.") {
+                restrict(guild = true, Permission.ADMINISTRATOR)
+                option<Int>("uma_1st", "1위 우마. (참고용 : 작혼 = +15)", required = true)
+                option<Int>("uma_2nd", "2위 우마. (참고용 : 작혼 = +5)", required = true)
+                option<Int>("uma_3rd", "3위 우마. (참고용 : 작혼 = -5)", required = true)
+                option<Int>("uma_4th", "4위 우마. (참고용 : 작혼 = -15)", required = true)
+                option<Int>(
+                    "start-point",
+                    "시작점수. (참고용 : 작혼 = 25000) // 시작점수와 반환점수가 다를 경우 1위 오카 지급이 활성화됩니다.",
+                    required = true
+                )
+                option<Int>(
+                    "return-point",
+                    "반환점수. (참고용 : 작혼 = 25000) // 시작점수와 반환점수가 다를 경우 1위 오카 지급이 활성화됩니다.",
+                    required = true
+                )
+            }
+            subcommand("setting-list", "현재 서버에 적용 중인 기록 설정을 가져옵니다.")
         }
     }
 
@@ -184,8 +183,6 @@ class SlashMahjongCommand(
                 }
 
                 "record" -> when (event.subcommandName) {
-                    "setting" -> return recordSetting(event, deferReply)
-                    "setting-list" -> return recordSettingList(event, deferReply)
                     "add" -> return recordAdd(event, deferReply)
                 }
 
@@ -201,6 +198,8 @@ class SlashMahjongCommand(
 
                 "admin" -> when (event.subcommandName) {
                     "stat-refresh" -> return internalStatRefresh(event, deferReply)
+                    "setting" -> return recordSetting(event, deferReply)
+                    "setting-list" -> return recordSettingList(event, deferReply)
                 }
             }
 
