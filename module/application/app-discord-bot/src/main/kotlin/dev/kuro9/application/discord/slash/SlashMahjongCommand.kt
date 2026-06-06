@@ -203,13 +203,16 @@ class SlashMahjongCommand(
 
     override suspend fun handleButtonInteraction(event: ButtonInteractionEvent) {
 
-        val (buttonId, data) = event.componentId.removePrefix("${buttonPrefix}_").split("_")
-            .also { require(it.size == 2) { "올바른 형식이 아닙니다. buttonId: ${event.componentId}" } }
+        val (buttonId, data, subData) = event.componentId.removePrefix("${buttonPrefix}_").split("_") + ""
 
         when (buttonId) {
             "add-delete" -> recordAddDelete(event, data)
             "add-modify-user" -> recordAddModifyUser(event, data)
             "add-modify-score" -> recordAddModifyScore(event, data)
+            "month-point" -> updateMonthPointRank(event, data, subData)
+            "month-game-count" -> updateMonthGameCountRank(event, data, subData)
+            "all-point" -> updateAllPointRank(event, data)
+            "all-game-count" -> updateAllGameCountRank(event, data)
         }
     }
 
@@ -731,6 +734,62 @@ class SlashMahjongCommand(
             .await()
             .editOriginal(messageEditData)
             .await()
+    }
+
+    private suspend fun updateMonthPointRank(
+        event: ButtonInteractionEvent,
+        data: String,
+        subData: String,
+    ) {
+        val page = data.toInt()
+        val yearMonth = YearMonth.parse(subData)
+        val deferReply = event.deferEdit()
+
+        MessageEdit(
+            useComponentsV2 = true,
+            builder = getMonthPointRankMessage(event.user, event.guild!!.idLong, yearMonth, page)
+        ).let { deferReply.await().editOriginal(it).await() }
+    }
+
+    private suspend fun updateMonthGameCountRank(
+        event: ButtonInteractionEvent,
+        data: String,
+        subData: String,
+    ) {
+        val page = data.toInt()
+        val yearMonth = YearMonth.parse(subData)
+        val deferReply = event.deferEdit()
+
+        MessageEdit(
+            useComponentsV2 = true,
+            builder = getMonthGameCountRankMessage(event.user, event.guild!!.idLong, yearMonth, page)
+        ).let { deferReply.await().editOriginal(it).await() }
+    }
+
+    private suspend fun updateAllPointRank(
+        event: ButtonInteractionEvent,
+        data: String,
+    ) {
+        val page = data.toInt()
+        val deferReply = event.deferEdit()
+
+        MessageEdit(
+            useComponentsV2 = true,
+            builder = getAllPointRankMessage(event.user, event.guild!!.idLong, page)
+        ).let { deferReply.await().editOriginal(it).await() }
+    }
+
+    private suspend fun updateAllGameCountRank(
+        event: ButtonInteractionEvent,
+        data: String,
+    ) {
+        val page = data.toInt()
+        val deferReply = event.deferEdit()
+
+        MessageEdit(
+            useComponentsV2 = true,
+            builder = getAllGameCountRankMessage(event.user, event.guild!!.idLong, page)
+        ).let { deferReply.await().editOriginal(it).await() }
     }
 
     private suspend fun recordAddDelete(event: ButtonInteractionEvent, data: String) = suspendTransaction {
@@ -1522,17 +1581,17 @@ class SlashMahjongCommand(
                 actionRow {
                     if (page > 1)
                         secondaryButton(
-                            customId = "${buttonPrefix}_month-point_${page.minus(1).coerceIn(1..maxPage)}",
+                            customId = "${buttonPrefix}_month-point_${page.minus(1).coerceIn(1..maxPage)}_${yearMonth}",
                             label = "<"
                         )
                     primaryButton(
-                        customId = "${buttonPrefix}_month-point_${page.coerceIn(1..maxPage)}",
+                        customId = "${buttonPrefix}_month-point_${page.coerceIn(1..maxPage)}_${yearMonth}",
                         label = "PAGE $page / $maxPage",
                         emoji = Emoji.fromUnicode("\uD83D\uDD04")
                     )
                     if (page < maxPage)
                         secondaryButton(
-                            customId = "${buttonPrefix}_month-point_${page.plus(1).coerceIn(1..maxPage)}",
+                            customId = "${buttonPrefix}_month-point_${page.plus(1).coerceIn(1..maxPage)}_${yearMonth}",
                             label = ">"
                         )
                 }
@@ -1642,17 +1701,21 @@ class SlashMahjongCommand(
                 actionRow {
                     if (page > 1)
                         secondaryButton(
-                            customId = "${buttonPrefix}_month-game-count_${page.minus(1).coerceIn(1..maxPage)}",
+                            customId = "${buttonPrefix}_month-game-count_${
+                                page.minus(1).coerceIn(1..maxPage)
+                            }_${yearMonth}",
                             label = "<"
                         )
                     primaryButton(
-                        customId = "${buttonPrefix}_month-game-count_${page.coerceIn(1..maxPage)}",
+                        customId = "${buttonPrefix}_month-game-count_${page.coerceIn(1..maxPage)}_${yearMonth}",
                         label = "PAGE $page / $maxPage",
                         emoji = Emoji.fromUnicode("\uD83D\uDD04")
                     )
                     if (page < maxPage)
                         secondaryButton(
-                            customId = "${buttonPrefix}_month-game-count_${page.plus(1).coerceIn(1..maxPage)}",
+                            customId = "${buttonPrefix}_month-game-count_${
+                                page.plus(1).coerceIn(1..maxPage)
+                            }_${yearMonth}",
                             label = ">"
                         )
                 }
