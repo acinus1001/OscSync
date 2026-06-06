@@ -1,0 +1,27 @@
+plugins {
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.kotlin.spring)
+    alias(libs.plugins.kotlin.serialization)
+}
+
+dependencies {
+    implementation(libs.spring.boot.starter.web)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.reactor)
+    implementation(libs.spring.boot.starter.aop)
+
+    runtimeOnly(libs.aspectj.runtime)
+    runtimeOnly(libs.aspectj.weaver)
+
+
+    implementation(projects.module.common.logger)
+    implementation(projects.multiplatformCommon.serialization)
+    implementation(projects.multiplatformCommon.date)
+    implementation(projects.multiplatformCommon.network)
+
+    implementation(projects.module.domain.database)
+    implementation(projects.module.domain.cache)
+
+    implementation(libs.kotlinx.kandy)
+}

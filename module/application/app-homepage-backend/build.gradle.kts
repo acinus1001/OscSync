@@ -42,4 +42,5 @@ dependencies {
     implementation(projects.module.domain.inquiry)
     implementation(projects.module.domain.smartappUserinfo)
     implementation(projects.module.domain.smartappWebhook)
+    implementation(projects.module.domain.mahjongRank)
 }

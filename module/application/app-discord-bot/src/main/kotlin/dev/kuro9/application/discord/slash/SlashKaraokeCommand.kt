@@ -86,7 +86,7 @@ class SlashKaraokeCommand(
 
             throw NotImplementedError("Unknown command=${event.fullCommandName}")
         }.onFailure { t: Throwable ->
-            error(t) { "handl event error: ${event.fullCommandName}" }
+            error(t) { "handle event error: ${event.fullCommandName}" }
             deferReply.await()
                 .editOriginalEmbeds(getDefaultExceptionEmbed(t))
                 .await()
