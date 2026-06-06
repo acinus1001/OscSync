@@ -690,6 +690,11 @@ class SlashMahjongCommand(
                 builder = getMonthPointRankMessage(event.user, event.guild!!.idLong, YearMonth(year, month), 1)
             )
 
+            1 -> MessageEdit(
+                useComponentsV2 = true,
+                builder = getMonthGameCountRankMessage(event.user, event.guild!!.idLong, YearMonth(year, month), 1)
+            )
+
             else -> {
                 throw NotImplementedError("대응되지 않은 타입입니다. type=$type")
             }
@@ -703,7 +708,29 @@ class SlashMahjongCommand(
     }
 
     private suspend fun recordRankAll(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
-        TODO()
+        val type = event.getOption("type")?.asInt ?: 0
+
+        val messageEditData = when (type) {
+            0 -> MessageEdit(
+                useComponentsV2 = true,
+                builder = getAllPointRankMessage(event.user, event.guild!!.idLong, 1)
+            )
+
+            1 -> MessageEdit(
+                useComponentsV2 = true,
+                builder = getAllGameCountRankMessage(event.user, event.guild!!.idLong, 1)
+            )
+
+            else -> {
+                throw NotImplementedError("대응되지 않은 타입입니다. type=$type")
+            }
+        }
+
+
+        deferReply
+            .await()
+            .editOriginal(messageEditData)
+            .await()
     }
 
     private suspend fun recordAddDelete(event: ButtonInteractionEvent, data: String) = suspendTransaction {
@@ -1488,26 +1515,206 @@ class SlashMahjongCommand(
                     for ((user, userId) in userListWithId) {
                         appendLine("${user.umaRank}\\.\t\t**${"%+,.1f".format(user.totalUmaSum)}**\t\t\t\t\t<@${userId}>")
                     }
-                }
+                }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
             }
             separator { spacing = Spacing.LARGE }
-            actionRow {
-                if (page > 1)
-                    secondaryButton(
-                        customId = "${buttonPrefix}_month-point_${page.minus(1).coerceIn(1..maxPage)}",
-                        label = "<"
+            if (maxPage > 0)
+                actionRow {
+                    if (page > 1)
+                        secondaryButton(
+                            customId = "${buttonPrefix}_month-point_${page.minus(1).coerceIn(1..maxPage)}",
+                            label = "<"
+                        )
+                    primaryButton(
+                        customId = "${buttonPrefix}_month-point_${page.coerceIn(1..maxPage)}",
+                        label = "PAGE $page / $maxPage",
+                        emoji = Emoji.fromUnicode("\uD83D\uDD04")
                     )
-                primaryButton(
-                    customId = "${buttonPrefix}_month-point_${page.coerceIn(1..maxPage)}",
-                    label = "PAGE $page / $maxPage",
-                    emoji = Emoji.fromUnicode("\uD83D\uDD04")
-                )
-                if (page < maxPage)
-                    secondaryButton(
-                        customId = "${buttonPrefix}_month-point_${page.plus(1).coerceIn(1..maxPage)}",
-                        label = ">"
-                    )
+                    if (page < maxPage)
+                        secondaryButton(
+                            customId = "${buttonPrefix}_month-point_${page.plus(1).coerceIn(1..maxPage)}",
+                            label = ">"
+                        )
+                }
+        }
+    }
+
+    private fun getAllPointRankMessage(
+        eventCaller: User,
+        guildId: Long,
+        page: Int,
+    ): InlineMessage<*>.() -> Unit = result@{
+        require(page >= 1)
+        // size = 30
+        val (userList, count) = mahjongStatService.getAllPointRank(
+            guildId = guildId,
+            n = 30,
+            offset = (page - 1) * 30L,
+        )
+        val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
+
+        val userListWithId = runBlocking {
+            suspendTransaction {
+                userList.associateWith { user -> user.totalStat.userId }
             }
+        }
+
+        return@result container {
+            mentions { user(eventCaller) }
+            accentColor = Color.GRAY
+
+            text("### 포인트 순위표")
+            text("-# 전체 기록 범위")
+            text("-# 요청자 : ${eventCaller.asMention}")
+            separator { spacing = Spacing.LARGE }
+            text("**순위**\t**포인트**\t\t\t\t\t\t**플레이어**")
+            separator { spacing = Spacing.SMALL }
+            text {
+                content = buildString {
+                    for ((user, userId) in userListWithId) {
+                        appendLine("${user.umaRank}\\.\t\t**${"%+,.1f".format(user.totalUmaSum)}**\t\t\t\t\t<@${userId}>")
+                    }
+                }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
+            }
+            separator { spacing = Spacing.LARGE }
+            if (maxPage > 0)
+                actionRow {
+                    if (page > 1)
+                        secondaryButton(
+                            customId = "${buttonPrefix}_all-point_${page.minus(1).coerceIn(1..maxPage)}",
+                            label = "<"
+                        )
+                    primaryButton(
+                        customId = "${buttonPrefix}_all-point_${page.coerceIn(1..maxPage)}",
+                        label = "PAGE $page / $maxPage",
+                        emoji = Emoji.fromUnicode("\uD83D\uDD04")
+                    )
+                    if (page < maxPage)
+                        secondaryButton(
+                            customId = "${buttonPrefix}_all-point_${page.plus(1).coerceIn(1..maxPage)}",
+                            label = ">"
+                        )
+                }
+        }
+    }
+
+    private fun getMonthGameCountRankMessage(
+        eventCaller: User,
+        guildId: Long,
+        yearMonth: YearMonth,
+        page: Int,
+    ): InlineMessage<*>.() -> Unit = result@{
+        require(page >= 1)
+        // size = 30
+        val (userList, count) = mahjongStatService.getMonthGameCountRank(
+            guildId = guildId,
+            n = 30,
+            offset = (page - 1) * 30L,
+            yearMonth = yearMonth,
+        )
+        val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
+
+        val userListWithId = runBlocking {
+            suspendTransaction {
+                userList.associateWith { user -> user.totalStat.userId }
+            }
+        }
+
+        return@result container {
+            mentions { user(eventCaller) }
+            accentColor = Color.GRAY
+
+            text("### 대국수 순위표")
+            text("-# $yearMonth 범위")
+            text("-# 요청자 : ${eventCaller.asMention}")
+            separator { spacing = Spacing.LARGE }
+            text("**순위**\t**대국수**\t\t\t\t\t\t**플레이어**")
+            separator { spacing = Spacing.SMALL }
+            text {
+                content = buildString {
+                    for ((user, userId) in userListWithId) {
+                        appendLine("${user.gameCountRank}\\.\t\t**${"%,d".format(user.totalGameCount)}**\t\t\t\t\t<@${userId}>")
+                    }
+                }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
+            }
+            separator { spacing = Spacing.LARGE }
+            if (maxPage > 0)
+                actionRow {
+                    if (page > 1)
+                        secondaryButton(
+                            customId = "${buttonPrefix}_month-game-count_${page.minus(1).coerceIn(1..maxPage)}",
+                            label = "<"
+                        )
+                    primaryButton(
+                        customId = "${buttonPrefix}_month-game-count_${page.coerceIn(1..maxPage)}",
+                        label = "PAGE $page / $maxPage",
+                        emoji = Emoji.fromUnicode("\uD83D\uDD04")
+                    )
+                    if (page < maxPage)
+                        secondaryButton(
+                            customId = "${buttonPrefix}_month-game-count_${page.plus(1).coerceIn(1..maxPage)}",
+                            label = ">"
+                        )
+                }
+        }
+    }
+
+    private fun getAllGameCountRankMessage(
+        eventCaller: User,
+        guildId: Long,
+        page: Int,
+    ): InlineMessage<*>.() -> Unit = result@{
+        require(page >= 1)
+        // size = 30
+        val (userList, count) = mahjongStatService.getAllGameCountRank(
+            guildId = guildId,
+            n = 30,
+            offset = (page - 1) * 30L,
+        )
+        val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
+
+        val userListWithId = runBlocking {
+            suspendTransaction {
+                userList.associateWith { user -> user.totalStat.userId }
+            }
+        }
+
+        return@result container {
+            mentions { user(eventCaller) }
+            accentColor = Color.GRAY
+
+            text("### 대국수 순위표")
+            text("-# 전체 기록 범위")
+            text("-# 요청자 : ${eventCaller.asMention}")
+            separator { spacing = Spacing.LARGE }
+            text("**순위**\t**대국수**\t\t\t\t\t\t**플레이어**")
+            separator { spacing = Spacing.SMALL }
+            text {
+                content = buildString {
+                    for ((user, userId) in userListWithId) {
+                        appendLine("${user.gameCountRank}\\.\t\t**${"%,d".format(user.totalGameCount)}**\t\t\t\t\t<@${userId}>")
+                    }
+                }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
+            }
+            separator { spacing = Spacing.LARGE }
+            if (maxPage > 0)
+                actionRow {
+                    if (page > 1)
+                        secondaryButton(
+                            customId = "${buttonPrefix}_month-game-count_${page.minus(1).coerceIn(1..maxPage)}",
+                            label = "<"
+                        )
+                    primaryButton(
+                        customId = "${buttonPrefix}_month-game-count_${page.coerceIn(1..maxPage)}",
+                        label = "PAGE $page / $maxPage",
+                        emoji = Emoji.fromUnicode("\uD83D\uDD04")
+                    )
+                    if (page < maxPage)
+                        secondaryButton(
+                            customId = "${buttonPrefix}_month-game-count_${page.plus(1).coerceIn(1..maxPage)}",
+                            label = ">"
+                        )
+                }
         }
     }
 }
