@@ -1,6 +1,7 @@
 package dev.kuro9.application.discord.slash
 
 import dev.kuro9.application.discord.service.DiscordUserNameService
+import dev.kuro9.domain.mahjong.core.annotation.MahjongInternalApi
 import dev.kuro9.domain.mahjong.core.dto.MahjongGameDetailInput
 import dev.kuro9.domain.mahjong.core.enums.MahjongLogType
 import dev.kuro9.domain.mahjong.core.enums.MahjongSeki
@@ -62,6 +63,7 @@ import java.io.File
 import java.math.RoundingMode
 import javax.imageio.ImageIO
 import kotlin.time.Clock
+import kotlin.time.measureTime
 
 @Component
 class SlashMahjongCommand(
@@ -160,6 +162,11 @@ class SlashMahjongCommand(
                 }
             }
         }
+
+        group("admin", "기타 관리를 위한 명령어입니다.") {
+            restrict(guild = true, Permission.ADMINISTRATOR)
+            subcommand("stat-refresh", "통계 재계산")
+        }
     }
 
     private val buttonPrefix = "mj_button"
@@ -191,6 +198,10 @@ class SlashMahjongCommand(
                     "month" -> return recordRankMonth(event, deferReply)
                     "all" -> return recordRankAll(event, deferReply)
                 }
+
+                "admin" -> when (event.subcommandName) {
+                    "stat-refresh" -> return internalStatRefresh(event, deferReply)
+                }
             }
 
             throw NotImplementedError("Unknown command=${event.fullCommandName}")
@@ -199,6 +210,32 @@ class SlashMahjongCommand(
             deferReply.await().editOriginalEmbeds(getDefaultExceptionEmbed(t)).await()
             return
         }
+    }
+
+    @OptIn(MahjongInternalApi::class)
+    private suspend fun internalStatRefresh(
+        event: SlashCommandInteractionEvent,
+        deferReply: Deferred<InteractionHook>
+    ) {
+        if (event.user.idLong != 400579163959853056L) {
+            Embed {
+                title = "403 Forbidden"
+                color = Color.RED.rgb
+            }.let { deferReply.await().editOriginalEmbeds(it).await() }
+            return
+        }
+
+        val duration = measureTime {
+            withContext(Dispatchers.IO) {
+                mahjongStatService.calculateInitial()
+            }
+        }
+
+        Embed {
+            title = "200 OK"
+            description = "Job completed in $duration."
+            color = Color.GREEN.rgb
+        }.let { deferReply.await().editOriginalEmbeds(it).await() }
     }
 
     override suspend fun handleButtonInteraction(event: ButtonInteractionEvent) {
