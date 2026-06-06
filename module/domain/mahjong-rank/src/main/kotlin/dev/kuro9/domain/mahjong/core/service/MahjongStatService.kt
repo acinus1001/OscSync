@@ -10,6 +10,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.YearMonth
 import kotlinx.datetime.yearMonth
 import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.dao.load
 import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.select
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 import java.math.BigDecimal
+import kotlin.time.measureTime
 
 @Service
 @Transactional(readOnly = true)
@@ -87,6 +89,76 @@ class MahjongStatService {
         )
 
         info { "rank pre-calculation completed" }
+    }
+
+    fun getMonthPointRank(
+        guildId: Long,
+        n: Int,
+        offset: Long,
+        yearMonth: YearMonth,
+    ): Pair<List<MahjongMonthStatEntity>, Long> {
+        val query = MahjongMonthStats.innerJoin(MahjongTotalStats)
+            .select(MahjongMonthStats.columns)
+            .where { MahjongTotalStats.guildId eq guildId }
+            .andWhere { MahjongMonthStats.yearMonth eq yearMonth }
+            .orderBy(MahjongMonthStats.umaRank to SortOrder.ASC)
+        return query.limit(n).offset(offset).map {
+            MahjongMonthStatEntity.wrapRow(it).load(MahjongMonthStatEntity::totalStat)
+        } to query.count()
+    }
+
+    fun getAllPointRank(
+        guildId: Long,
+        n: Int,
+        offset: Long,
+    ): Pair<List<MahjongMonthStatEntity>, Long> {
+        val query = MahjongMonthStats.innerJoin(MahjongTotalStats)
+            .select(MahjongMonthStats.columns)
+            .where { MahjongTotalStats.guildId eq guildId }
+            .orderBy(MahjongMonthStats.umaRank to SortOrder.ASC)
+        return query
+            .limit(n)
+            .offset(offset)
+            .map {
+                MahjongMonthStatEntity.wrapRow(it).load(MahjongMonthStatEntity::totalStat)
+            } to query.count()
+    }
+
+    fun getMonthGameCountRank(
+        guildId: Long,
+        n: Int,
+        offset: Long,
+        yearMonth: YearMonth,
+    ): Pair<List<MahjongMonthStatEntity>, Long> {
+        val query = MahjongMonthStats.innerJoin(MahjongTotalStats)
+            .select(MahjongMonthStats.columns)
+            .where { MahjongTotalStats.guildId eq guildId }
+            .andWhere { MahjongMonthStats.yearMonth eq yearMonth }
+            .orderBy(MahjongMonthStats.gameCountRank to SortOrder.ASC)
+        return query
+            .limit(n)
+            .offset(offset)
+            .map {
+                MahjongMonthStatEntity.wrapRow(it).load(MahjongMonthStatEntity::totalStat)
+            } to query.count()
+    }
+
+    fun getAllGameCountRank(
+        guildId: Long,
+        n: Int,
+        offset: Long,
+    ): Pair<List<MahjongMonthStatEntity>, Long> {
+        val query = MahjongMonthStats.innerJoin(MahjongTotalStats)
+            .select(MahjongMonthStats.columns)
+            .where { MahjongTotalStats.guildId eq guildId }
+            .orderBy(MahjongMonthStats.gameCountRank to SortOrder.ASC)
+
+        return query
+            .limit(n)
+            .offset(offset)
+            .map {
+                MahjongMonthStatEntity.wrapRow(it).load(MahjongMonthStatEntity::totalStat)
+            } to query.count()
     }
 
     // 유저 스탯 계산
@@ -211,5 +283,33 @@ class MahjongStatService {
             .orderBy(MahjongMonthStats.gameCountRank to SortOrder.DESC)
             .map(MahjongMonthStatEntity::wrapRow)
             .forEachIndexed { i, entity -> entity.gameCountRank = i + 1 }
+    }
+
+    // 초기 통계 적재용 메소드
+    private fun calculateInitial() {
+        info { "initializing mahjong stat" }
+        val guildIdList = MahjongGames.select(MahjongGames.guildId).distinct().map { it[MahjongGames.guildId] }
+        info { "guild count: ${guildIdList.size}" }
+
+        val time = measureTime {
+            for (guildId in guildIdList) {
+                info { "processing guildId: $guildId" }
+                val userIdAndYearMonthList = MahjongGameResults.innerJoin(MahjongGames)
+                    .select(MahjongGameResults.userId, MahjongGames.createdAt)
+                    .where { MahjongGames.guildId eq guildId }
+                    .map { it[MahjongGameResults.userId] to it[MahjongGames.createdAt].date.yearMonth }
+
+                info { "data count: ${userIdAndYearMonthList.size}" }
+                info { "processing calculateUserStat" }
+                for ((userId, yearMonth) in userIdAndYearMonthList) {
+                    calculateUserStat(userId, guildId, yearMonth)
+                }
+                info { "processing calculateRank" }
+                for (yearMonth in userIdAndYearMonthList.map { it.second }.distinct()) {
+                    calculateRank(guildId, yearMonth)
+                }
+            }
+        }
+        info { "job end. duration = $time" }
     }
 }

@@ -40,6 +40,7 @@ import net.dv8tion.jda.api.components.separator.Separator.Spacing
 import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -144,8 +145,20 @@ class SlashMahjongCommand(
 
         group("rank", "마작 기록을 통한 서버 내 순위를 확인합니다.") {
             restrict(guild = true)
-            subcommand("month", "월별 서버 내 순위를 확인합니다.")
-            subcommand("all", "전체 기간에 대한 서버 내 순위를 확인합니다.")
+            subcommand("month", "월별 서버 내 순위를 확인합니다.") {
+                option<Int>("type", "확인할 순위표 종류를 선택. 기본값=포인트(구 우마)", required = false) {
+                    choice("포인트(구 우마)", 0)
+                    choice("대국수", 1)
+                }
+                option<Int>("year", "확인할 년도 선택. 기본값=현재", required = false)
+                option<Int>("month", "확인할 월 선택. 기본값=현재", required = false)
+            }
+            subcommand("all", "전체 기간에 대한 서버 내 순위를 확인합니다.") {
+                option<Int>("type", "확인할 순위표 종류를 선택. 기본값=포인트(구 우마)", required = false) {
+                    choice("포인트(구 우마)", 0)
+                    choice("대국수", 1)
+                }
+            }
         }
     }
 
@@ -667,9 +680,26 @@ class SlashMahjongCommand(
     }
 
     private suspend fun recordRankMonth(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+        val type = event.getOption("type")?.asInt ?: 0
         val year = event.getOption("year")?.asInt ?: LocalDate.now().year
         val month = event.getOption("month")?.asInt ?: LocalDate.now().month.number
-        TODO()
+
+        val messageEditData = when (type) {
+            0 -> MessageEdit(
+                useComponentsV2 = true,
+                builder = getMonthPointRankMessage(event.user, event.guild!!.idLong, YearMonth(year, month), 1)
+            )
+
+            else -> {
+                throw NotImplementedError("대응되지 않은 타입입니다. type=$type")
+            }
+        }
+
+
+        deferReply
+            .await()
+            .editOriginal(messageEditData)
+            .await()
     }
 
     private suspend fun recordRankAll(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
@@ -1420,4 +1450,64 @@ class SlashMahjongCommand(
                 }
             }
         }
+
+    private fun getMonthPointRankMessage(
+        eventCaller: User,
+        guildId: Long,
+        yearMonth: YearMonth,
+        page: Int,
+    ): InlineMessage<*>.() -> Unit = result@{
+        require(page >= 1)
+        // size = 30
+        val (userList, count) = mahjongStatService.getMonthPointRank(
+            guildId = guildId,
+            n = 30,
+            offset = (page - 1) * 30L,
+            yearMonth = yearMonth,
+        )
+        val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
+
+        val userListWithId = runBlocking {
+            suspendTransaction {
+                userList.associateWith { user -> user.totalStat.userId }
+            }
+        }
+
+        return@result container {
+            mentions { user(eventCaller) }
+            accentColor = Color.GRAY
+
+            text("### 포인트 순위표")
+            text("-# $yearMonth 범위")
+            text("-# 요청자 : ${eventCaller.asMention}")
+            separator { spacing = Spacing.LARGE }
+            text("**순위**\t**포인트**\t\t\t\t\t\t**플레이어**")
+            separator { spacing = Spacing.SMALL }
+            text {
+                content = buildString {
+                    for ((user, userId) in userListWithId) {
+                        appendLine("${user.umaRank}\\.\t\t**${"%+,.1f".format(user.totalUmaSum)}**\t\t\t\t\t<@${userId}>")
+                    }
+                }
+            }
+            separator { spacing = Spacing.LARGE }
+            actionRow {
+                if (page > 1)
+                    secondaryButton(
+                        customId = "${buttonPrefix}_month-point_${page.minus(1).coerceIn(1..maxPage)}",
+                        label = "<"
+                    )
+                primaryButton(
+                    customId = "${buttonPrefix}_month-point_${page.coerceIn(1..maxPage)}",
+                    label = "PAGE $page / $maxPage",
+                    emoji = Emoji.fromUnicode("\uD83D\uDD04")
+                )
+                if (page < maxPage)
+                    secondaryButton(
+                        customId = "${buttonPrefix}_month-point_${page.plus(1).coerceIn(1..maxPage)}",
+                        label = ">"
+                    )
+            }
+        }
+    }
 }
