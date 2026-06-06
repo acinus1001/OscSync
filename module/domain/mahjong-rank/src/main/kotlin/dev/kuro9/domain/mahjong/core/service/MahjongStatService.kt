@@ -1,13 +1,12 @@
 package dev.kuro9.domain.mahjong.core.service
 
 import dev.kuro9.domain.database.between
-import dev.kuro9.domain.database.exists
+import dev.kuro9.domain.mahjong.core.annotation.MahjongInternalApi
 import dev.kuro9.domain.mahjong.core.event.MahjongRankEvent
 import dev.kuro9.domain.mahjong.core.repository.*
 import dev.kuro9.multiplatform.common.date.util.now
 import dev.kuro9.multiplatform.common.date.util.toRangeOfMonth
 import io.github.harryjhin.slf4j.extension.info
-import jakarta.annotation.PostConstruct
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.YearMonth
 import kotlinx.datetime.yearMonth
@@ -16,7 +15,6 @@ import org.jetbrains.exposed.v1.dao.load
 import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.upsert
 import org.jetbrains.exposed.v1.jdbc.upsertReturning
 import org.springframework.scheduling.annotation.Async
@@ -289,7 +287,9 @@ class MahjongStatService {
     }
 
     // 초기 통계 적재용 메소드
-    private fun calculateInitial() {
+    @Transactional
+    @MahjongInternalApi
+    fun calculateInitial() {
         info { "initializing mahjong stat" }
         val guildIdList = MahjongGames.select(MahjongGames.guildId).distinct().map { it[MahjongGames.guildId] }
         info { "guild count: ${guildIdList.size}" }
@@ -314,20 +314,5 @@ class MahjongStatService {
             }
         }
         info { "job end. duration = $time" }
-    }
-
-    @PostConstruct
-    private fun init() {
-        // stat 테이블이 비어있을 경우 초기화 시도
-        transaction {
-            val isExists = MahjongTotalStats.select(intLiteral(1)).exists()
-            if (isExists) {
-                info { "stat data already exists. skip procedure" }
-                return@transaction
-            }
-
-            info { "stat data does not exist. start procedure" }
-            calculateInitial()
-        }
     }
 }
