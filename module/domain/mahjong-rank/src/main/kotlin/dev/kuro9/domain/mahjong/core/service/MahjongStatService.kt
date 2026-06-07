@@ -304,7 +304,7 @@ class MahjongStatService {
 
                 info { "data count: ${userIdAndYearMonthList.size}" }
                 info { "processing calculateUserStat" }
-                for ((userId, yearMonth) in userIdAndYearMonthList) {
+                for ((userId, yearMonth) in userIdAndYearMonthList.distinct()) {
                     calculateUserStat(userId, guildId, yearMonth)
                 }
                 info { "processing calculateRank" }
