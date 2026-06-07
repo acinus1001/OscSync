@@ -1589,9 +1589,9 @@ class SlashMahjongCommand(
         )
         val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId = runBlocking {
+        val userListWithId: List<Pair<MahjongMonthStatEntity, Long>> = runBlocking {
             suspendTransaction {
-                userList.associateWith { user -> user.totalStat.userId }
+                userList.map { user -> user to user.totalStat.userId }
             }
         }
 
@@ -1648,9 +1648,9 @@ class SlashMahjongCommand(
         )
         val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId = runBlocking {
+        val userListWithId: List<Pair<MahjongMonthStatEntity, Long>> = runBlocking {
             suspendTransaction {
-                userList.associateWith { user -> user.totalStat.userId }
+                userList.map { user -> user to user.totalStat.userId }
             }
         }
 
@@ -1709,9 +1709,9 @@ class SlashMahjongCommand(
         )
         val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId = runBlocking {
+        val userListWithId: List<Pair<MahjongMonthStatEntity, Long>> = runBlocking {
             suspendTransaction {
-                userList.associateWith { user -> user.totalStat.userId }
+                userList.map { user -> user to user.totalStat.userId }
             }
         }
 
@@ -1772,9 +1772,9 @@ class SlashMahjongCommand(
         )
         val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId = runBlocking {
+        val userListWithId: List<Pair<MahjongMonthStatEntity, Long>> = runBlocking {
             suspendTransaction {
-                userList.associateWith { user -> user.totalStat.userId }
+                userList.map { user -> user to user.totalStat.userId }
             }
         }
 
