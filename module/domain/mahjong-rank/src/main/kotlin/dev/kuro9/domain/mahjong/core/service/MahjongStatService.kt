@@ -291,7 +291,7 @@ class MahjongStatService {
     @MahjongInternalApi
     fun calculateInitial() {
         info { "initializing mahjong stat" }
-        val guildIdList = MahjongGames.select(MahjongGames.guildId).distinct().map { it[MahjongGames.guildId] }
+        val guildIdList = MahjongGames.select(MahjongGames.guildId).withDistinct(true).map { it[MahjongGames.guildId] }
         info { "guild count: ${guildIdList.size}" }
 
         val time = measureTime {
@@ -301,10 +301,11 @@ class MahjongStatService {
                     .select(MahjongGameResults.userId, MahjongGames.createdAt)
                     .where { MahjongGames.guildId eq guildId }
                     .map { it[MahjongGameResults.userId] to it[MahjongGames.createdAt].date.yearMonth }
+                    .distinct()
 
                 info { "data count: ${userIdAndYearMonthList.size}" }
                 info { "processing calculateUserStat" }
-                for ((userId, yearMonth) in userIdAndYearMonthList.distinct()) {
+                for ((userId, yearMonth) in userIdAndYearMonthList) {
                     calculateUserStat(userId, guildId, yearMonth)
                 }
                 info { "processing calculateRank" }
