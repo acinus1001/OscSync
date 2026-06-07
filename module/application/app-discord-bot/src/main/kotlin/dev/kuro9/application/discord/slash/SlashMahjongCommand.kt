@@ -1285,7 +1285,7 @@ class SlashMahjongCommand(
 
         if (game == null) {
             event.replyEmbeds(Embed {
-                title = "404 Not Found";
+                title = "404 Not Found"
                 description =
                     "해당 게임을 찾을 수 없습니다. 이미 삭제되었거나 외부에서 변경되었을 경우일 수 있습니다."
                 color = Color.RED.rgb
@@ -1309,7 +1309,7 @@ class SlashMahjongCommand(
 
         if (!event.member!!.hasPermission(Permission.ADMINISTRATOR) && game.updatableUntil < LocalDateTime.now()) {
             event.replyEmbeds(Embed {
-                title = "403 Forbidden";
+                title = "403 Forbidden"
                 description = "대국 수정 기간이 만료되었습니다. 관리자에게 문의해 주세요."
                 color = Color.RED.rgb
             }).setEphemeral(true).await()
@@ -1648,9 +1648,9 @@ class SlashMahjongCommand(
         )
         val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId: List<Pair<MahjongMonthStatEntity, Long>> = runBlocking {
+        val userListWithId: List<Pair<MahjongTotalStatEntity, Long>> = runBlocking {
             suspendTransaction {
-                userList.map { user -> user to user.totalStat.userId }
+                userList.map { user -> user to user.userId }
             }
         }
 
@@ -1772,9 +1772,9 @@ class SlashMahjongCommand(
         )
         val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId: List<Pair<MahjongMonthStatEntity, Long>> = runBlocking {
+        val userListWithId: List<Pair<MahjongTotalStatEntity, Long>> = runBlocking {
             suspendTransaction {
-                userList.map { user -> user to user.totalStat.userId }
+                userList.map { user -> user to user.userId }
             }
         }
 

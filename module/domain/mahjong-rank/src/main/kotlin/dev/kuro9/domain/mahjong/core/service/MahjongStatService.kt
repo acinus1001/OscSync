@@ -112,17 +112,14 @@ class MahjongStatService {
         guildId: Long,
         n: Int,
         offset: Long,
-    ): Pair<List<MahjongMonthStatEntity>, Long> {
-        val query = MahjongMonthStats.innerJoin(MahjongTotalStats)
-            .select(MahjongMonthStats.columns)
+    ): Pair<List<MahjongTotalStatEntity>, Long> {
+        val query = MahjongTotalStats.select(MahjongTotalStats.columns)
             .where { MahjongTotalStats.guildId eq guildId }
-            .orderBy(MahjongMonthStats.umaRank to SortOrder.ASC)
+            .orderBy(MahjongTotalStats.umaRank to SortOrder.ASC)
         return query
             .limit(n)
             .offset(offset)
-            .map {
-                MahjongMonthStatEntity.wrapRow(it).load(MahjongMonthStatEntity::totalStat)
-            } to query.count()
+            .map { MahjongTotalStatEntity.wrapRow(it) } to query.count()
     }
 
     fun getMonthGameCountRank(
@@ -148,18 +145,15 @@ class MahjongStatService {
         guildId: Long,
         n: Int,
         offset: Long,
-    ): Pair<List<MahjongMonthStatEntity>, Long> {
-        val query = MahjongMonthStats.innerJoin(MahjongTotalStats)
-            .select(MahjongMonthStats.columns)
+    ): Pair<List<MahjongTotalStatEntity>, Long> {
+        val query = MahjongTotalStats.select(MahjongTotalStats.columns)
             .where { MahjongTotalStats.guildId eq guildId }
-            .orderBy(MahjongMonthStats.gameCountRank to SortOrder.ASC)
+            .orderBy(MahjongTotalStats.gameCountRank to SortOrder.ASC)
 
         return query
             .limit(n)
             .offset(offset)
-            .map {
-                MahjongMonthStatEntity.wrapRow(it).load(MahjongMonthStatEntity::totalStat)
-            } to query.count()
+            .map { MahjongTotalStatEntity.wrapRow(it) } to query.count()
     }
 
     // 유저 스탯 계산
