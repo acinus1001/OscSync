@@ -26,14 +26,21 @@ fun MahjongLayout(
         Nav(attrs = {
             style {
                 width(200.px)
-                backgroundColor(Color("#2c3e50"))
+                backgroundColor(Color("#2d2d2d"))
                 display(DisplayStyle.Flex)
                 flexDirection(FlexDirection.Column)
                 padding(10.px)
-                gap(10.px)
+                gap(5.px)
+                property("border-right", "1px solid #444")
             }
         }) {
-            H3 { Text("서버: $serverId") }
+            H3(attrs = {
+                style {
+                    fontSize(1.2.em)
+                    marginBottom(15.px)
+                    paddingLeft(10.px)
+                }
+            }) { Text("마작 메뉴") }
 
             MahjongMenuItem("대국 기록", routeState.nowPage is Route.Services.MahjongRecords) {
                 routeState.navigate(Route.Services.MahjongRecords(serverId))
@@ -41,7 +48,7 @@ fun MahjongLayout(
             MahjongMenuItem("통계", routeState.nowPage is Route.Services.MahjongStats) {
                 routeState.navigate(Route.Services.MahjongStats(serverId))
             }
-            MahjongMenuItem("랭킹", routeState.nowPage is Route.Services.MahjongRanks) {
+            MahjongMenuItem("순위", routeState.nowPage is Route.Services.MahjongRanks) {
                 routeState.navigate(Route.Services.MahjongRanks(serverId))
             }
         }
@@ -68,11 +75,18 @@ private fun MahjongMenuItem(
     Div(attrs = {
         onClick { onClick() }
         style {
-            padding(10.px)
-            if (isSelected) backgroundColor(Color("#34495e"))
+            padding(10.px, 15.px)
+            if (isSelected) {
+                backgroundColor(Color("#3e444a"))
+                fontWeight("bold")
+                color(Color("#3498db"))
+            } else {
+                color(Color("#adb5bd"))
+            }
             cursor("pointer")
             borderRadius(4.px)
-            // Hover 효과는 복잡하므로 여기서는 생략하거나 인라인 스타일로 처리
+
+            property("transition", "background-color 0.2s")
         }
     }) {
         Text(text)

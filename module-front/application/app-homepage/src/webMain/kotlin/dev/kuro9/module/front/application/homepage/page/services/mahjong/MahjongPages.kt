@@ -67,7 +67,15 @@ fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
                                 }) {
                                     Text(record.createdAt.date.toString())
                                 }
-                                Td(attrs = { style { padding(8.px); border(1.px, LineStyle.Solid, Color("#444")) } }) {
+                                Td(attrs = {
+                                    style {
+                                        padding(8.px); border(
+                                        1.px,
+                                        LineStyle.Solid,
+                                        Color("#444")
+                                    )
+                                    }
+                                }) {
                                     Div(attrs = {
                                         style {
                                             display(DisplayStyle.Flex)
