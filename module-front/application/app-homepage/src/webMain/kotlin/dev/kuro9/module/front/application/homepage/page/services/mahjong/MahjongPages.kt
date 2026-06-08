@@ -1,11 +1,19 @@
 package dev.kuro9.module.front.application.homepage.page.services.mahjong
 
 import androidx.compose.runtime.*
+import dev.kuro9.module.front.application.homepage.network.DiscordNameApiService
 import dev.kuro9.module.front.application.homepage.network.MahjongApiService
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
+import dev.kuro9.multiplatform.common.types.app.homepage.common.DiscordIdAndName
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPagingResult
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongRecord
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.datetime.toLocalDate
+import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.disabled
+import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
@@ -13,15 +21,29 @@ import org.koin.compose.koinInject
 @Composable
 fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
     val mahjongApiService: MahjongApiService = koinInject()
+    val discordNameApiService: DiscordNameApiService = koinInject()
+    val mahjongViewModel: MahjongViewModel = koinInject()
+    val searchState = mahjongViewModel.state
+
     val scope = rememberCoroutineScope()
     var result by remember { mutableStateOf<MahjongPagingResult<MahjongRecord>?>(null) }
     var page by remember { mutableStateOf(1) }
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(serverId, page) {
+    var autocompleteList by remember { mutableStateOf<List<DiscordIdAndName>>(emptyList()) }
+    var isAutocompleteOpen by remember { mutableStateOf(false) }
+    var autocompleteJob by remember { mutableStateOf<Job?>(null) }
+
+    LaunchedEffect(serverId, page, searchState.searchStartDate, searchState.searchEndDate, searchState.searchUserId) {
         isLoading = true
         try {
-            result = mahjongApiService.getAllRecords(serverId.toLong(), page)
+            result = mahjongApiService.getAllRecords(
+                guildId = serverId.toLong(),
+                page = page,
+                start = searchState.searchStartDate,
+                endInclusive = searchState.searchEndDate,
+                userId = searchState.searchUserId
+            )
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
@@ -31,6 +53,179 @@ fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
 
     MahjongLayout(serverId, routeState) {
         H2 { Text("대국 기록 ($serverId)") }
+
+        // 검색 필터 UI
+        Div(attrs = {
+            style {
+                display(DisplayStyle.Flex)
+                flexDirection(FlexDirection.Column)
+                gap(10.px)
+                marginBottom(20.px)
+                padding(15.px)
+                backgroundColor(Color("#333"))
+                property("border", "1px solid #444")
+            }
+        }) {
+            Div(attrs = {
+                style {
+                    display(DisplayStyle.Flex)
+                    alignItems(AlignItems.Center)
+                    gap(15.px)
+                    flexWrap(FlexWrap.Wrap)
+                }
+            }) {
+                // 시작일
+                Div {
+                    Label {
+                        Text("시작일: ")
+                        Input(type = InputType.Date, attrs = {
+                            value(searchState.searchStartDate?.toString() ?: "")
+                            onInput {
+                                val value = it.value
+                                searchState.searchStartDate = if (value.isBlank()) null else value.toLocalDate()
+                                page = 1
+                            }
+                            style {
+                                backgroundColor(Color("#444"))
+                                color(Color("#f1f1f1"))
+                                border(1.px, LineStyle.Solid, Color("#555"))
+                                padding(5.px)
+                            }
+                        })
+                    }
+                }
+
+                // 종료일
+                Div {
+                    Label {
+                        Text("종료일: ")
+                        Input(type = InputType.Date, attrs = {
+                            value(searchState.searchEndDate?.toString() ?: "")
+                            onInput {
+                                val value = it.value
+                                searchState.searchEndDate = if (value.isBlank()) null else value.toLocalDate()
+                                page = 1
+                            }
+                            style {
+                                backgroundColor(Color("#444"))
+                                color(Color("#f1f1f1"))
+                                border(1.px, LineStyle.Solid, Color("#555"))
+                                padding(5.px)
+                            }
+                        })
+                    }
+                }
+
+                // 유저 검색 (Autocomplete)
+                Div(attrs = {
+                    style {
+                        position(Position.Relative)
+                        display(DisplayStyle.Flex)
+                        alignItems(AlignItems.Center)
+                        gap(5.px)
+                    }
+                }) {
+                    Text("유저: ")
+                    Input(type = InputType.Text, attrs = {
+                        placeholder("이름으로 검색...")
+                        value(searchState.searchUserName)
+                        onInput {
+                            val keyword = it.value
+                            searchState.searchUserName = keyword
+                            if (keyword.isBlank()) {
+                                searchState.searchUserId = null
+                                autocompleteList = emptyList()
+                                isAutocompleteOpen = false
+                                page = 1
+                                return@onInput
+                            }
+
+                            autocompleteJob?.cancel()
+                            autocompleteJob = scope.launch {
+                                delay(500)
+                                try {
+                                    autocompleteList = discordNameApiService.searchNames(keyword)
+                                    isAutocompleteOpen = autocompleteList.isNotEmpty()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        }
+                        style {
+                            backgroundColor(Color("#444"))
+                            color(Color("#f1f1f1"))
+                            border(1.px, LineStyle.Solid, Color("#555"))
+                            padding(5.px)
+                        }
+                    })
+
+                    if (searchState.searchUserId != null) {
+                        Button(attrs = {
+                            onClick {
+                                searchState.searchUserId = null
+                                searchState.searchUserName = ""
+                                page = 1
+                            }
+                            style {
+                                backgroundColor(Color("#e74c3c"))
+                                color(Color("#ffffff"))
+                                border(0.px)
+                                padding(5.px, 10.px)
+                                cursor("pointer")
+                            }
+                        }) { Text("초기화") }
+                    }
+
+                    // Autocomplete Dropdown
+                    if (isAutocompleteOpen) {
+                        Ul(attrs = {
+                            style {
+                                position(Position.Absolute)
+                                property("top", "100%")
+                                left(45.px) // "유저: " 텍스트 너비 고려
+                                right(0.px)
+                                backgroundColor(Color("#222"))
+                                property("z-index", "2000")
+                                property("border", "1px solid #555")
+                                property("list-style", "none")
+                                padding(0.px)
+                                margin(0.px)
+                                maxHeight(200.px)
+                                overflowY("auto")
+                            }
+                        }) {
+                            autocompleteList.forEach { user ->
+                                Li(attrs = {
+                                    onClick {
+                                        searchState.searchUserId = user.id
+                                        searchState.searchUserName = user.name
+                                        isAutocompleteOpen = false
+                                        page = 1
+                                    }
+                                    onMouseEnter {
+                                        (it.target as? org.w3c.dom.HTMLElement)?.style?.backgroundColor = "#444"
+                                    }
+                                    onMouseLeave {
+                                        (it.target as? org.w3c.dom.HTMLElement)?.style?.backgroundColor =
+                                            if (searchState.searchUserId == user.id) "#444" else "transparent"
+                                    }
+                                    style {
+                                        padding(8.px, 12.px)
+                                        cursor("pointer")
+                                        property("border-bottom", "1px solid #444")
+                                        if (searchState.searchUserId == user.id) {
+                                            backgroundColor(Color("#444"))
+                                        }
+                                    }
+                                }) {
+                                    Text(user.name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         if (isLoading) {
             P { Text("로딩 중...") }

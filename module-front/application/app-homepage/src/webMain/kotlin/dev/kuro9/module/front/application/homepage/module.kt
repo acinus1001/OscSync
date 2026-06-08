@@ -1,9 +1,6 @@
 package dev.kuro9.module.front.application.homepage
 
-import dev.kuro9.module.front.application.homepage.network.AuthResourceApiService
-import dev.kuro9.module.front.application.homepage.network.AuthResourceManageApiService
-import dev.kuro9.module.front.application.homepage.network.IotApiService
-import dev.kuro9.module.front.application.homepage.network.MahjongApiService
+import dev.kuro9.module.front.application.homepage.network.*
 import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongViewModel
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.module.front.application.homepage.state.user.UserState
@@ -25,5 +22,6 @@ val module = module {
     singleOf(::AuthResourceApiService)
     singleOf(::AuthResourceManageApiService)
     singleOf(::MahjongApiService)
+    singleOf(::DiscordNameApiService)
     singleOf(::MahjongViewModel)
 }
