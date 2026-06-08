@@ -13,5 +13,6 @@ data class DiscordGuild(
     val owner: Boolean,
 ) {
     val iconUrl: String? get() = icon?.let { "https://cdn.discordapp.com/icons/$id/$it.png" }
+    val idLong: Long get() = id.toLong()
 }
 // 필요한거 있을때 문서보고 추가하기 바람. 너무 많다..

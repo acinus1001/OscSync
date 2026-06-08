@@ -22,6 +22,7 @@ class HomepageBackendSecurityConfig {
             action.apply {
                 authorize("/health", permitAll)
                 authorize("/names/search", authenticated)
+                authorize("/common/info/guilds/bulk", authenticated)
 
                 authorize("/webhook/smartapp", permitAll)
 

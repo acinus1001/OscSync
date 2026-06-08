@@ -6,6 +6,7 @@ import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.SizedIterable
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.upsert
@@ -48,4 +49,10 @@ class DiscordBotGuildService {
     }
 
     fun findGuildsByBotIdList(botId: Long) = findGuildsByBotId(botId).toList()
+
+    fun findGuildsByBotIdAndGuildIdList(botId: Long, guildIdList: List<Long>): List<DiscordBotJoinedGuildEntity> {
+        return DiscordBotJoinedGuildEntity.find {
+            (DiscordBotJoinedGuilds.botId eq botId) and (DiscordBotJoinedGuilds.guildId inList guildIdList)
+        }.toList()
+    }
 }
