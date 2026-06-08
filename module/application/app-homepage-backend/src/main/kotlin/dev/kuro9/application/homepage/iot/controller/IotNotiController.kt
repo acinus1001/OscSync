@@ -24,7 +24,11 @@ class IotNotiController(
 
         notiService.addEmitter(emitter)
 
-        notiService.send("test", "test")
+        try {
+            emitter.send(SseEmitter.event().name("connect").data("connected"))
+        } catch (e: Exception) {
+            emitter.completeWithError(e)
+        }
 
         return emitter
     }

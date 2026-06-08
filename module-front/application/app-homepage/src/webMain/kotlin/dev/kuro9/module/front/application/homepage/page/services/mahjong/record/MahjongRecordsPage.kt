@@ -1,8 +1,12 @@
-package dev.kuro9.module.front.application.homepage.page.services.mahjong
+package dev.kuro9.module.front.application.homepage.page.services.mahjong.record
 
 import androidx.compose.runtime.*
 import dev.kuro9.module.front.application.homepage.network.DiscordNameApiService
 import dev.kuro9.module.front.application.homepage.network.MahjongApiService
+import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongLayout
+import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongState
+import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongViewModel
+import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.multiplatform.common.types.app.homepage.common.DiscordIdAndName
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPagingResult
@@ -377,7 +381,7 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
                                     Button(attrs = {
                                         onClick {
                                             routeState.navigate(
-                                                dev.kuro9.module.front.application.homepage.state.route.Route.Services.MahjongRecordDetail(
+                                                Route.Services.MahjongRecordDetail(
                                                     serverId,
                                                     record.id.toString()
                                                 )
@@ -418,37 +422,5 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun MahjongStatsPage(serverId: Long, routeState: RouteViewModel) {
-    MahjongLayout(serverId, routeState) {
-        H2 { Text("통계 ($serverId)") }
-        P { Text("서버 통계가 여기에 표시됩니다.") }
-    }
-}
-
-@Composable
-fun MahjongRanksPage(serverId: Long, routeState: RouteViewModel) {
-    MahjongLayout(serverId, routeState) {
-        H2 { Text("랭킹 ($serverId)") }
-        P { Text("유저 랭킹이 여기에 표시됩니다.") }
-    }
-}
-
-@Composable
-fun MahjongRecordDetailPage(serverId: Long, recordId: String, routeState: RouteViewModel) {
-    MahjongLayout(serverId, routeState) {
-        H2 { Text("대국 상세 기록 ($serverId - $recordId)") }
-        P { Text("대국 ID $recordId 에 대한 상세 정보가 여기에 표시됩니다.") }
-    }
-}
-
-@Composable
-fun MahjongUserStatsPage(serverId: Long, userId: String, routeState: RouteViewModel) {
-    MahjongLayout(serverId, routeState) {
-        H2 { Text("사용자 통계 ($serverId - $userId)") }
-        P { Text("사용자 $userId 에 대한 상세 통계가 여기에 표시됩니다.") }
     }
 }
