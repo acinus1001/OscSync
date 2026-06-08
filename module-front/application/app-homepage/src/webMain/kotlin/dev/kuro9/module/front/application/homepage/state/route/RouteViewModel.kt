@@ -39,6 +39,16 @@ sealed class Route(val path: String) {
     sealed interface Services {
         object ROOT : Route("/services"), Services
         object IOT : Route("/services/iot"), Services
+        object MAHJONG : Route("/services/mahjong"), Services
+        class MahjongServer(val serverId: String) : Route("/services/mahjong/guilds/$serverId"), Services
+        class MahjongRecords(val serverId: String) : Route("/services/mahjong/guilds/$serverId/records"), Services
+        class MahjongStats(val serverId: String) : Route("/services/mahjong/guilds/$serverId/stats"), Services
+        class MahjongRanks(val serverId: String) : Route("/services/mahjong/guilds/$serverId/ranks"), Services
+        class MahjongRecordDetail(val serverId: String, val recordId: String) :
+            Route("/services/mahjong/guilds/$serverId/records/$recordId"), Services
+
+        class MahjongUserStats(val serverId: String, val userId: String) :
+            Route("/services/mahjong/guilds/$serverId/stats/$userId"), Services
     }
 
     sealed interface Admin {
@@ -60,8 +70,34 @@ sealed class Route(val path: String) {
             }
 
             when {
-                path.startsWith("/services") -> when (path) {
-                    "/services/iot" -> return Services.IOT
+                path.startsWith("/services") -> {
+                    if (path == "/services/iot") return Services.IOT
+                    if (path == "/services/mahjong") return Services.MAHJONG
+
+                    val mahjongRegex =
+                        Regex("^/services/mahjong/guilds/([^/]+)(?:/(records|stats|ranks)(?:/([^/]+))?)?/?$")
+                    val matchResult = mahjongRegex.find(path)
+
+                    if (matchResult != null) {
+                        val serverId = matchResult.groupValues[1]
+                        val subPath = matchResult.groupValues[2]
+                        val detailId = matchResult.groupValues[3]
+
+                        return when (subPath) {
+                            "records" -> {
+                                if (detailId.isNotEmpty()) Services.MahjongRecordDetail(serverId, detailId)
+                                else Services.MahjongRecords(serverId)
+                            }
+
+                            "stats" -> {
+                                if (detailId.isNotEmpty()) Services.MahjongUserStats(serverId, detailId)
+                                else Services.MahjongStats(serverId)
+                            }
+
+                            "ranks" -> Services.MahjongRanks(serverId)
+                            else -> Services.MahjongServer(serverId)
+                        }
+                    }
                 }
 
                 path.startsWith("/admin") -> when (path) {

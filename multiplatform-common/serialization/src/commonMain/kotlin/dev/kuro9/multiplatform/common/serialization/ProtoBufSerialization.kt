@@ -6,5 +6,5 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.protobuf.ProtoBuf
 
 val protoBuf = ProtoBuf {
-    this.encodeDefaults = true
+    this.encodeDefaults = false
 }

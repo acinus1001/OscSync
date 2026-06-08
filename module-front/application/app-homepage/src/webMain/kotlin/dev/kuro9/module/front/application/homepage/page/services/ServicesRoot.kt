@@ -5,6 +5,9 @@ import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.module.front.application.homepage.state.user.UserState
 import kotlinx.browser.window
+import org.jetbrains.compose.web.css.Color
+import org.jetbrains.compose.web.css.color
+import org.jetbrains.compose.web.css.cursor
 import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
 
@@ -33,6 +36,20 @@ fun ServicesRoot(routeState: RouteViewModel) {
                 }
             }) {
                 Text("${if (userState.hasIotRule()) "" else "[권한 필요] "}내방 조명 스위치")
+            }
+        }
+        Li {
+            A(attrs = {
+                onClick {
+                    routeState.navigate(Route.Services.MAHJONG)
+                }
+                style {
+                    cursor("pointer")
+                    property("text-decoration", "underline")
+                    color(Color("#3498db"))
+                }
+            }) {
+                Text("마작")
             }
         }
     }

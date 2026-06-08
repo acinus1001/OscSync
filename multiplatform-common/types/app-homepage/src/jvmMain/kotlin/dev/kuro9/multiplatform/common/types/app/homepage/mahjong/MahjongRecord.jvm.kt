@@ -16,7 +16,7 @@ fun MahjongRecord.UserScore.Companion.of(
         rank = rank,
         score = score,
         seki = seki,
-        pointDeltaStringified = pointDelta.toString(),
+        pointDeltaStringified = "%+,.1f".format(pointDelta),
         userName = userName
     )
 }
