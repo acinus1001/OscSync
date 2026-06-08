@@ -50,6 +50,7 @@ dependencies {
     implementation(projects.module.domain.chessCom)
     implementation(projects.module.domain.inquiry)
     implementation(projects.module.domain.mahjongRank)
+    implementation(projects.module.domain.discordName)
 
     implementation(projects.multiplatformCommon.types.smartthings)
 }

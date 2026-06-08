@@ -53,6 +53,7 @@ class CacheConfig {
         return RedisCacheManagerBuilderCustomizer { builder ->
 //            builder.withCacheConfiguration("example", typedCacheConfiguration<String>())
             builder.withCacheConfiguration("cache-discord-name", jdkCacheConfiguration(Duration.ZERO))
+            builder.withCacheConfiguration("cache-discord-search", jdkCacheConfiguration(Duration.ZERO))
 
             builder.withCacheConfiguration("smartapp-registered-devices", jdkCacheConfiguration(24.hours))
             builder.withCacheConfiguration("ai-master-memory-list", jdkCacheConfiguration(10.minutes))
