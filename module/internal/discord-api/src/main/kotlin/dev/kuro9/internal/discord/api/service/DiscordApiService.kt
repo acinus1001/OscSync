@@ -6,6 +6,7 @@ import dev.kuro9.internal.discord.api.exception.DiscordApiException
 import dev.kuro9.internal.discord.api.resource.DiscordApiResource
 import dev.kuro9.multiplatform.common.network.httpClient
 import dev.kuro9.multiplatform.common.serialization.minifyJson
+import dev.kuro9.multiplatform.common.types.discord.api.DiscordGuild
 import dev.kuro9.multiplatform.common.types.discord.api.DiscordGuildMember
 import io.github.harryjhin.slf4j.extension.info
 import io.ktor.client.call.*
@@ -74,6 +75,36 @@ class DiscordApiService(
     @Throws(DiscordApiException::class)
     suspend fun getGuildMemberInfo(guildId: Long, userId: Long): DiscordGuildMember = handleRateLimit {
         httpClient.get(DiscordApiResource.Guild.Member(guildId = guildId, userId = userId))
+    }
+
+    /**
+     * @param before 페이지네이션용. 주어진 guildId보다 이전인 리스트 가져오기.
+     * @param after 페이지네이션용. 주어진 guildId보다 이후인 리스트 가져오기.
+     * @param userToken 사용자 oauth2 토큰. null 시 bot 모드로 동작.
+     */
+    @Throws(DiscordApiException::class)
+    suspend fun getMyGuildList(
+        before: String? = null,
+        after: String? = null,
+        userToken: String? = null,
+    ): List<DiscordGuild> {
+        return when (userToken) {
+            null -> {
+                // bot mode
+                handleRateLimit {
+                    httpClient.get(DiscordApiResource.User.Me.Guilds())
+                }
+            }
+
+            else -> {
+                // user mode, no rate limit
+                httpClient.get(DiscordApiResource.User.Me.Guilds()) {
+                    headers {
+                        set("Authorization", "Bearer $userToken")
+                    }
+                }
+            }
+        }.body()
     }
 
     @Throws(DiscordApiException::class)

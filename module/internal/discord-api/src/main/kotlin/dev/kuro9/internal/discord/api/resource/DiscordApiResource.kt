@@ -22,4 +22,20 @@ class DiscordApiResource {
             )
         }
     }
+
+    @Resource("users")
+    class User(
+        val parent: DiscordApiResource = DiscordApiResource(),
+    ) {
+        @Resource("@me")
+        class Me(val parent: User = User()) {
+            @Resource("guilds")
+            class Guilds(
+                val parent: Me = Me(),
+                val before: String? = null,
+                val after: String? = null,
+                val limit: Int = 200, // [1, 200]
+            )
+        }
+    }
 }
