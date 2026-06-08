@@ -52,14 +52,14 @@ fun IotRoot() = requireAnyAuthority("AUTHORITY_HOMEPAGE_IOT") { isLoading ->
         )
 
         eventSource.onmessage = { event ->
-            println(event.data.toString())
             val deviceEvent = minifyJson.decodeFromString<SmartAppDeviceEvent>(event.data.toString())
+            println("device event: $deviceEvent")
             deviceStates[deviceEvent.deviceId] = deviceEvent.state
         }
 
         eventSource.onerror = { event ->
             println(event)
-
+            println("sse error")
             // todo 서버 끊겼다는 인디케이터 표시
         }
 
