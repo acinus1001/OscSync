@@ -1,14 +1,13 @@
 package dev.kuro9.domain.member.auth.config
 
 import dev.kuro9.domain.member.auth.filter.TokenAuthFilter
+import dev.kuro9.domain.member.auth.handler.CustomLogoutSuccessHandler
 import dev.kuro9.domain.member.auth.interfaces.AuthorizeHttpRequestHandler
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2UserService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseCookie
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.invoke
@@ -17,12 +16,9 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
-import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.toJavaDuration
 
 @Configuration
 @EnableWebSecurity
@@ -35,7 +31,8 @@ class OAuth2LoginSecurityConfig {
         oAuth2SuccessHandler: AuthenticationSuccessHandler,
         tokenAuthFilter: TokenAuthFilter,
         cookieConfigProperties: CookieConfigProperties,
-        authorizeHandlerList: List<AuthorizeHttpRequestHandler>
+        authorizeHandlerList: List<AuthorizeHttpRequestHandler>,
+        customLogoutSuccessHandler: CustomLogoutSuccessHandler,
     ): SecurityFilterChain {
         http {
             csrf { disable() }
@@ -47,30 +44,7 @@ class OAuth2LoginSecurityConfig {
             logout {
                 logoutUrl = "/users/me/logout"
                 logoutSuccessUrl = "/"
-                logoutSuccessHandler = { _, response, _ ->
-                    HttpStatusReturningLogoutSuccessHandler()
-                    val expiredAccessTokenCookie = ResponseCookie.from("accessToken", "")
-                        .httpOnly(true)
-                        .secure(cookieConfigProperties.secure)
-                        .domain(cookieConfigProperties.domain)
-                        .sameSite("Lax")
-                        .path("/")
-                        .maxAge(0.seconds.toJavaDuration())
-                        .build()
-
-                    val expiredRefreshTokenCookie = ResponseCookie.from("refreshToken", "")
-                        .httpOnly(true)
-                        .secure(cookieConfigProperties.secure)
-                        .domain(cookieConfigProperties.domain)
-                        .sameSite("Lax")
-                        .path("/")
-                        .maxAge(0.seconds.toJavaDuration())
-                        .build()
-
-                    response.addHeader(HttpHeaders.SET_COOKIE, expiredAccessTokenCookie.toString())
-                    response.addHeader(HttpHeaders.SET_COOKIE, expiredRefreshTokenCookie.toString())
-                    response.status = HttpStatus.OK.value()
-                }
+                logoutSuccessHandler = customLogoutSuccessHandler
             }
             sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }
             authorizeHttpRequests {
