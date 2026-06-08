@@ -75,9 +75,15 @@ fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
                 }
             }) {
                 // 시작일
-                Div {
+                Div(attrs = {
+                    style {
+                        display(DisplayStyle.Flex)
+                        alignItems(AlignItems.Center)
+                        gap(5.px)
+                    }
+                }) {
                     Label {
-                        Text("시작일: ")
+                        run { Text("시작일: ") }
                         Input(type = InputType.Date, attrs = {
                             value(searchState.searchStartDate?.toString() ?: "")
                             onInput {
@@ -93,12 +99,34 @@ fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
                             }
                         })
                     }
+                    if (searchState.searchStartDate != null) {
+                        Button(attrs = {
+                            onClick {
+                                searchState.searchStartDate = null
+                                page = 1
+                            }
+                            style {
+                                backgroundColor(Color("#e74c3c"))
+                                color(Color("#ffffff"))
+                                border(0.px)
+                                padding(5.px, 10.px)
+                                cursor("pointer")
+                                fontSize(0.8.em)
+                            }
+                        }) { Text("X") }
+                    }
                 }
 
                 // 종료일
-                Div {
+                Div(attrs = {
+                    style {
+                        display(DisplayStyle.Flex)
+                        alignItems(AlignItems.Center)
+                        gap(5.px)
+                    }
+                }) {
                     Label {
-                        Text("종료일: ")
+                        run { Text("종료일: ") }
                         Input(type = InputType.Date, attrs = {
                             value(searchState.searchEndDate?.toString() ?: "")
                             onInput {
@@ -113,6 +141,22 @@ fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
                                 padding(5.px)
                             }
                         })
+                    }
+                    if (searchState.searchEndDate != null) {
+                        Button(attrs = {
+                            onClick {
+                                searchState.searchEndDate = null
+                                page = 1
+                            }
+                            style {
+                                backgroundColor(Color("#e74c3c"))
+                                color(Color("#ffffff"))
+                                border(0.px)
+                                padding(5.px, 10.px)
+                                cursor("pointer")
+                                fontSize(0.8.em)
+                            }
+                        }) { Text("X") }
                     }
                 }
 
