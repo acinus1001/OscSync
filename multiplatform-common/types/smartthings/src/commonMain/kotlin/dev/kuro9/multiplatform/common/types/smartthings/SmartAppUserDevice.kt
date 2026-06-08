@@ -13,4 +13,8 @@ data class SmartAppUserDevice(
     val deviceName: String,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
-) : PlatformSerializable
+) : PlatformSerializable {
+    companion object {
+        private const val serialVersionUID: Long = 8817991241381851624L
+    }
+}
