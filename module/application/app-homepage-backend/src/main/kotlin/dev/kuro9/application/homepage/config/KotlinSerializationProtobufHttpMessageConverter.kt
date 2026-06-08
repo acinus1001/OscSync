@@ -2,6 +2,7 @@ package dev.kuro9.application.homepage.config
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.springframework.http.HttpInputMessage
 import org.springframework.http.HttpOutputMessage
@@ -19,12 +20,13 @@ class KotlinSerializationProtobufHttpMessageConverter(
     protoBuf,
     MediaType.APPLICATION_PROTOBUF
 ) {
+
     override fun canRead(clazz: Class<*>, mediaType: MediaType?): Boolean {
-        return canRead(mediaType)
+        return isProtobufMediaType(mediaType) && super.canRead(clazz, mediaType)
     }
 
     override fun canWrite(clazz: Class<*>, mediaType: MediaType?): Boolean {
-        return canWrite(mediaType)
+        return isProtobufMediaType(mediaType) && super.canWrite(clazz, mediaType)
     }
 
     override fun readInternal(
@@ -32,12 +34,8 @@ class KotlinSerializationProtobufHttpMessageConverter(
         format: ProtoBuf,
         inputMessage: HttpInputMessage
     ): Any {
-        return inputMessage.body.use { inputStream ->
-            inputStream.readAllBytes().let {
-                format.decodeFromByteArray(serializer, it)
-                    ?: throw IllegalStateException("Failed to deserialize protobuf body")
-            }
-        }
+        val bytes = inputMessage.body.readAllBytes()
+        return format.decodeFromByteArray(serializer, bytes) ?: throw SerializationException("null")
     }
 
     override fun writeInternal(
@@ -46,11 +44,13 @@ class KotlinSerializationProtobufHttpMessageConverter(
         format: ProtoBuf,
         outputMessage: HttpOutputMessage
     ) {
-        outputMessage.body.use { outputStream ->
-            val bytes = format.encodeToByteArray(serializer, `object`)
-            outputStream.write(bytes)
-            outputStream.flush() // 버퍼에 남은 잔여 데이터 비우기
-        }
+        val bytes = format.encodeToByteArray(serializer, `object`)
+        outputMessage.body.write(bytes)
+        outputMessage.body.flush()
+    }
+
+    private fun isProtobufMediaType(mediaType: MediaType?): Boolean {
+        return mediaType != null && MediaType.APPLICATION_PROTOBUF.includes(mediaType)
     }
 
 }
