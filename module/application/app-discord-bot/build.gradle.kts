@@ -51,6 +51,7 @@ dependencies {
     implementation(projects.module.domain.inquiry)
     implementation(projects.module.domain.mahjongRank)
     implementation(projects.module.domain.discordName)
+    implementation(projects.module.domain.discordBotGuilds)
 
     implementation(projects.multiplatformCommon.types.smartthings)
 }
