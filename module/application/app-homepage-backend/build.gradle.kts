@@ -18,6 +18,7 @@ dependencies {
     runtimeOnly(libs.aspectj.runtime)
     runtimeOnly(libs.aspectj.weaver)
 
+
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.reactor.kotlin.extensions)
@@ -43,4 +44,5 @@ dependencies {
     implementation(projects.module.domain.smartappUserinfo)
     implementation(projects.module.domain.smartappWebhook)
     implementation(projects.module.domain.mahjongRank)
+    implementation(projects.module.domain.discordName)
 }

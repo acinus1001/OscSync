@@ -21,10 +21,13 @@ class HomepageBackendSecurityConfig {
         override fun applyCustomAuthorize(action: AuthorizeHttpRequestsDsl) {
             action.apply {
                 authorize("/health", permitAll)
+                authorize("/names/search", authenticated)
+
                 authorize("/webhook/smartapp", permitAll)
-                authorize("/services/iot/noti/subscribe", permitAll)
-                authorize("/services/mahjong/**", withAuthority(MemberHomepageAuthority.Mahjong))
+
+//                authorize("/services/iot/noti/subscribe", withAuthority(MemberHomepageAuthority.Iot))
                 authorize("/services/iot/**", withAuthority(MemberHomepageAuthority.Iot))
+                authorize("/services/mahjong/**", authenticated) // 여러 서버에서 이용 가능하게 변경
 
                 authorize("/resources/strings/*", authenticated)
                 authorize("/resources/images/*", authenticated)
