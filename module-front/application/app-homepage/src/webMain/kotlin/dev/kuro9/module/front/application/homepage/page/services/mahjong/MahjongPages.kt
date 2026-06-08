@@ -125,30 +125,66 @@ fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
                         gap(5.px)
                     }
                 }) {
-                    Text("유저: ")
+                    Select(attrs = {
+                        onChange {
+                            searchState.searchMode = MahjongState.SearchMode.valueOf(it.value ?: "NAME")
+                            searchState.searchUserId = null
+                            searchState.searchUserName = ""
+                            autocompleteList = emptyList()
+                            isAutocompleteOpen = false
+                            page = 1
+                        }
+                        style {
+                            backgroundColor(Color("#444"))
+                            color(Color("#f1f1f1"))
+                            border(1.px, LineStyle.Solid, Color("#555"))
+                            padding(5.px)
+                        }
+                    }) {
+                        Option("NAME") {
+                            if (searchState.searchMode == MahjongState.SearchMode.NAME) {
+                                DomSideEffect { it.asDynamic().selected = true }
+                            }
+                            Text("유저 이름")
+                        }
+                        Option("ID") {
+                            if (searchState.searchMode == MahjongState.SearchMode.ID) {
+                                DomSideEffect { it.asDynamic().selected = true }
+                            }
+                            Text("유저 ID")
+                        }
+                    }
+
                     Input(type = InputType.Text, attrs = {
-                        placeholder("이름으로 검색...")
+                        placeholder(if (searchState.searchMode == MahjongState.SearchMode.NAME) "이름으로 검색..." else "ID 직접 입력...")
                         value(searchState.searchUserName)
                         onInput {
                             val keyword = it.value
                             searchState.searchUserName = keyword
-                            if (keyword.isBlank()) {
-                                searchState.searchUserId = null
-                                autocompleteList = emptyList()
-                                isAutocompleteOpen = false
-                                page = 1
-                                return@onInput
-                            }
 
-                            autocompleteJob?.cancel()
-                            autocompleteJob = scope.launch {
-                                delay(500)
-                                try {
-                                    autocompleteList = discordNameApiService.searchNames(keyword)
-                                    isAutocompleteOpen = autocompleteList.isNotEmpty()
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
+                            if (searchState.searchMode == MahjongState.SearchMode.NAME) {
+                                if (keyword.isBlank()) {
+                                    searchState.searchUserId = null
+                                    autocompleteList = emptyList()
+                                    isAutocompleteOpen = false
+                                    page = 1
+                                    return@onInput
                                 }
+
+                                autocompleteJob?.cancel()
+                                autocompleteJob = scope.launch {
+                                    delay(500)
+                                    try {
+                                        autocompleteList = discordNameApiService.searchNames(keyword)
+                                        isAutocompleteOpen = autocompleteList.isNotEmpty()
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                            } else {
+                                // ID 모드
+                                searchState.searchUserId = keyword.toLongOrNull()
+                                page = 1
                             }
                         }
                         style {
@@ -177,12 +213,12 @@ fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
                     }
 
                     // Autocomplete Dropdown
-                    if (isAutocompleteOpen) {
+                    if (searchState.searchMode == MahjongState.SearchMode.NAME && isAutocompleteOpen) {
                         Ul(attrs = {
                             style {
                                 position(Position.Absolute)
                                 property("top", "100%")
-                                left(45.px) // "유저: " 텍스트 너비 고려
+                                left(100.px) // Select 박스 너비 고려
                                 right(0.px)
                                 backgroundColor(Color("#222"))
                                 property("z-index", "2000")

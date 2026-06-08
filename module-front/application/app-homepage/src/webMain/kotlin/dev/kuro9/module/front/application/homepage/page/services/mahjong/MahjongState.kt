@@ -23,6 +23,9 @@ class MahjongState {
     var searchEndDate by mutableStateOf<LocalDate?>(null)
     var searchUserId by mutableStateOf<Long?>(null)
     var searchUserName by mutableStateOf("")
+    var searchMode by mutableStateOf(SearchMode.NAME)
+
+    enum class SearchMode { NAME, ID }
 }
 
 class MahjongViewModel : ViewModel() {

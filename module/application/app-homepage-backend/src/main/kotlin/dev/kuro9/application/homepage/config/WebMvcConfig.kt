@@ -1,6 +1,7 @@
 package dev.kuro9.application.homepage.config
 
 import org.springframework.context.annotation.Configuration
+import org.springframework.format.FormatterRegistry
 import org.springframework.http.converter.HttpMessageConverter
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
@@ -11,5 +12,9 @@ class WebMvcConfig(
 
     override fun configureMessageConverters(converters: MutableList<HttpMessageConverter<*>>) {
         converters.addFirst(protoBufMessageConverter)
+    }
+
+    override fun addFormatters(registry: FormatterRegistry) {
+        registry.addConverter(StringToKotlinxLocalDateConverter())
     }
 }
