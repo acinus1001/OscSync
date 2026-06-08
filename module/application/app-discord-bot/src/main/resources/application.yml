@@ -6,6 +6,8 @@ spring:
       - discord
       - database
       - redis
+server:
+  port: 0
 
 management:
   server:
