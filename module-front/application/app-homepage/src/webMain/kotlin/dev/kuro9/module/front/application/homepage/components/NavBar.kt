@@ -17,6 +17,11 @@ import org.koin.compose.koinInject
 fun NavBar() {
     Div(attrs = {
         style {
+            position(Position.Fixed)
+            top(0.px)
+            left(0.px)
+            right(0.px)
+            property("z-index", 1000)
             padding(12.px)
             border {
                 width(1.px)
@@ -27,22 +32,39 @@ fun NavBar() {
             color(Color("#f1f1f1"))
             fontFamily("serif")
             display(DisplayStyle.Flex)
-            justifyContent(JustifyContent.SpaceBetween)
+            justifyContent(JustifyContent.Center) // 컨테이너 내부 중앙 정렬을 위해 변경
             alignItems(AlignItems.Center)
         }
     }) {
-        Logo()
-        NavMenus()
-        UtilButtons()
+        Div(attrs = {
+            style {
+                display(DisplayStyle.Flex)
+                justifyContent(JustifyContent.SpaceBetween)
+                alignItems(AlignItems.Center)
+                width(100.percent)
+                maxWidth(1200.px)
+                property("padding-left", "20px")
+                property("padding-right", "20px")
+            }
+        }) {
+            Logo()
+            NavMenus()
+            UtilButtons()
+        }
     }
 }
 
 @Composable
 private fun Logo() {
+    val routeState: RouteViewModel = koinInject()
     Div(attrs = {
         style {
             flex(1)
             fontSize(24.px)
+            cursor("pointer")
+        }
+        onClick {
+            routeState.navigate(Route.HOME)
         }
     }) {
         Text("kuro9.dev")

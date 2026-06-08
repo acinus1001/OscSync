@@ -21,7 +21,7 @@ fun MahjongLayout(
     Div(attrs = {
         style {
             display(DisplayStyle.Flex)
-            height(100.vh)
+            property("height", "calc(100vh - 80px)")
             color(Color("#f1f1f1"))
         }
     }) {
