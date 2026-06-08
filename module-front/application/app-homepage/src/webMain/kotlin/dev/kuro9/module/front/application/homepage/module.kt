@@ -21,6 +21,7 @@ val module = module {
     singleOf(::IotApiService)
     singleOf(::AuthResourceApiService)
     singleOf(::AuthResourceManageApiService)
+    singleOf(::CommonApiService)
     singleOf(::MahjongApiService)
     singleOf(::DiscordNameApiService)
     singleOf(::MahjongViewModel)

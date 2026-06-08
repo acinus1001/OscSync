@@ -1,6 +1,7 @@
 package dev.kuro9.module.front.application.homepage.page.services.mahjong
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import org.jetbrains.compose.web.css.*
@@ -11,6 +12,10 @@ import org.koin.compose.koinInject
 fun MahjongServerSelectPage(routeState: RouteViewModel) {
     val mahjongViewModel: MahjongViewModel = koinInject()
     val servers = mahjongViewModel.state.servers
+
+    LaunchedEffect(Unit) {
+        mahjongViewModel.updateServers()
+    }
 
     Div(attrs = {
         style {

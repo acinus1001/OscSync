@@ -9,7 +9,7 @@ import org.koin.compose.koinInject
 
 @Composable
 fun MahjongLayout(
-    serverId: String,
+    serverId: Long,
     routeState: RouteViewModel,
     content: @Composable () -> Unit
 ) {

@@ -10,3 +10,12 @@ spring:
   exposed:
     generate-ddl: false
     show-sql: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  exposed:
+    generate-ddl: true
+    show-sql: true

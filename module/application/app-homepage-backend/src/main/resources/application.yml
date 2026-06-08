@@ -5,6 +5,7 @@ spring:
       - database
       - smartapp-webhook
       - redis
+      - dbg # discord-bot-guilds
   servlet:
     multipart:
       max-file-size: 50MB
