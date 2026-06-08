@@ -2,7 +2,12 @@ package dev.kuro9.module.front.application.homepage.page.services
 
 import androidx.compose.runtime.Composable
 import dev.kuro9.module.front.application.homepage.page.services.iot.IotRoot
-import dev.kuro9.module.front.application.homepage.page.services.mahjong.*
+import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongServerSelectPage
+import dev.kuro9.module.front.application.homepage.page.services.mahjong.rank.MahjongRanksPage
+import dev.kuro9.module.front.application.homepage.page.services.mahjong.record.MahjongRecordDetailPage
+import dev.kuro9.module.front.application.homepage.page.services.mahjong.record.MahjongRecordsPage
+import dev.kuro9.module.front.application.homepage.page.services.mahjong.stats.MahjongStatsPage
+import dev.kuro9.module.front.application.homepage.page.services.mahjong.stats.MahjongUserStatsPage
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 

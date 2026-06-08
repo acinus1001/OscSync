@@ -25,7 +25,7 @@ fun App() {
     Div(attrs = {
         style {
             paddingTop(80.px) // NavBar height adjustment
-            maxWidth(1200.px)
+            maxWidth(1400.px)
             property("margin", "0 auto")
             property("padding-left", "20px")
             property("padding-right", "20px")

@@ -42,7 +42,7 @@ fun NavBar() {
                 justifyContent(JustifyContent.SpaceBetween)
                 alignItems(AlignItems.Center)
                 width(100.percent)
-                maxWidth(1200.px)
+                maxWidth(1400.px)
                 property("padding-left", "20px")
                 property("padding-right", "20px")
             }
