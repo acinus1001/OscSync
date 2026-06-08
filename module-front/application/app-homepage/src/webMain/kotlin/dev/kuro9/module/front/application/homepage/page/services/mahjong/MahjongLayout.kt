@@ -1,13 +1,11 @@
 package dev.kuro9.module.front.application.homepage.page.services.mahjong
 
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import org.jetbrains.compose.web.css.*
-import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.H3
-import org.jetbrains.compose.web.dom.Nav
-import org.jetbrains.compose.web.dom.Text
+import org.jetbrains.compose.web.dom.*
+import org.koin.compose.koinInject
 
 @Composable
 fun MahjongLayout(
@@ -15,6 +13,11 @@ fun MahjongLayout(
     routeState: RouteViewModel,
     content: @Composable () -> Unit
 ) {
+    val mahjongViewModel: MahjongViewModel = koinInject()
+    val servers = mahjongViewModel.state.servers
+    val currentServer = servers.find { it.id == serverId }
+    var isDropdownOpen by remember { mutableStateOf(false) }
+
     Div(attrs = {
         style {
             display(DisplayStyle.Flex)
@@ -34,13 +37,129 @@ fun MahjongLayout(
                 property("border-right", "1px solid #444")
             }
         }) {
-            H3(attrs = {
+            // 서버 선택 드롭다운
+            Div(attrs = {
                 style {
-                    fontSize(1.2.em)
+                    position(Position.Relative)
                     marginBottom(15.px)
-                    paddingLeft(10.px)
                 }
-            }) { Text("마작 메뉴") }
+            }) {
+                Div(attrs = {
+                    onClick { isDropdownOpen = !isDropdownOpen }
+                    style {
+                        display(DisplayStyle.Flex)
+                        alignItems(AlignItems.Center)
+                        gap(10.px)
+                        padding(10.px)
+                        backgroundColor(Color("#333"))
+                        property("border", "1px solid #444")
+                        cursor("pointer")
+                        property("user-select", "none")
+                    }
+                }) {
+                    currentServer?.iconUrl?.let {
+                        Img(src = it, attrs = {
+                            style {
+                                width(24.px)
+                                height(24.px)
+                                borderRadius(50.percent)
+                            }
+                        })
+                    } ?: Div(attrs = {
+                        style {
+                            width(24.px)
+                            height(24.px)
+                            borderRadius(50.percent)
+                            backgroundColor(Color("#555"))
+                        }
+                    })
+
+                    Span(attrs = {
+                        style {
+                            flex(1)
+                            overflow("hidden")
+                            property("text-overflow", "ellipsis")
+                            whiteSpace("nowrap")
+                            fontWeight("bold")
+                            fontSize(0.9.em)
+                        }
+                    }) {
+                        Text(currentServer?.name ?: "서버 선택")
+                    }
+
+                    Span(attrs = {
+                        style {
+                            fontSize(0.8.em)
+                            color(Color("#888"))
+                        }
+                    }) { Text(if (isDropdownOpen) "▲" else "▼") }
+                }
+
+                if (isDropdownOpen) {
+                    Div(attrs = {
+                        style {
+                            position(Position.Absolute)
+                            property("top", "100%")
+                            left(0.px)
+                            right(0.px)
+                            backgroundColor(Color("#333"))
+                            property("z-index", "1000")
+                            property("border", "1px solid #444")
+                            property("border-top", "none")
+                            overflow("hidden")
+                        }
+                    }) {
+                        servers.forEach { server ->
+                            Div(attrs = {
+                                onClick {
+                                    isDropdownOpen = false
+                                    if (server.id != serverId) {
+                                        routeState.navigate(Route.Services.MahjongServer(server.id))
+                                    }
+                                }
+                                style {
+                                    display(DisplayStyle.Flex)
+                                    alignItems(AlignItems.Center)
+                                    gap(10.px)
+                                    padding(10.px)
+                                    cursor("pointer")
+                                    if (server.id == serverId) {
+                                        backgroundColor(Color("#444"))
+                                    }
+                                    property("border-bottom", "1px solid #444")
+                                }
+                            }) {
+                                server.iconUrl?.let {
+                                    Img(src = it, attrs = {
+                                        style {
+                                            width(20.px)
+                                            height(20.px)
+                                            borderRadius(50.percent)
+                                        }
+                                    })
+                                } ?: Div(attrs = {
+                                    style {
+                                        width(20.px)
+                                        height(20.px)
+                                        borderRadius(50.percent)
+                                        backgroundColor(Color("#555"))
+                                    }
+                                })
+                                Span(attrs = {
+                                    style {
+                                        fontSize(0.9.em)
+                                        whiteSpace("nowrap")
+                                        overflow("hidden")
+                                        property("text-overflow", "ellipsis")
+                                    }
+                                }) {
+                                    Text(server.name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             MahjongMenuItem("대국 기록", routeState.nowPage is Route.Services.MahjongRecords) {
                 routeState.navigate(Route.Services.MahjongRecords(serverId))

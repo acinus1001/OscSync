@@ -5,18 +5,12 @@ import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
+import org.koin.compose.koinInject
 
 @Composable
 fun MahjongServerSelectPage(routeState: RouteViewModel) {
-    data class MahjongServerInfo(val id: String, val name: String, val iconUrl: String?)
-
-    val servers = listOf(
-        MahjongServerInfo(
-            id = "588993828309041153",
-            name = "test",
-            iconUrl = null
-        )
-    )
+    val mahjongViewModel: MahjongViewModel = koinInject()
+    val servers = mahjongViewModel.state.servers
 
     Div(attrs = {
         style {
