@@ -23,20 +23,18 @@ class IotNotiService {
     }
 
     fun send(message: String, customEventName: String? = null) {
-        val failedEmitters = mutableListOf<SseEmitter>()
-        emitters.forEach { emitter ->
-            try {
-                val event = SseEmitter.event()
-                    .data(message)
-                    .let { if (customEventName != null) it.name(customEventName) else it }
-                emitter.send(event)
-            } catch (e: Exception) {
-                failedEmitters.add(emitter)
+        emitters
+            .filter { emitter ->
+                val result = runCatching {
+                    SseEmitter.event()
+                        .data(message)
+                        .let { if (customEventName != null) it.name(customEventName) else it }
+                        .let { emitter.send(it) }
+                }
+
+                result.isFailure
             }
-        }
-        if (failedEmitters.isNotEmpty()) {
-            emitters.removeAll(failedEmitters)
-        }
+            .let { emitters.removeAll(it) }
     }
 
     @Scheduled(fixedDelay = 30_000L)
