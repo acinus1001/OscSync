@@ -19,7 +19,7 @@ import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
 
 @Composable
-fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
+fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
     val mahjongApiService: MahjongApiService = koinInject()
     val discordNameApiService: DiscordNameApiService = koinInject()
     val mahjongViewModel: MahjongViewModel = koinInject()
@@ -38,7 +38,7 @@ fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
         isLoading = true
         try {
             result = mahjongApiService.getAllRecords(
-                guildId = serverId.toLong(),
+                guildId = serverId,
                 page = page,
                 start = searchState.searchStartDate,
                 endInclusive = searchState.searchEndDate,
@@ -422,7 +422,7 @@ fun MahjongRecordsPage(serverId: String, routeState: RouteViewModel) {
 }
 
 @Composable
-fun MahjongStatsPage(serverId: String, routeState: RouteViewModel) {
+fun MahjongStatsPage(serverId: Long, routeState: RouteViewModel) {
     MahjongLayout(serverId, routeState) {
         H2 { Text("통계 ($serverId)") }
         P { Text("서버 통계가 여기에 표시됩니다.") }
@@ -430,7 +430,7 @@ fun MahjongStatsPage(serverId: String, routeState: RouteViewModel) {
 }
 
 @Composable
-fun MahjongRanksPage(serverId: String, routeState: RouteViewModel) {
+fun MahjongRanksPage(serverId: Long, routeState: RouteViewModel) {
     MahjongLayout(serverId, routeState) {
         H2 { Text("랭킹 ($serverId)") }
         P { Text("유저 랭킹이 여기에 표시됩니다.") }
@@ -438,7 +438,7 @@ fun MahjongRanksPage(serverId: String, routeState: RouteViewModel) {
 }
 
 @Composable
-fun MahjongRecordDetailPage(serverId: String, recordId: String, routeState: RouteViewModel) {
+fun MahjongRecordDetailPage(serverId: Long, recordId: String, routeState: RouteViewModel) {
     MahjongLayout(serverId, routeState) {
         H2 { Text("대국 상세 기록 ($serverId - $recordId)") }
         P { Text("대국 ID $recordId 에 대한 상세 정보가 여기에 표시됩니다.") }
@@ -446,7 +446,7 @@ fun MahjongRecordDetailPage(serverId: String, recordId: String, routeState: Rout
 }
 
 @Composable
-fun MahjongUserStatsPage(serverId: String, userId: String, routeState: RouteViewModel) {
+fun MahjongUserStatsPage(serverId: Long, userId: String, routeState: RouteViewModel) {
     MahjongLayout(serverId, routeState) {
         H2 { Text("사용자 통계 ($serverId - $userId)") }
         P { Text("사용자 $userId 에 대한 상세 통계가 여기에 표시됩니다.") }
