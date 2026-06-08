@@ -2,6 +2,7 @@ package dev.kuro9.application.homepage.security
 
 import dev.kuro9.domain.discord.bot.guilds.config.DiscordBotProperty
 import dev.kuro9.domain.discord.bot.guilds.service.DiscordBotGuildService
+import dev.kuro9.domain.mahjong.core.service.MahjongScoreSettingService
 import dev.kuro9.domain.member.auth.interfaces.AuthorizationSuccessHandler
 import dev.kuro9.domain.member.auth.repository.MemberAuthorities
 import dev.kuro9.domain.member.auth.repository.MemberEntity
@@ -23,6 +24,7 @@ class AuthorizationRoleApplyHandler(
     private val botProperty: DiscordBotProperty,
     private val discordBotGuildService: DiscordBotGuildService,
     private val discordOAuthTokenService: DiscordOAuth2TokenManageService,
+    private val mahjongScoreSettingService: MahjongScoreSettingService,
 ) : AuthorizationSuccessHandler {
 
     @Transactional
@@ -45,6 +47,10 @@ class AuthorizationRoleApplyHandler(
 
                 val mutualIdList =
                     userGuildList.map { it.id.toLong() }.intersect(botGuildList.map { it.guildId }.toSet())
+                        .filter { guildId ->
+                            // save 시 score setting 무조건 생성되므로 세팅 존재하면 마작 기록한 것으로 간주할 수 있음.
+                            mahjongScoreSettingService.hasScoreSettings(guildId)
+                        }
 
                 for (guildId in mutualIdList) {
                     authoritiesToAdd += MemberHomepageAuthority.MahjongGuild(guildId)

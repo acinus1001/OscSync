@@ -1,9 +1,12 @@
 package dev.kuro9.domain.mahjong.core.service
 
+import dev.kuro9.domain.database.exists
 import dev.kuro9.domain.mahjong.core.repository.MahjongScoreSettingEntity
 import dev.kuro9.domain.mahjong.core.repository.MahjongScoreSettings
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.intLiteral
+import org.jetbrains.exposed.v1.jdbc.select
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -66,5 +69,12 @@ class MahjongScoreSettingService {
             this.umaFourth = umaFourth
             this.createdBy = userId
         }
+    }
+
+    @Transactional(readOnly = true)
+    fun hasScoreSettings(guildId: Long): Boolean {
+        return MahjongScoreSettings.select(intLiteral(1))
+            .where { MahjongScoreSettings.guildId eq guildId }
+            .exists()
     }
 }
