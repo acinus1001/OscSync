@@ -14,6 +14,7 @@ import org.springframework.data.redis.cache.RedisCacheManager
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair.fromSerializer
+import org.springframework.data.redis.serializer.StringRedisSerializer
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -53,7 +54,7 @@ class CacheConfig {
         return RedisCacheManagerBuilderCustomizer { builder ->
 //            builder.withCacheConfiguration("example", typedCacheConfiguration<String>())
             builder.withCacheConfiguration("cache-discord-name", jdkCacheConfiguration(Duration.ZERO))
-            builder.withCacheConfiguration("cache-discord-search", jdkCacheConfiguration(Duration.ZERO))
+            builder.withCacheConfiguration("cache-discord-search", stringCacheConfiguration(Duration.ZERO))
 
             builder.withCacheConfiguration("smartapp-registered-devices", jdkCacheConfiguration(24.hours))
             builder.withCacheConfiguration("ai-master-memory-list", jdkCacheConfiguration(10.minutes))
@@ -73,6 +74,15 @@ class CacheConfig {
             .entryTtl(ttl.toJavaDuration())
             .disableCachingNullValues()
             .serializeValuesWith(fromSerializer(JdkSerializationRedisSerializer()))
+
+    }
+
+    private fun stringCacheConfiguration(ttl: Duration): RedisCacheConfiguration {
+
+        return RedisCacheConfiguration.defaultCacheConfig()
+            .entryTtl(ttl.toJavaDuration())
+            .disableCachingNullValues()
+            .serializeValuesWith(fromSerializer(StringRedisSerializer()))
 
     }
 

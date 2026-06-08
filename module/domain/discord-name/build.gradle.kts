@@ -11,5 +11,6 @@ dependencies {
     implementation(libs.spring.boot.starter.redis)
 
     implementation(projects.module.domain.cache)
+    implementation(projects.module.common.logger)
     implementation(projects.multiplatformCommon.strings)
 }

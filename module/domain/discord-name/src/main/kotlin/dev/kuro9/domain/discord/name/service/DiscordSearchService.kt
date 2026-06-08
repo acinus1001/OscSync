@@ -2,6 +2,7 @@ package dev.kuro9.domain.discord.name.service
 
 import dev.kuro9.domain.discord.name.dto.DiscordIdAndName
 import dev.kuro9.multiplatform.common.strings.disassembleHangul
+import io.github.harryjhin.slf4j.extension.info
 import org.springframework.cache.CacheManager
 import org.springframework.cache.get
 import org.springframework.data.domain.Range
@@ -25,20 +26,26 @@ class DiscordSearchService(
     }
 
     fun findByUsername(keyword: String, limit: Int = 10): List<DiscordIdAndName> {
+        if (keyword.isEmpty()) return emptyList()
+
         val disassembledKeyword = disassembleHangul(keyword)
 
-        val lowerBound = Range.Bound.inclusive("[$disassembledKeyword")
-        val upperBound = Range.Bound.inclusive("[${disassembledKeyword}\uffff")
+        val lowerBound = Range.Bound.inclusive(disassembledKeyword)
+        val upperBound = Range.Bound.exclusive("${disassembledKeyword.dropLast(1)}${disassembledKeyword.last() + 1}")
         val range: Range<String> = Range.from(lowerBound).to(upperBound)
         val limit: Limit = Limit.limit().count(limit)
 
+        info { "range : $range" }
+
         val searchResults = redisTemplate.opsForZSet().rangeByLex(SEARCH_KEY, range, limit) ?: emptySet()
+
+        info { "searchResults : $searchResults" }
 
         return searchResults.mapNotNull { item ->
             val parts = item.split("::")
-            if (parts.size != 2) return@mapNotNull null
+            if (parts.size != 3) return@mapNotNull null
 
-            DiscordIdAndName(name = parts[0], id = parts[1].toLong())
+            DiscordIdAndName(name = parts[1], id = parts[2].toLong())
         }
     }
 
