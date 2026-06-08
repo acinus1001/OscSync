@@ -46,4 +46,6 @@ class DiscordBotGuildService {
     fun findGuildsByBotId(botId: Long): SizedIterable<DiscordBotJoinedGuildEntity> {
         return DiscordBotJoinedGuildEntity.find(DiscordBotJoinedGuilds.botId eq botId)
     }
+
+    fun findGuildsByBotIdList(botId: Long) = findGuildsByBotId(botId).toList()
 }

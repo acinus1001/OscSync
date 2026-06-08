@@ -1,8 +1,11 @@
 package dev.kuro9.application.homepage.security
 
+import dev.kuro9.domain.discord.bot.guilds.config.DiscordBotProperty
+import dev.kuro9.domain.discord.bot.guilds.service.DiscordBotGuildService
 import dev.kuro9.domain.member.auth.interfaces.AuthorizationSuccessHandler
 import dev.kuro9.domain.member.auth.repository.MemberAuthorities
 import dev.kuro9.domain.member.auth.repository.MemberEntity
+import dev.kuro9.domain.member.auth.service.DiscordOAuth2TokenManageService
 import dev.kuro9.internal.discord.api.exception.DiscordApiException
 import dev.kuro9.internal.discord.api.service.DiscordApiService
 import dev.kuro9.multiplatform.common.date.util.now
@@ -17,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional
 @Component
 class AuthorizationRoleApplyHandler(
     private val discordApiService: DiscordApiService,
+    private val botProperty: DiscordBotProperty,
+    private val discordBotGuildService: DiscordBotGuildService,
+    private val discordOAuthTokenService: DiscordOAuth2TokenManageService,
 ) : AuthorizationSuccessHandler {
 
     @Transactional
@@ -26,22 +32,23 @@ class AuthorizationRoleApplyHandler(
 
         runBlocking {
 
-            // 마작
+            // 길드별 마작
             run {
-                if (member.authorities.any { it.authority == MemberHomepageAuthority.Mahjong.toString() }) return@run
-
-                val guildMemberInfo = try {
-                    discordApiService.getGuildMemberInfo(guildId = 891599899420946463L, userId = userId)
-                } catch (e: DiscordApiException.NotFound) {
-                    info { "not on guild." }
-                    return@run
+                val userGuildList = try {
+                    val token = discordOAuthTokenService.getToken(userId) ?: return@run
+                    discordApiService.getMyGuildList(userToken = token.accessToken)
                 } catch (e: Exception) {
-                    error(e) { "Failed to get guild member info. userId: $userId" }
+                    error(e) { "Failed to get guild list. userId: $userId" }
                     return@run
                 }
+                val botGuildList = discordBotGuildService.findGuildsByBotIdList(botProperty.id)
 
-                // mahjong 관련 role 검사 등...
-                authoritiesToAdd += MemberHomepageAuthority.Mahjong
+                val mutualIdList =
+                    userGuildList.map { it.id.toLong() }.intersect(botGuildList.map { it.guildId }.toSet())
+
+                for (guildId in mutualIdList) {
+                    authoritiesToAdd += MemberHomepageAuthority.MahjongGuild(guildId)
+                }
             }
 
             // iot

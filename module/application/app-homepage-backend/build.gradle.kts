@@ -45,4 +45,5 @@ dependencies {
     implementation(projects.module.domain.smartappWebhook)
     implementation(projects.module.domain.mahjongRank)
     implementation(projects.module.domain.discordName)
+    implementation(projects.module.domain.discordBotGuilds)
 }

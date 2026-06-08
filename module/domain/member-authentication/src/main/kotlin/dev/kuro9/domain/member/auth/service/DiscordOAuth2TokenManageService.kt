@@ -17,6 +17,15 @@ import org.springframework.transaction.annotation.Transactional
 class DiscordOAuth2TokenManageService(
     private val apiService: DiscordOAuthApiService,
 ) {
+    suspend fun getToken(userId: Long): DiscordOAuthTokenEntity? = suspendTransaction {
+        val token = DiscordOAuthTokenEntity.find { DiscordOAuthTokens.member eq userId }.singleOrNull()
+            ?: return@suspendTransaction null
+        if (token.expiresAt <= LocalDateTime.now()) {
+            return@suspendTransaction refreshToken(userId)
+        }
+
+        return@suspendTransaction token
+    }
 
     suspend fun saveToken(
         userId: Long,

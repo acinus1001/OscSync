@@ -6,6 +6,7 @@ spring:
       - discord
       - database
       - redis
+      - dbg # discord-bot-guilds
 server:
   port: 0
 

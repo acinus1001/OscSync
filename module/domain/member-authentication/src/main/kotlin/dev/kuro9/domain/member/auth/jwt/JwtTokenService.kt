@@ -4,6 +4,7 @@ package dev.kuro9.domain.member.auth.jwt
 
 import dev.kuro9.domain.member.auth.config.JwtTokenConfigProperties
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
+import dev.kuro9.domain.member.auth.repository.MemberAuthorities
 import dev.kuro9.domain.member.auth.repository.MemberEntity
 import dev.kuro9.domain.member.auth.service.RefreshTokenService
 import dev.kuro9.multiplatform.common.date.util.now
@@ -11,6 +12,8 @@ import dev.kuro9.multiplatform.common.date.util.toLocalDateTime
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.SerializationException
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.core.OAuth2Error
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes
@@ -51,7 +54,11 @@ class JwtTokenService(
             name = userDetail.userName,
             iat = now,
             exp = now + accessTokenExpireDuration,
-            scp = authentication.authorities.map { it.authority },
+            scp = MemberAuthorities.select(MemberAuthorities.authority)
+                .where { MemberAuthorities.member eq userDetail.id }
+                .map { it[MemberAuthorities.authority] }
+                .plus(authentication.authorities.map { it.authority })
+                .distinct(),
             avatarUrl = userDetail.avatarUrl,
         )
 

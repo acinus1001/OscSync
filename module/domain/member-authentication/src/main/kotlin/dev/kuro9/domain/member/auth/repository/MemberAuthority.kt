@@ -8,7 +8,7 @@ import org.jetbrains.exposed.v1.dao.LongEntityClass
 import org.jetbrains.exposed.v1.datetime.datetime
 
 object MemberAuthorities : LongIdTable("member_authority") {
-    val authority = varchar("authority", 50)
+    val authority = varchar("authority", 128)
     val createdAt = datetime("created_at")
 
     val member = reference(
