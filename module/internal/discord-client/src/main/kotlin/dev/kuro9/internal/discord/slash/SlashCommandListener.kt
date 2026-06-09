@@ -7,6 +7,7 @@ import dev.kuro9.internal.discord.model.DiscordEventHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.minn.jda.ktx.interactions.commands.updateCommands
 import io.github.harryjhin.slf4j.extension.error
+import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +34,13 @@ internal class SlashCommandListener(
         }) {
             eventPublisher.publishEvent(event)
         }
-        commandMap[event.name]?.handleEvent(event) ?: errorLog("No such command: ${event.fullCommandName}")
+
+        val commandHandler: SlashCommandComponent? = commandMap[event.name]
+        info { "command: ${event.name}, handler: ${commandHandler?.javaClass?.simpleName}" }
+        when (commandHandler) {
+            null -> errorLog("No such command: ${event.fullCommandName}")
+            else -> commandHandler.handleEvent(event)
+        }
     }
 
     override fun initialize(jda: JDA): Unit = jda.run {
