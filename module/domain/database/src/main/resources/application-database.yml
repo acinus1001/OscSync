@@ -9,7 +9,7 @@ spring:
       maximum-pool-size: 24
   exposed:
     generate-ddl: false
-    show-sql: false
+    show-sql: true
 
 ---
 spring:
