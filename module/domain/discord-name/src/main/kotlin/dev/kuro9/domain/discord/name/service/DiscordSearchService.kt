@@ -3,7 +3,6 @@ package dev.kuro9.domain.discord.name.service
 import dev.kuro9.domain.discord.name.dto.DiscordIdAndName
 import dev.kuro9.multiplatform.common.strings.disassembleHangul
 import io.github.harryjhin.slf4j.extension.info
-import jakarta.annotation.PostConstruct
 import org.springframework.cache.CacheManager
 import org.springframework.cache.get
 import org.springframework.data.domain.Range
@@ -121,10 +120,5 @@ class DiscordSearchService(
             }
         }
         println("✅ 캐시 마이그레이션 완료! 총 ${migrationCount}개의 캐시 데이터를 기반으로 [$SEARCH_KEY] ZSet을 새로 생성했습니다.")
-    }
-
-    @PostConstruct
-    fun init() {
-        internalIndexingAllData()
     }
 }
