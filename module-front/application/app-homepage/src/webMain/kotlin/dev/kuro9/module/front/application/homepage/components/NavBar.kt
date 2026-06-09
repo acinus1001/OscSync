@@ -2,6 +2,7 @@ package dev.kuro9.module.front.application.homepage.components
 
 import androidx.compose.runtime.*
 import dev.kuro9.module.front.application.homepage.GlobalStyles
+import dev.kuro9.module.front.application.homepage.state.MobileMenuState
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.module.front.application.homepage.state.user.UserEffect
@@ -140,6 +141,21 @@ private fun MobileMenu(isOpen: Boolean, onClose: () -> Unit) {
         MenuItem(routeState.nowPage == Route.Services.ROOT, "Services") {
             routeState.navigate(Route.Services.ROOT)
             onClose()
+        }
+
+        MobileMenuState.customMenu?.let {
+            Div(attrs = {
+                style {
+                    marginTop(10.px)
+                    marginBottom(10.px)
+                    width(100.percent)
+                    property("border-top", "1px solid #333")
+                    property("border-bottom", "1px solid #333")
+                    padding(10.px, 0.px)
+                }
+            }) {
+                it()
+            }
         }
     }
 

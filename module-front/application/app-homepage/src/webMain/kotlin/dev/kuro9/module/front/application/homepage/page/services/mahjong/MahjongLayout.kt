@@ -1,6 +1,8 @@
 package dev.kuro9.module.front.application.homepage.page.services.mahjong
 
 import androidx.compose.runtime.*
+import dev.kuro9.module.front.application.homepage.GlobalStyles
+import dev.kuro9.module.front.application.homepage.state.MobileMenuState
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import org.jetbrains.compose.web.css.*
@@ -18,23 +20,12 @@ fun MahjongLayout(
     val currentServer = servers.find { it.id == serverId }
     var isDropdownOpen by remember { mutableStateOf(false) }
 
-    Div(attrs = {
-        style {
-            display(DisplayStyle.Flex)
-            property("height", "calc(100vh - 80px)")
-            color(Color("#f1f1f1"))
-        }
-    }) {
-        // 왼쪽 메뉴바
-        Nav(attrs = {
+    val mahjongMenu: @Composable () -> Unit = {
+        Div(attrs = {
             style {
-                width(200.px)
-                backgroundColor(Color("#2d2d2d"))
                 display(DisplayStyle.Flex)
                 flexDirection(FlexDirection.Column)
-                padding(10.px)
                 gap(5.px)
-                property("border-right", "1px solid #444")
             }
         }) {
             // 서버 선택 드롭다운
@@ -170,6 +161,40 @@ fun MahjongLayout(
             MahjongMenuItem("순위", routeState.nowPage is Route.Services.MahjongRanks) {
                 routeState.navigate(Route.Services.MahjongRanks(serverId))
             }
+        }
+    }
+
+    LaunchedEffect(serverId, routeState.nowPage) {
+        MobileMenuState.setMenu(mahjongMenu)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            MobileMenuState.setMenu(null)
+        }
+    }
+
+    Div(attrs = {
+        style {
+            display(DisplayStyle.Flex)
+            property("height", "calc(100vh - 80px)")
+            color(Color("#f1f1f1"))
+        }
+    }) {
+        // 왼쪽 메뉴바
+        Nav(attrs = {
+            classes(GlobalStyles.desktopOnly)
+            style {
+                width(200.px)
+                backgroundColor(Color("#2d2d2d"))
+//                display(DisplayStyle.Flex)
+                flexDirection(FlexDirection.Column)
+                padding(10.px)
+                gap(5.px)
+                property("border-right", "1px solid #444")
+            }
+        }) {
+            mahjongMenu()
         }
 
         // 메인 콘텐츠 영역
