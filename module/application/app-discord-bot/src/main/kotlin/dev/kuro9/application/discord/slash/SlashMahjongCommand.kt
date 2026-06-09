@@ -1573,247 +1573,317 @@ class SlashMahjongCommand(
             }
         }
 
-    private fun getMonthPointRankMessage(
+    private suspend fun <T> getUserListAndMaxPage(
+        userListGetAction: suspend () -> Pair<List<T>, Long>,
+        userIdGetAction: suspend (T) -> Long,
+        size: Int,
+    ): Pair<List<Triple<T, Long, String>>, Int> {
+        val (userList, count) = userListGetAction()
+        val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
+        return run {
+            // 1. 각 유저에 대한 작업을 비동기(async)로 시작합니다.
+            val deferredList = userList.map { user ->
+                coroutineScope {
+                    async {
+                        suspendTransaction {
+                            val userId = userIdGetAction(user)
+                            Triple(
+                                user,
+                                userId,
+                                userNameService.getUserName(userId)
+                            )
+                        }
+                    }
+                }
+            }
+            // 2. 모든 비동기 작업이 완료될 때까지 동시에 기다립니다.
+            deferredList.awaitAll()
+        } to maxPage
+    }
+
+    private suspend fun getMonthPointRankMessage(
         eventCaller: User,
         guildId: Long,
         yearMonth: YearMonth,
         page: Int,
-    ): InlineMessage<*>.() -> Unit = result@{
+    ): InlineMessage<*>.() -> Unit {
         require(page >= 1)
         // size = 30
-        val (userList, count) = mahjongStatService.getMonthPointRank(
-            guildId = guildId,
-            n = 30,
-            offset = (page - 1) * 30L,
-            yearMonth = yearMonth,
+        val (userListWithIdAndName, maxPage) = getUserListAndMaxPage(
+            userListGetAction = {
+                mahjongStatService.getMonthPointRank(
+                    guildId = guildId,
+                    n = 30,
+                    offset = (page - 1) * 30L,
+                    yearMonth = yearMonth,
+                )
+            },
+            userIdGetAction = { it.totalStat.userId },
+            size = 30,
         )
-        val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId: List<Pair<MahjongMonthStatEntity, Long>> = runBlocking {
-            suspendTransaction {
-                userList.map { user -> user to user.totalStat.userId }
-            }
-        }
+        return {
+            container {
+                mentions { user(eventCaller) }
+                accentColor = Color.GRAY
 
-        return@result container {
-            mentions { user(eventCaller) }
-            accentColor = Color.GRAY
-
-            text("### 포인트 순위표")
-            text("-# $yearMonth 범위")
-            text("-# 요청자 : ${eventCaller.asMention}")
-            separator { spacing = Spacing.LARGE }
-            text("**순위**\t**포인트**\t\t\t\t\t\t**플레이어**")
-            separator { spacing = Spacing.SMALL }
-            text {
-                content = buildString {
-                    for ((user, userId) in userListWithId) {
-                        appendLine("${user.umaRank}\\.\t\t**${"%+,.1f".format(user.totalUmaSum)}**\t\t\t\t\t<@${userId}>")
-                    }
-                }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
-            }
-            separator { spacing = Spacing.LARGE }
-            if (maxPage > 0)
-                actionRow {
-                    if (page > 1)
-                        secondaryButton(
-                            customId = "${buttonPrefix}_month-point_${page.minus(1).coerceIn(1..maxPage)}_${yearMonth}",
-                            label = "<"
-                        )
-                    primaryButton(
-                        customId = "${buttonPrefix}_month-point_${page.coerceIn(1..maxPage)}_${yearMonth}",
-                        label = "PAGE $page / $maxPage",
-                        emoji = Emoji.fromUnicode("\uD83D\uDD04")
-                    )
-                    if (page < maxPage)
-                        secondaryButton(
-                            customId = "${buttonPrefix}_month-point_${page.plus(1).coerceIn(1..maxPage)}_${yearMonth}",
-                            label = ">"
-                        )
+                text("### 포인트 순위표")
+                text("-# $yearMonth 범위")
+                text("-# 요청자 : ${eventCaller.asMention}")
+                separator { spacing = Spacing.LARGE }
+                text("**순위**\t**포인트**\t\t\t\t\t\t**플레이어**")
+                separator { spacing = Spacing.SMALL }
+                text {
+                    content = buildString {
+                        for ((user, userId, userName) in userListWithIdAndName) {
+                            appendLine(
+                                "${user.umaRank}\\.\t\t**${"%+,.1f".format(user.totalUmaSum)}**\t\t\t\t\t${
+                                    getUserDeepLink(
+                                        userName,
+                                        userId
+                                    )
+                                }"
+                            )
+                        }
+                    }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
                 }
+                separator { spacing = Spacing.LARGE }
+                if (maxPage > 0)
+                    actionRow {
+                        if (page > 1)
+                            secondaryButton(
+                                customId = "${buttonPrefix}_month-point_${
+                                    page.minus(1).coerceIn(1..maxPage)
+                                }_${yearMonth}",
+                                label = "<"
+                            )
+                        primaryButton(
+                            customId = "${buttonPrefix}_month-point_${page.coerceIn(1..maxPage)}_${yearMonth}",
+                            label = "PAGE $page / $maxPage",
+                            emoji = Emoji.fromUnicode("\uD83D\uDD04")
+                        )
+                        if (page < maxPage)
+                            secondaryButton(
+                                customId = "${buttonPrefix}_month-point_${
+                                    page.plus(1).coerceIn(1..maxPage)
+                                }_${yearMonth}",
+                                label = ">"
+                            )
+                    }
+            }
         }
     }
 
-    private fun getAllPointRankMessage(
+    private suspend fun getAllPointRankMessage(
         eventCaller: User,
         guildId: Long,
         page: Int,
-    ): InlineMessage<*>.() -> Unit = result@{
+    ): InlineMessage<*>.() -> Unit {
         require(page >= 1)
         // size = 30
-        val (userList, count) = mahjongStatService.getAllPointRank(
-            guildId = guildId,
-            n = 30,
-            offset = (page - 1) * 30L,
+
+        val (userListWithIdAndName, maxPage) = getUserListAndMaxPage(
+            userListGetAction = {
+                mahjongStatService.getAllPointRank(
+                    guildId = guildId,
+                    n = 30,
+                    offset = (page - 1) * 30L,
+                )
+            },
+            userIdGetAction = { it.userId },
+            size = 30,
         )
-        val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId: List<Pair<MahjongTotalStatEntity, Long>> = runBlocking {
-            suspendTransaction {
-                userList.map { user -> user to user.userId }
-            }
-        }
+        return {
+            container {
+                mentions { user(eventCaller) }
+                accentColor = Color.GRAY
 
-        return@result container {
-            mentions { user(eventCaller) }
-            accentColor = Color.GRAY
-
-            text("### 포인트 순위표")
-            text("-# 전체 기록 범위")
-            text("-# 요청자 : ${eventCaller.asMention}")
-            separator { spacing = Spacing.LARGE }
-            text("**순위**\t**포인트**\t\t\t\t\t\t**플레이어**")
-            separator { spacing = Spacing.SMALL }
-            text {
-                content = buildString {
-                    for ((user, userId) in userListWithId) {
-                        appendLine("${user.umaRank}\\.\t\t**${"%+,.1f".format(user.totalUmaSum)}**\t\t\t\t\t<@${userId}>")
-                    }
-                }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
-            }
-            separator { spacing = Spacing.LARGE }
-            if (maxPage > 0)
-                actionRow {
-                    if (page > 1)
-                        secondaryButton(
-                            customId = "${buttonPrefix}_all-point_${page.minus(1).coerceIn(1..maxPage)}",
-                            label = "<"
-                        )
-                    primaryButton(
-                        customId = "${buttonPrefix}_all-point_${page.coerceIn(1..maxPage)}",
-                        label = "PAGE $page / $maxPage",
-                        emoji = Emoji.fromUnicode("\uD83D\uDD04")
-                    )
-                    if (page < maxPage)
-                        secondaryButton(
-                            customId = "${buttonPrefix}_all-point_${page.plus(1).coerceIn(1..maxPage)}",
-                            label = ">"
-                        )
+                text("### 포인트 순위표")
+                text("-# 전체 기록 범위")
+                text("-# 요청자 : ${eventCaller.asMention}")
+                separator { spacing = Spacing.LARGE }
+                text("**순위**\t**포인트**\t\t\t\t\t\t**플레이어**")
+                separator { spacing = Spacing.SMALL }
+                text {
+                    content = buildString {
+                        for ((user, userId, userName) in userListWithIdAndName) {
+                            appendLine(
+                                "${user.umaRank}\\.\t\t**${"%+,.1f".format(user.totalUmaSum)}**\t\t\t\t\t${
+                                    getUserDeepLink(
+                                        userName,
+                                        userId
+                                    )
+                                }"
+                            )
+                        }
+                    }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
                 }
+                separator { spacing = Spacing.LARGE }
+                if (maxPage > 0)
+                    actionRow {
+                        if (page > 1)
+                            secondaryButton(
+                                customId = "${buttonPrefix}_all-point_${page.minus(1).coerceIn(1..maxPage)}",
+                                label = "<"
+                            )
+                        primaryButton(
+                            customId = "${buttonPrefix}_all-point_${page.coerceIn(1..maxPage)}",
+                            label = "PAGE $page / $maxPage",
+                            emoji = Emoji.fromUnicode("\uD83D\uDD04")
+                        )
+                        if (page < maxPage)
+                            secondaryButton(
+                                customId = "${buttonPrefix}_all-point_${page.plus(1).coerceIn(1..maxPage)}",
+                                label = ">"
+                            )
+                    }
+            }
         }
     }
 
-    private fun getMonthGameCountRankMessage(
+    private suspend fun getMonthGameCountRankMessage(
         eventCaller: User,
         guildId: Long,
         yearMonth: YearMonth,
         page: Int,
-    ): InlineMessage<*>.() -> Unit = result@{
+    ): InlineMessage<*>.() -> Unit {
         require(page >= 1)
         // size = 30
-        val (userList, count) = mahjongStatService.getMonthGameCountRank(
-            guildId = guildId,
-            n = 30,
-            offset = (page - 1) * 30L,
-            yearMonth = yearMonth,
+
+        val (userListWithIdAndName, maxPage) = getUserListAndMaxPage(
+            userListGetAction = {
+                mahjongStatService.getMonthGameCountRank(
+                    guildId = guildId,
+                    n = 30,
+                    offset = (page - 1) * 30L,
+                    yearMonth = yearMonth,
+                )
+            },
+            userIdGetAction = { it.totalStat.userId },
+            size = 30,
         )
-        val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId: List<Pair<MahjongMonthStatEntity, Long>> = runBlocking {
-            suspendTransaction {
-                userList.map { user -> user to user.totalStat.userId }
-            }
-        }
+        return {
+            container {
+                mentions { user(eventCaller) }
+                accentColor = Color.GRAY
 
-        return@result container {
-            mentions { user(eventCaller) }
-            accentColor = Color.GRAY
-
-            text("### 대국수 순위표")
-            text("-# $yearMonth 범위")
-            text("-# 요청자 : ${eventCaller.asMention}")
-            separator { spacing = Spacing.LARGE }
-            text("**순위**\t**대국수**\t\t\t\t\t\t**플레이어**")
-            separator { spacing = Spacing.SMALL }
-            text {
-                content = buildString {
-                    for ((user, userId) in userListWithId) {
-                        appendLine("${user.gameCountRank}\\.\t\t**${"%,d".format(user.totalGameCount)}**\t\t\t\t\t<@${userId}>")
-                    }
-                }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
-            }
-            separator { spacing = Spacing.LARGE }
-            if (maxPage > 0)
-                actionRow {
-                    if (page > 1)
-                        secondaryButton(
-                            customId = "${buttonPrefix}_month-game-count_${
-                                page.minus(1).coerceIn(1..maxPage)
-                            }_${yearMonth}",
-                            label = "<"
-                        )
-                    primaryButton(
-                        customId = "${buttonPrefix}_month-game-count_${page.coerceIn(1..maxPage)}_${yearMonth}",
-                        label = "PAGE $page / $maxPage",
-                        emoji = Emoji.fromUnicode("\uD83D\uDD04")
-                    )
-                    if (page < maxPage)
-                        secondaryButton(
-                            customId = "${buttonPrefix}_month-game-count_${
-                                page.plus(1).coerceIn(1..maxPage)
-                            }_${yearMonth}",
-                            label = ">"
-                        )
+                text("### 대국수 순위표")
+                text("-# $yearMonth 범위")
+                text("-# 요청자 : ${eventCaller.asMention}")
+                separator { spacing = Spacing.LARGE }
+                text("**순위**\t**대국수**\t\t\t\t\t\t**플레이어**")
+                separator { spacing = Spacing.SMALL }
+                text {
+                    content = buildString {
+                        for ((user, userId, userName) in userListWithIdAndName) {
+                            appendLine(
+                                "${user.gameCountRank}\\.\t\t**${"%,d".format(user.totalGameCount)}**\t\t\t\t\t${
+                                    getUserDeepLink(
+                                        userName,
+                                        userId
+                                    )
+                                }"
+                            )
+                        }
+                    }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
                 }
+                separator { spacing = Spacing.LARGE }
+                if (maxPage > 0)
+                    actionRow {
+                        if (page > 1)
+                            secondaryButton(
+                                customId = "${buttonPrefix}_month-game-count_${
+                                    page.minus(1).coerceIn(1..maxPage)
+                                }_${yearMonth}",
+                                label = "<"
+                            )
+                        primaryButton(
+                            customId = "${buttonPrefix}_month-game-count_${page.coerceIn(1..maxPage)}_${yearMonth}",
+                            label = "PAGE $page / $maxPage",
+                            emoji = Emoji.fromUnicode("\uD83D\uDD04")
+                        )
+                        if (page < maxPage)
+                            secondaryButton(
+                                customId = "${buttonPrefix}_month-game-count_${
+                                    page.plus(1).coerceIn(1..maxPage)
+                                }_${yearMonth}",
+                                label = ">"
+                            )
+                    }
+            }
         }
     }
 
-    private fun getAllGameCountRankMessage(
+    private suspend fun getAllGameCountRankMessage(
         eventCaller: User,
         guildId: Long,
         page: Int,
-    ): InlineMessage<*>.() -> Unit = result@{
+    ): InlineMessage<*>.() -> Unit {
         require(page >= 1)
         // size = 30
-        val (userList, count) = mahjongStatService.getAllGameCountRank(
-            guildId = guildId,
-            n = 30,
-            offset = (page - 1) * 30L,
+
+        val (userListWithIdAndName, maxPage) = getUserListAndMaxPage(
+            userListGetAction = {
+                mahjongStatService.getAllGameCountRank(
+                    guildId = guildId,
+                    n = 30,
+                    offset = (page - 1) * 30L,
+                )
+            },
+            userIdGetAction = { it.userId },
+            size = 30,
         )
-        val maxPage = ((count / 30) + if (count % 30 == 0L) 0 else 1).toInt()
 
-        val userListWithId: List<Pair<MahjongTotalStatEntity, Long>> = runBlocking {
-            suspendTransaction {
-                userList.map { user -> user to user.userId }
-            }
-        }
+        return {
+            container {
+                mentions { user(eventCaller) }
+                accentColor = Color.GRAY
 
-        return@result container {
-            mentions { user(eventCaller) }
-            accentColor = Color.GRAY
-
-            text("### 대국수 순위표")
-            text("-# 전체 기록 범위")
-            text("-# 요청자 : ${eventCaller.asMention}")
-            separator { spacing = Spacing.LARGE }
-            text("**순위**\t**대국수**\t\t\t\t\t\t**플레이어**")
-            separator { spacing = Spacing.SMALL }
-            text {
-                content = buildString {
-                    for ((user, userId) in userListWithId) {
-                        appendLine("${user.gameCountRank}\\.\t\t**${"%,d".format(user.totalGameCount)}**\t\t\t\t\t<@${userId}>")
-                    }
-                }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
-            }
-            separator { spacing = Spacing.LARGE }
-            if (maxPage > 0)
-                actionRow {
-                    if (page > 1)
-                        secondaryButton(
-                            customId = "${buttonPrefix}_month-game-count_${page.minus(1).coerceIn(1..maxPage)}",
-                            label = "<"
-                        )
-                    primaryButton(
-                        customId = "${buttonPrefix}_month-game-count_${page.coerceIn(1..maxPage)}",
-                        label = "PAGE $page / $maxPage",
-                        emoji = Emoji.fromUnicode("\uD83D\uDD04")
-                    )
-                    if (page < maxPage)
-                        secondaryButton(
-                            customId = "${buttonPrefix}_month-game-count_${page.plus(1).coerceIn(1..maxPage)}",
-                            label = ">"
-                        )
+                text("### 대국수 순위표")
+                text("-# 전체 기록 범위")
+                text("-# 요청자 : ${eventCaller.asMention}")
+                separator { spacing = Spacing.LARGE }
+                text("**순위**\t**대국수**\t\t\t\t\t\t**플레이어**")
+                separator { spacing = Spacing.SMALL }
+                text {
+                    content = buildString {
+                        for ((user, userId, userName) in userListWithIdAndName) {
+                            appendLine(
+                                "${user.gameCountRank}\\.\t\t**${"%,d".format(user.totalGameCount)}**\t\t\t\t\t${
+                                    getUserDeepLink(
+                                        userName,
+                                        userId
+                                    )
+                                }"
+                            )
+                        }
+                    }.takeIf { it.isNotBlank() } ?: "-# 데이터가 없습니다."
                 }
+                separator { spacing = Spacing.LARGE }
+                if (maxPage > 0)
+                    actionRow {
+                        if (page > 1)
+                            secondaryButton(
+                                customId = "${buttonPrefix}_month-game-count_${page.minus(1).coerceIn(1..maxPage)}",
+                                label = "<"
+                            )
+                        primaryButton(
+                            customId = "${buttonPrefix}_month-game-count_${page.coerceIn(1..maxPage)}",
+                            label = "PAGE $page / $maxPage",
+                            emoji = Emoji.fromUnicode("\uD83D\uDD04")
+                        )
+                        if (page < maxPage)
+                            secondaryButton(
+                                customId = "${buttonPrefix}_month-game-count_${page.plus(1).coerceIn(1..maxPage)}",
+                                label = ">"
+                            )
+                    }
+            }
         }
     }
+
+    private fun getUserDeepLink(displayName: String, userId: Long): String =
+        "[$displayName](discord://-/users/${userId})"
 }
