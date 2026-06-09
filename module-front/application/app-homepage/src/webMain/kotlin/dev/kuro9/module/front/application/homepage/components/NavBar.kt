@@ -1,7 +1,7 @@
 package dev.kuro9.module.front.application.homepage.components
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
+import dev.kuro9.module.front.application.homepage.GlobalStyles
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.module.front.application.homepage.state.user.UserEffect
@@ -15,6 +15,8 @@ import org.koin.compose.koinInject
 
 @Composable
 fun NavBar() {
+    var isMenuOpen by remember { mutableStateOf(false) }
+
     Div(attrs = {
         style {
             position(Position.Fixed)
@@ -32,7 +34,7 @@ fun NavBar() {
             color(Color("#f1f1f1"))
             fontFamily("serif")
             display(DisplayStyle.Flex)
-            justifyContent(JustifyContent.Center) // 컨테이너 내부 중앙 정렬을 위해 변경
+            justifyContent(JustifyContent.Center)
             alignItems(AlignItems.Center)
         }
     }) {
@@ -47,10 +49,114 @@ fun NavBar() {
                 property("padding-right", "20px")
             }
         }) {
-            Logo()
+            Div(attrs = {
+                style {
+                    display(DisplayStyle.Flex)
+                    alignItems(AlignItems.Center)
+                    gap(16.px)
+                    flex(1)
+                }
+            }) {
+                MenuButton { isMenuOpen = !isMenuOpen }
+                Logo()
+            }
             NavMenus()
             UtilButtons()
         }
+    }
+
+    MobileMenu(isMenuOpen) { isMenuOpen = false }
+}
+
+@Composable
+private fun MenuButton(vararg customClasses: String, onClick: () -> Unit) {
+    Div(attrs = {
+        style {
+            cursor("pointer")
+            fontSize(24.px)
+        }
+//        classes(GlobalStyles.mobileOnly)
+        onClick { onClick() }
+    }) {
+        Text("☰")
+    }
+}
+
+@Composable
+private fun MobileMenu(isOpen: Boolean, onClose: () -> Unit) {
+    val routeState: RouteViewModel = koinInject()
+    Div(attrs = {
+        style {
+            position(Position.Fixed)
+            top(0.px)
+            left(if (isOpen) 0.px else (-100).percent)
+            width(200.px)
+            height(100.vh)
+            backgroundColor(Color("#1e1e1e"))
+            property("z-index", 2000)
+            property("transition", "left 0.3s ease")
+            display(DisplayStyle.Flex)
+            flexDirection(FlexDirection.Column)
+            padding(20.px)
+            gap(10.px)
+            property("border-right", "1px solid #333333")
+        }
+    }) {
+        Div(attrs = {
+            style {
+                display(DisplayStyle.Flex)
+                justifyContent(JustifyContent.FlexEnd)
+                cursor("pointer")
+                fontSize(24.px)
+                marginBottom(20.px)
+            }
+            onClick { onClose() }
+        }) {
+            Text("✕")
+        }
+        Div(attrs = {
+            style {
+                display(DisplayStyle.Flex)
+                flexDirection(FlexDirection.Column) // 세로 정렬
+                alignItems(AlignItems.Start)
+            }
+            onClick { onClose() }
+        }) {
+            UtilButtons()
+        }
+
+        MenuItem(routeState.nowPage == Route.HOME, "Home") {
+            routeState.navigate(Route.HOME)
+            onClose()
+        }
+        MenuItem(routeState.nowPage == Route.ABOUT, "About") {
+            routeState.navigate(Route.ABOUT)
+            onClose()
+        }
+        MenuItem(routeState.nowPage == Route.CONTACT, "Contact") {
+            routeState.navigate(Route.CONTACT)
+            onClose()
+        }
+        MenuItem(routeState.nowPage == Route.Services.ROOT, "Services") {
+            routeState.navigate(Route.Services.ROOT)
+            onClose()
+        }
+    }
+
+    // Overlay
+    if (isOpen) {
+        Div(attrs = {
+            style {
+                position(Position.Fixed)
+                top(0.px)
+                left(0.px)
+                right(0.px)
+                bottom(0.px)
+                backgroundColor(rgba(0, 0, 0, 0.5))
+                property("z-index", 1500)
+            }
+            onClick { onClose() }
+        })
     }
 }
 
@@ -59,7 +165,6 @@ private fun Logo() {
     val routeState: RouteViewModel = koinInject()
     Div(attrs = {
         style {
-            flex(1)
             fontSize(24.px)
             cursor("pointer")
         }
@@ -76,10 +181,10 @@ private fun NavMenus() {
     val routeState: RouteViewModel = koinInject()
     Div(attrs = {
         style {
-            display(DisplayStyle.Flex)
             justifyContent(JustifyContent.Center)
             gap(6.px)
         }
+        classes(GlobalStyles.desktopOnly)
     }) {
         MenuItem(routeState.nowPage == Route.HOME, "Home") { routeState.navigate(Route.HOME) }
         MenuItem(routeState.nowPage == Route.ABOUT, "About") { routeState.navigate(Route.ABOUT) }
