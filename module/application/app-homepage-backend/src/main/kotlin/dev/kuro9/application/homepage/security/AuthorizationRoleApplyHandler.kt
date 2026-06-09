@@ -7,14 +7,17 @@ import dev.kuro9.domain.member.auth.interfaces.AuthorizationSuccessHandler
 import dev.kuro9.domain.member.auth.repository.MemberAuthorities
 import dev.kuro9.domain.member.auth.repository.MemberEntity
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2TokenManageService
-import dev.kuro9.internal.discord.api.exception.DiscordApiException
 import dev.kuro9.internal.discord.api.service.DiscordApiService
 import dev.kuro9.multiplatform.common.date.util.now
 import io.github.harryjhin.slf4j.extension.error
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
@@ -31,18 +34,27 @@ class AuthorizationRoleApplyHandler(
     override fun onSuccess(userId: Long) {
         val member = MemberEntity.findById(userId) ?: return
         val authoritiesToAdd = mutableSetOf<MemberHomepageAuthority>()
+        val authoritiesToRemove = mutableSetOf<MemberHomepageAuthority>()
 
         runBlocking {
-
-            // 길드별 마작
-            run {
-                val userGuildList = try {
-                    val token = discordOAuthTokenService.getToken(userId) ?: return@run
+            val userGuildList = run {
+                try {
+                    val token = discordOAuthTokenService.getToken(userId) ?: return@run null
                     discordApiService.getMyGuildList(userToken = token.accessToken)
                 } catch (e: Exception) {
                     error(e) { "Failed to get guild list. userId: $userId" }
+                    null
+                }
+            }
+
+
+            // 길드별 마작
+            run {
+                if (userGuildList == null) {
+                    info { "userGuildList is null. userId: $userId" }
                     return@run
                 }
+
                 val botGuildList = discordBotGuildService.findGuildsByBotIdList(botProperty.id)
 
                 val mutualIdList =
@@ -52,9 +64,16 @@ class AuthorizationRoleApplyHandler(
                             mahjongScoreSettingService.hasScoreSettings(guildId)
                         }
 
-                for (guildId in mutualIdList) {
-                    authoritiesToAdd += MemberHomepageAuthority.MahjongGuild(guildId)
-                }
+                val granted = mutualIdList.map { MemberHomepageAuthority.MahjongGuild(it) }.toSet()
+
+                authoritiesToAdd += granted
+
+                // 길드별 마작 권한의 경우 길드 탈퇴 시 revoke
+                authoritiesToRemove += member.authorities.asSequence().map { it.authority }
+                    .filter { authority: String -> authority.startsWith("AUTHORITY_${MemberHomepageAuthority.MahjongGuild.getPrefix()}") }
+                    .mapNotNull { MemberHomepageAuthority.MahjongGuild.parseOrNull(it) }
+                    .toSet()
+                    .minus(granted)
             }
 
             // iot
@@ -67,6 +86,7 @@ class AuthorizationRoleApplyHandler(
             // VR
             run {
                 if (member.authorities.any { it.authority == MemberHomepageAuthority.Vr.toString() }) return@run
+                if (userGuildList == null) return@run
 
                 // 기타 사용자
                 if (member.id.value in listOf(893385640874500108L, 281001713815781378L)) {
@@ -74,18 +94,17 @@ class AuthorizationRoleApplyHandler(
                     return@run
                 }
 
-                val guildMemberInfo = try {
-                    discordApiService.getGuildMemberInfo(guildId = 891599899420946463L, userId = userId)
-                } catch (e: DiscordApiException.NotFound) {
-                    info { "not on guild." }
-                    return@run
-                } catch (e: Exception) {
-                    error(e) { "Failed to get guild member info. userId: $userId" }
-                    return@run
-                }
+                if (userGuildList.firstOrNull { it.id == "891599899420946463" } == null) return@run
 
                 authoritiesToAdd += MemberHomepageAuthority.Vr
             }
+        }
+
+        info { "apply authorities: $authoritiesToAdd, remove authorities: $authoritiesToRemove" }
+
+        MemberAuthorities.deleteWhere {
+            (MemberAuthorities.member eq userId)
+                .and(MemberAuthorities.authority inList authoritiesToRemove.map { it.toString() })
         }
 
         MemberAuthorities.batchInsert(authoritiesToAdd, ignore = true) {

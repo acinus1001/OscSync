@@ -25,7 +25,10 @@ class ItunesApiService {
             json(minifyJson)
             register(ContentType.Text.JavaScript, KotlinxSerializationConverter(minifyJson))
         }
-        install(Logging)
+        install(Logging) {
+            level = LogLevel.INFO
+            sanitizeHeader { header -> header == HttpHeaders.Authorization }
+        }
         install(Resources)
         expectSuccess = true
 
@@ -35,6 +38,7 @@ class ItunesApiService {
                 protocol = URLProtocol.HTTPS
                 host = "itunes.apple.com"
             }
+            userAgent("kuro9.dev (mailto:admin@kuro9.dev)")
         }
     }
 

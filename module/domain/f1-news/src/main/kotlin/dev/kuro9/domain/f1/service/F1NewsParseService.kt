@@ -16,7 +16,10 @@ class F1NewsParseService {
     private val MAX_CHARS: Int = 10000
 
     private val httpClient = HttpClient {
-        install(Logging)
+        install(Logging) {
+            level = LogLevel.INFO
+            sanitizeHeader { header -> header == HttpHeaders.Authorization }
+        }
         install(HttpTimeout) {
             requestTimeoutMillis = 5000
         }

@@ -23,7 +23,9 @@ class MusicConnectService(
         install(ContentNegotiation) {
             json(minifyJson)
         }
-        install(Logging)
+        install(Logging) {
+            sanitizeHeader { header -> header == HttpHeaders.Authorization }
+        }
         install(Resources)
 
         expectSuccess = true

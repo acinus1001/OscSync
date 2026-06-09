@@ -1,11 +1,12 @@
 package dev.kuro9.domain.member.auth.handler
 
 import dev.kuro9.domain.member.auth.config.CookieConfigProperties
+import dev.kuro9.domain.member.auth.jwt.JwtToken
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2TokenManageService
+import io.github.harryjhin.slf4j.extension.info
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseCookie
@@ -27,12 +28,21 @@ class CustomLogoutSuccessHandler(
         response: HttpServletResponse,
         authentication: Authentication?,
     ) {
-        run {
-            val userId = tokenService.getUserId(authentication ?: return@run)
-            runBlocking {
-                discordTokenService.revokeToken(userId)
+        val userId = when (authentication) {
+            null -> run {
+                val accessToken = request.cookies
+                    ?.firstOrNull { it.name == "accessToken" }
+                    ?.value
+                    ?: return@run null
+
+                tokenService.getUserIdWithNoCheck(accessToken.let(::JwtToken))
             }
+
+            else -> tokenService.getUserId(authentication)
         }
+
+        info { "logging out of user: $userId" }
+        userId?.let { discordTokenService.revokeToken(it) }
 
         HttpStatusReturningLogoutSuccessHandler()
         val expiredAccessTokenCookie = ResponseCookie.from("accessToken", "")

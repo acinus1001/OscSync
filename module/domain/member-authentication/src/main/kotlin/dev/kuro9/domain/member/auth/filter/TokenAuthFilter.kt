@@ -12,7 +12,6 @@ import io.github.harryjhin.slf4j.extension.warn
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseCookie
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -53,7 +52,7 @@ class TokenAuthFilter(
                     userId
                 } else null
                 val tokenResponse = try {
-                    runBlocking { discordTokenService.refreshToken(userId = userId ?: return@runBlocking) }
+                    run { discordTokenService.refreshToken(userId = userId ?: return@run) }
                     tokenService.refreshToken(refreshToken)
                 } catch (e: JwtValidationException) {
                     info(e) { "not valid refresh token. clear cookies and context. message=${e.message}" }
