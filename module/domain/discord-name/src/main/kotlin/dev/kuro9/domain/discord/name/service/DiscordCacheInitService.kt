@@ -4,7 +4,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
 import org.springframework.core.io.Resource
 import org.springframework.data.redis.connection.RedisConnectionFactory
+import org.springframework.data.redis.connection.RedisStringCommands
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.types.Expiration
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer
 import org.springframework.data.redis.serializer.RedisSerializer
 import org.springframework.data.redis.serializer.StringRedisSerializer
@@ -71,7 +73,12 @@ class DiscordCacheInitService(
                                     val rawValue = valueSerializer.serialize(name)
 
                                     if (rawKey != null && rawValue != null) {
-                                        connection.stringCommands().set(rawKey, rawValue)
+                                        connection.stringCommands().set(
+                                            rawKey,
+                                            rawValue,
+                                            Expiration.persistent(),
+                                            RedisStringCommands.SetOption.SET_IF_ABSENT
+                                        )
                                         discordSearchService.updateDiscordName(userId.toLong(), name)
                                     }
                                 }
