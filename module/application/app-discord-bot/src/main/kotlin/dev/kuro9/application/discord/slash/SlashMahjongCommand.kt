@@ -779,12 +779,12 @@ class SlashMahjongCommand(
     ) {
         val page = data.toInt()
         val yearMonth = YearMonth.parse(subData)
-        val deferReply = event.deferEdit()
+        val deferReply = event.deferEdit().await()
 
         MessageEdit(
             useComponentsV2 = true,
             builder = getMonthPointRankMessage(event.user, event.guild!!.idLong, yearMonth, page)
-        ).let { deferReply.await().editOriginal(it).await() }
+        ).let { deferReply.editOriginal(it).await() }
     }
 
     private suspend fun updateMonthGameCountRank(
@@ -794,12 +794,12 @@ class SlashMahjongCommand(
     ) {
         val page = data.toInt()
         val yearMonth = YearMonth.parse(subData)
-        val deferReply = event.deferEdit()
+        val deferReply = event.deferEdit().await()
 
         MessageEdit(
             useComponentsV2 = true,
             builder = getMonthGameCountRankMessage(event.user, event.guild!!.idLong, yearMonth, page)
-        ).let { deferReply.await().editOriginal(it).await() }
+        ).let { deferReply.editOriginal(it).await() }
     }
 
     private suspend fun updateAllPointRank(
@@ -807,12 +807,12 @@ class SlashMahjongCommand(
         data: String,
     ) {
         val page = data.toInt()
-        val deferReply = event.deferEdit()
+        val deferReply = event.deferEdit().await()
 
         MessageEdit(
             useComponentsV2 = true,
             builder = getAllPointRankMessage(event.user, event.guild!!.idLong, page)
-        ).let { deferReply.await().editOriginal(it).await() }
+        ).let { deferReply.editOriginal(it).await() }
     }
 
     private suspend fun updateAllGameCountRank(
@@ -820,12 +820,12 @@ class SlashMahjongCommand(
         data: String,
     ) {
         val page = data.toInt()
-        val deferReply = event.deferEdit()
+        val deferReply = event.deferEdit().await()
 
         MessageEdit(
             useComponentsV2 = true,
             builder = getAllGameCountRankMessage(event.user, event.guild!!.idLong, page)
-        ).let { deferReply.await().editOriginal(it).await() }
+        ).let { deferReply.editOriginal(it).await() }
     }
 
     private suspend fun recordAddDelete(event: ButtonInteractionEvent, data: String) = suspendTransaction {
