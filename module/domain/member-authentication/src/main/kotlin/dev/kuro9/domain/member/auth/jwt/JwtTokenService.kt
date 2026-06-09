@@ -6,10 +6,12 @@ import dev.kuro9.domain.member.auth.config.JwtTokenConfigProperties
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.domain.member.auth.repository.MemberAuthorities
 import dev.kuro9.domain.member.auth.repository.MemberEntity
+import dev.kuro9.domain.member.auth.service.RefreshTokenInfo
 import dev.kuro9.domain.member.auth.service.RefreshTokenService
 import dev.kuro9.multiplatform.common.date.util.now
 import dev.kuro9.multiplatform.common.date.util.toLocalDateTime
 import dev.kuro9.multiplatform.common.serialization.minifyJson
+import io.github.harryjhin.slf4j.extension.info
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.SerializationException
 import org.jetbrains.exposed.v1.core.eq
@@ -85,21 +87,26 @@ class JwtTokenService(
         )
     }
 
-    fun isRefreshable(refreshTokenStr: String): Boolean {
+    fun isRefreshable(
+        refreshTokenStr: String,
+        savedToken: RefreshTokenInfo? = refreshTokenService.findByToken(refreshTokenStr)
+    ): Boolean = run {
         val payload = validateAndGetRefreshPayload(JwtToken(refreshTokenStr))
 
-        if (payload.type != "REFRESH") return false
+        if (payload.type != "REFRESH") return@run false
 
-        refreshTokenService
-            .findByToken(refreshTokenStr)
+        savedToken
             ?.takeIf { it.expiresAt > LocalDateTime.now() }
-            ?: return false
+            ?: return@run false
 
-        return true
-    }
+        return@run true
+    }.also { info { "isRefreshable : $it" } }
 
     @Transactional
-    fun refreshToken(refreshTokenStr: String): JwtTokenResponse {
+    fun refreshToken(
+        refreshTokenStr: String,
+        savedToken: RefreshTokenInfo? = refreshTokenService.findByToken(refreshTokenStr)
+    ): JwtTokenResponse {
         val payload = validateAndGetRefreshPayload(JwtToken(refreshTokenStr))
 
         if (payload.type != "REFRESH") {
@@ -114,16 +121,15 @@ class JwtTokenService(
             )
         }
 
-        val savedToken = refreshTokenService.findByToken(refreshTokenStr)
-            ?: throw JwtValidationException(
-                "Refresh token not found or already used", listOf(
-                    OAuth2Error(
-                        OAuth2ErrorCodes.INVALID_TOKEN,
-                        "Refresh token not found or already used.",
-                        null
-                    )
+        savedToken ?: throw JwtValidationException(
+            "Refresh token not found or already used", listOf(
+                OAuth2Error(
+                    OAuth2ErrorCodes.INVALID_TOKEN,
+                    "Refresh token not found or already used.",
+                    null
                 )
             )
+        )
 
         // Rotation: Delete old token
         refreshTokenService.deleteByToken(refreshTokenStr)

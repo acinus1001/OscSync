@@ -7,6 +7,7 @@ import dev.kuro9.domain.member.auth.jwt.JwtToken
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2TokenManageService
+import dev.kuro9.domain.member.auth.service.RefreshTokenService
 import io.github.harryjhin.slf4j.extension.info
 import io.github.harryjhin.slf4j.extension.warn
 import jakarta.servlet.FilterChain
@@ -28,6 +29,7 @@ import kotlin.time.toJavaDuration
 @Component
 class TokenAuthFilter(
     private val tokenService: JwtTokenService,
+    private val refreshTokenService: RefreshTokenService,
     private val discordTokenService: DiscordOAuth2TokenManageService,
     private val cookieProperties: CookieConfigProperties,
     private val authorizationSuccessHandlerList: List<AuthorizationSuccessHandler>
@@ -45,15 +47,21 @@ class TokenAuthFilter(
                     SecurityContextHolder.clearContext()
                     return@run
                 }
+                val savedToken = refreshTokenService.findByToken(refreshToken)
+                info { "savedToken info : token=${savedToken?.token}" }
 
-                val userId = if (tokenService.isRefreshable(refreshToken)) {
+                val userId = if (tokenService.isRefreshable(refreshToken, savedToken)) {
                     val userId = tokenService.getUserIdWithNoCheck(refreshToken.let(::JwtToken))
                     authorizationSuccessHandlerList.forEach { it.onSuccess(userId) }
                     userId
                 } else null
+
                 val tokenResponse = try {
+                    // api 429 막기 위해 순서 변경
+                    val tokenResponse = tokenService.refreshToken(refreshToken, savedToken)
+                    info { "refresh token succeed." }
                     run { discordTokenService.refreshToken(userId = userId ?: return@run) }
-                    tokenService.refreshToken(refreshToken)
+                    tokenResponse
                 } catch (e: JwtValidationException) {
                     info(e) { "not valid refresh token. clear cookies and context. message=${e.message}" }
 
