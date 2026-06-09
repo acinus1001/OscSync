@@ -1,5 +1,7 @@
 package dev.kuro9.domain.cache
 
+import dev.kuro9.domain.cache.interfaces.CustomCacheConfigurer
+import dev.kuro9.domain.cache.serializer.KotlinRedisJsonSerializer
 import dev.kuro9.domain.cache.serializer.KotlinRedisProtoBufSerializer
 import kotlinx.serialization.serializer
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer
@@ -28,7 +30,7 @@ class CacheConfig {
     @Bean
     fun redisCacheManager(
         connectionFactory: RedisConnectionFactory,
-        redisCacheCustomizer: RedisCacheManagerBuilderCustomizer
+        redisCacheCustomizer: RedisCacheManagerBuilderCustomizer,
     ): CacheManager {
 
         val redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
@@ -50,7 +52,7 @@ class CacheConfig {
     }
 
     @Bean
-    fun redisCacheCustomizer(): RedisCacheManagerBuilderCustomizer {
+    fun redisCacheCustomizer(customCacheConfigurations: List<CustomCacheConfigurer>): RedisCacheManagerBuilderCustomizer {
         return RedisCacheManagerBuilderCustomizer { builder ->
 //            builder.withCacheConfiguration("example", typedCacheConfiguration<String>())
             builder.withCacheConfiguration("cache-discord-name", jdkCacheConfiguration(Duration.ZERO))
@@ -65,6 +67,10 @@ class CacheConfig {
             builder.withCacheConfiguration("cache-10m", jdkCacheConfiguration(10.minutes))
             builder.withCacheConfiguration("cache-1h", jdkCacheConfiguration(1.hours))
             builder.withCacheConfiguration("cache-1d", jdkCacheConfiguration(1.days))
+
+            for (customCache in customCacheConfigurations) {
+                builder.withCacheConfiguration(customCache.getCacheName(), customCache.getCacheConfiguration())
+            }
         }
     }
 
@@ -86,11 +92,22 @@ class CacheConfig {
 
     }
 
-    private inline fun <reified T : Any> typedCacheConfiguration(ttl: Duration = 1.minutes): RedisCacheConfiguration {
-        return KotlinRedisProtoBufSerializer(serializer<T>())
-            .let(::fromSerializer)
-            .let(RedisCacheConfiguration.defaultCacheConfig()::serializeValuesWith)
-            .disableCachingNullValues()
-            .entryTtl(ttl.toJavaDuration())
+    companion object {
+        inline fun <reified T : Any> jsonCacheConfiguration(ttl: Duration): RedisCacheConfiguration {
+            return KotlinRedisJsonSerializer(serializer<T>())
+                .let(::fromSerializer)
+                .let(RedisCacheConfiguration.defaultCacheConfig()::serializeValuesWith)
+                .disableCachingNullValues()
+                .entryTtl(ttl.toJavaDuration())
+        }
+
+        inline fun <reified T : Any> protoBufCacheConfiguration(ttl: Duration): RedisCacheConfiguration {
+            return KotlinRedisProtoBufSerializer(serializer<T>())
+                .let(::fromSerializer)
+                .let(RedisCacheConfiguration.defaultCacheConfig()::serializeValuesWith)
+                .disableCachingNullValues()
+                .entryTtl(ttl.toJavaDuration())
+        }
     }
+
 }
