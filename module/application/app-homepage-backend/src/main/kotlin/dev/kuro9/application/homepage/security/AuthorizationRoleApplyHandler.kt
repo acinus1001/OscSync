@@ -1,5 +1,6 @@
 package dev.kuro9.application.homepage.security
 
+import dev.kuro9.application.homepage.service.GuildInfoCacheService
 import dev.kuro9.domain.discord.bot.guilds.config.DiscordBotProperty
 import dev.kuro9.domain.discord.bot.guilds.service.DiscordBotGuildService
 import dev.kuro9.domain.mahjong.core.service.MahjongScoreSettingService
@@ -9,6 +10,7 @@ import dev.kuro9.domain.member.auth.repository.MemberEntity
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2TokenManageService
 import dev.kuro9.internal.discord.api.service.DiscordApiService
 import dev.kuro9.multiplatform.common.date.util.now
+import dev.kuro9.multiplatform.common.types.app.homepage.common.DiscordGuildInfo
 import io.github.harryjhin.slf4j.extension.error
 import io.github.harryjhin.slf4j.extension.info
 import kotlinx.coroutines.runBlocking
@@ -28,6 +30,7 @@ class AuthorizationRoleApplyHandler(
     private val discordBotGuildService: DiscordBotGuildService,
     private val discordOAuthTokenService: DiscordOAuth2TokenManageService,
     private val mahjongScoreSettingService: MahjongScoreSettingService,
+    private val guildInfoCacheService: GuildInfoCacheService,
 ) : AuthorizationSuccessHandler {
 
     @Transactional
@@ -67,6 +70,16 @@ class AuthorizationRoleApplyHandler(
                 val granted = mutualIdList.map { MemberHomepageAuthority.MahjongGuild(it) }.toSet()
 
                 authoritiesToAdd += granted
+
+                // 미리 캐시에 저장
+                for (guildId in mutualIdList) {
+                    val guildInfo = userGuildList.firstOrNull { it.id == guildId.toString() } ?: continue
+                    DiscordGuildInfo(
+                        id = guildInfo.idLong,
+                        name = guildInfo.name,
+                        iconUrl = guildInfo.iconUrl
+                    ).let { guildInfoCacheService.putGuildInfo(it) }
+                }
 
                 // 길드별 마작 권한의 경우 길드 탈퇴 시 revoke
                 authoritiesToRemove += member.authorities.asSequence().map { it.authority }

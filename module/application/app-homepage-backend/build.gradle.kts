@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.spring.boot.starter.aop)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.oauth2.client)
+    implementation(libs.spring.boot.starter.redis)
 
     runtimeOnly(libs.aspectj.runtime)
     runtimeOnly(libs.aspectj.weaver)

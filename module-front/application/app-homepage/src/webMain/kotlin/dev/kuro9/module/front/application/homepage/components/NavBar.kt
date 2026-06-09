@@ -143,19 +143,21 @@ private fun MobileMenu(isOpen: Boolean, onClose: () -> Unit) {
             onClose()
         }
 
-        MobileMenuState.customMenu?.let {
-            Div(attrs = {
-                style {
-                    marginTop(10.px)
-                    marginBottom(10.px)
-                    width(100.percent)
-                    property("border-top", "1px solid #333")
-                    property("border-bottom", "1px solid #333")
-                    padding(10.px, 0.px)
-                }
-            }) {
-                it()
+        Div(attrs = {
+            style {
+                marginTop(10.px)
+                marginBottom(10.px)
+                width(100.percent)
+                property("border-top", "1px solid #333")
+                property("border-bottom", "1px solid #333")
+                padding(10.px, 0.px)
             }
+            onClick { onClose() }
+        }) {
+            MobileMenuState.customMenu?.invoke()?.also { return@Div }
+
+            Text("추가 메뉴가 있을 경우"); Br();
+            Text("여기에 표시됩니다...")
         }
     }
 
