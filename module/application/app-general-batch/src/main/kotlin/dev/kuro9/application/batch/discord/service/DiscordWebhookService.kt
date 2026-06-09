@@ -19,11 +19,14 @@ class DiscordWebhookService {
         install(ContentNegotiation) {
             json(minifyJson)
         }
-        install(Logging)
+        install(Logging) {
+            sanitizeHeader { header -> header == HttpHeaders.Authorization }
+        }
         expectSuccess = true
 
         defaultRequest {
             contentType(ContentType.Application.Json)
+            userAgent("kuro9.dev (mailto:admin@kuro9.dev)")
         }
     }
 

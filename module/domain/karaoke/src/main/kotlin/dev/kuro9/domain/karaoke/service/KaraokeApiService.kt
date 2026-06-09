@@ -22,10 +22,14 @@ class KaraokeApiService {
         install(ContentNegotiation) {
             json(minifyJson)
         }
-        install(Logging)
+        install(Logging) {
+            level = LogLevel.INFO
+            sanitizeHeader { header -> header == HttpHeaders.Authorization }
+        }
 
         defaultRequest {
             accept(ContentType.Application.Json)
+            userAgent("kuro9.dev (mailto:admin@kuro9.dev)")
         }
 
         expectSuccess = true

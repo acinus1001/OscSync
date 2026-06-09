@@ -27,7 +27,9 @@ class KaraokeTjNewSongService(
         install(ContentNegotiation) {
             json(minifyJson)
         }
-        install(Logging)
+        install(Logging) {
+            level = LogLevel.INFO
+        }
         expectSuccess = true
     }
     override val supportBrand: KaraokeBrand = KaraokeBrand.TJ

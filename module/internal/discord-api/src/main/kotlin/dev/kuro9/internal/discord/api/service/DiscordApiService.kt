@@ -14,9 +14,11 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.resources.*
+import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.util.*
 import org.springframework.stereotype.Service
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -31,7 +33,10 @@ class DiscordApiService(
     private val properties: DiscordApiConfigProperties
 ) {
     private val httpClient = httpClient {
-        install(Logging)
+        install(Logging) {
+            level = LogLevel.INFO
+            sanitizeHeader { header -> header == HttpHeaders.Authorization }
+        }
         install(Resources)
         install(ContentNegotiation) {
             json(minifyJson)
@@ -60,11 +65,8 @@ class DiscordApiService(
                 host = "discord.com"
                 protocol = URLProtocol.HTTPS
             }
-            userAgent("kuro9-backend (kuro9.dev, 0.0.1)")
-            headers {
-                set("Authorization", "Bot ${properties.token}")
-            }
-
+            userAgent("kuro9.dev (mailto:admin@kuro9.dev)")
+            headers.appendIfNameAbsent(HttpHeaders.Authorization, "Bot ${properties.token}")
         }
 
         expectSuccess = true
@@ -73,8 +75,22 @@ class DiscordApiService(
     private val rateLimitTime = AtomicReference<Instant?>(null)
 
     @Throws(DiscordApiException::class)
-    suspend fun getGuildMemberInfo(guildId: Long, userId: Long): DiscordGuildMember = handleRateLimit {
-        httpClient.get(DiscordApiResource.Guild.Member(guildId = guildId, userId = userId))
+    suspend fun getGuildMemberInfo(guildId: Long, userId: Long, userToken: String? = null): DiscordGuildMember {
+        return when (userToken) {
+            null -> {
+                // bot mode
+                handleRateLimit {
+                    httpClient.get(DiscordApiResource.Guild.Member(guildId = guildId, userId = userId))
+                }
+            }
+
+            else -> {
+                // user mode, no rate limit
+                httpClient.get(DiscordApiResource.Guild.Member(guildId = guildId, userId = userId)) {
+                    header(HttpHeaders.Authorization, "Bearer $userToken")
+                }
+            }
+        }.body()
     }
 
     /**
@@ -99,9 +115,7 @@ class DiscordApiService(
             else -> {
                 // user mode, no rate limit
                 httpClient.get(DiscordApiResource.User.Me.Guilds()) {
-                    headers {
-                        set("Authorization", "Bearer $userToken")
-                    }
+                    header(HttpHeaders.Authorization, "Bearer $userToken")
                 }
             }
         }.body()
