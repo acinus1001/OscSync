@@ -427,27 +427,81 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
         }
 
         // Simple Pagination
+        val maxPage = result?.maxPage ?: 1
+        var inputPage by remember(page) { mutableStateOf(page.toString()) }
+
         Div(attrs = {
             style {
                 display(DisplayStyle.Flex)
-                justifyContent(JustifyContent.Center)
+                flexDirection(FlexDirection.Column)
                 alignItems(AlignItems.Center)
-                gap(20.px)
+                gap(10.px)
                 marginTop(20.px)
             }
         }) {
-            Button(attrs = {
-                if (page <= 1) disabled()
-                onClick { if (page > 1) page-- }
+            Div(attrs = {
+                style {
+                    display(DisplayStyle.Flex)
+                    justifyContent(JustifyContent.Center)
+                    alignItems(AlignItems.Center)
+                    gap(20.px)
+                }
             }) {
-                Text("이전")
+                Button(attrs = {
+                    if (page <= 1) disabled()
+                    onClick { if (page > 1) page-- }
+                }) {
+                    Text("이전")
+                }
+                Text("페이지 $page / $maxPage")
+                Button(attrs = {
+                    if (page >= maxPage) disabled()
+                    onClick { if (page < maxPage) page++ }
+                }) {
+                    Text("다음")
+                }
             }
-            Text("페이지 $page / ${result?.maxPage ?: 1}")
-            Button(attrs = {
-                if (page >= (result?.maxPage ?: 1)) disabled()
-                onClick { if (page < (result?.maxPage ?: 1)) page++ }
+
+            // 페이지 입력 이동
+            Div(attrs = {
+                style {
+                    display(DisplayStyle.Flex)
+                    alignItems(AlignItems.Center)
+                    gap(10.px)
+                }
             }) {
-                Text("다음")
+                Input(type = InputType.Number, attrs = {
+                    value(inputPage)
+                    onInput { inputPage = it.value?.toString() ?: "" }
+                    onKeyDown {
+                        if (it.key == "Enter") {
+                            val targetPage = inputPage.toIntOrNull()
+                            if (targetPage != null && targetPage in 1..maxPage) {
+                                page = targetPage
+                            }
+                        }
+                    }
+                    style {
+                        width(50.px)
+                        padding(5.px)
+                        backgroundColor(Color("#444"))
+                        color(Color("#f1f1f1"))
+                        border(1.px, LineStyle.Solid, Color("#555"))
+                        textAlign("center")
+                    }
+                })
+                Button(attrs = {
+                    onClick {
+                        val targetPage = inputPage.toIntOrNull()
+                        if (targetPage != null && targetPage in 1..maxPage) {
+                            page = targetPage
+                        } else {
+                            kotlinx.browser.window.alert("1에서 $maxPage 사이의 숫자를 입력해주세요.")
+                        }
+                    }
+                }) {
+                    Text("이동")
+                }
             }
         }
     }
