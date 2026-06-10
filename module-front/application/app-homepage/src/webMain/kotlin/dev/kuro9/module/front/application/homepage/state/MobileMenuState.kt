@@ -6,9 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
 object MobileMenuState {
-    var customMenu: (@Composable () -> Unit)? by mutableStateOf(null)
+    var customMenu: (@Composable (onClose: () -> Unit) -> Unit)? by mutableStateOf(null)
 
-    fun setMenu(menu: (@Composable () -> Unit)?) {
+    fun setMenu(menu: (@Composable (onClose: () -> Unit) -> Unit)?) {
         customMenu = menu
     }
 }
