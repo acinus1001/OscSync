@@ -7,6 +7,7 @@ import dev.kuro9.domain.member.auth.jwt.JwtToken
 import dev.kuro9.domain.member.auth.jwt.JwtTokenService
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.domain.member.auth.service.DiscordOAuth2TokenManageService
+import dev.kuro9.domain.member.auth.service.RefreshTokenService
 import io.github.harryjhin.slf4j.extension.info
 import io.github.harryjhin.slf4j.extension.warn
 import jakarta.servlet.http.HttpServletRequest
@@ -33,6 +34,7 @@ class TokenRefreshController(
     private val discordTokenService: DiscordOAuth2TokenManageService,
     private val cookieProperties: CookieConfigProperties,
     private val authorizationSuccessHandlerList: List<AuthorizationSuccessHandler>,
+    private val refreshTokenService: RefreshTokenService,
 ) {
 
     @PostMapping
@@ -47,8 +49,9 @@ class TokenRefreshController(
 
         return try {
             val userId = tokenService.getUserIdWithNoCheck(JwtToken(refreshToken))
+            info { "refresh token userId=$userId, token=$refreshToken" }
 
-            val tokenResponse = tokenService.refreshToken(refreshToken)
+            val tokenResponse = tokenService.refreshToken(refreshToken, refreshTokenService.findByToken(refreshToken))
             info { "refresh token succeed." }
 
             discordTokenService.refreshToken(userId = userId)

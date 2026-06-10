@@ -89,7 +89,7 @@ class JwtTokenService(
 
     fun isRefreshable(
         refreshTokenStr: String,
-        savedToken: RefreshTokenInfo? = refreshTokenService.findByToken(refreshTokenStr)
+        savedToken: RefreshTokenInfo?
     ): Boolean = run {
         val payload = validateAndGetRefreshPayload(JwtToken(refreshTokenStr))
 
@@ -105,7 +105,7 @@ class JwtTokenService(
     @Transactional
     fun refreshToken(
         refreshTokenStr: String,
-        savedToken: RefreshTokenInfo? = refreshTokenService.findByToken(refreshTokenStr)
+        savedToken: RefreshTokenInfo?
     ): JwtTokenResponse {
         val payload = validateAndGetRefreshPayload(JwtToken(refreshTokenStr))
 

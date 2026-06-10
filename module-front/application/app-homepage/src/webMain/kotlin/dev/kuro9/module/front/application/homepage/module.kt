@@ -1,6 +1,7 @@
 package dev.kuro9.module.front.application.homepage
 
 import dev.kuro9.module.front.application.homepage.network.*
+import dev.kuro9.module.front.application.homepage.network.common.TokenRefreshService
 import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongViewModel
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.module.front.application.homepage.state.user.UserState
@@ -15,6 +16,7 @@ val module = module {
     single<ServerInfo> { getServerInfo() }
     single<MemberApiService> { MemberApiService(get<ServerInfo>().host, get<ServerInfo>().port) }
 
+    singleOf(::TokenRefreshService)
     singleOf(::RouteViewModel)
     singleOf(::UserState)
     singleOf(::UserViewModel)

@@ -1,7 +1,9 @@
 package dev.kuro9.module.front.application.homepage.network
 
+import dev.kuro9.module.front.application.homepage.network.common.TokenRefreshService
 import dev.kuro9.module.front.application.homepage.utils.getDefaultHttpClient
 import dev.kuro9.multiplatform.common.network.ServerInfo
+import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.kuro9.multiplatform.common.serialization.protoBuf
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPagingResult
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongRecord
@@ -11,14 +13,16 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.ExperimentalSerializationApi
 
-class MahjongApiService(serverInfo: ServerInfo) {
+class MahjongApiService(serverInfo: ServerInfo, tokenRefreshService: TokenRefreshService) {
     @OptIn(ExperimentalSerializationApi::class)
-    private val httpClient = getDefaultHttpClient(serverInfo) {
-        install(ContentNegotiation) {
+    private val httpClient = getDefaultHttpClient(serverInfo, tokenRefreshService) {
+        installOrReplace(ContentNegotiation) {
             serialization(ContentType.parse("application/x-protobuf"), protoBuf)
+            json(minifyJson)
         }
         defaultRequest {
             accept(ContentType.Application.ProtoBuf)

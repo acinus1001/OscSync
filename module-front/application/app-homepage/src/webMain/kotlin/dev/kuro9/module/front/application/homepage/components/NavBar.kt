@@ -225,6 +225,10 @@ private fun UtilButtons() {
                         println("openOAuth: $effect")
                         window.location.href = effect.url
                     }
+
+                    is UserEffect.Logout -> {
+                        window.location.href = "/"
+                    }
                 }
             }
         }

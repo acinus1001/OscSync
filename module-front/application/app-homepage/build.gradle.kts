@@ -50,6 +50,7 @@ kotlin {
             implementation(projects.multiplatformCommon.types.appHomepage)
 
             implementation(libs.compose.html)
+            implementation(libs.kotlinx.coroutines.core)
 
 
 //            implementation(npm("@discord/embedded-app-sdk", "latest"))
