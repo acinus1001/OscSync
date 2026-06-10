@@ -232,7 +232,6 @@ private fun UtilButtons() {
                         }
                         println("logout: $effect")
                         window.location.pathname = "/"
-                        window.alert("로그인 정보가 만료되었습니다. 다시 로그인해 주세요.")
                     }
 
                     is UserEffect.RefreshSuccess -> {

@@ -20,7 +20,6 @@ class UserViewModel(
     val effect: SharedFlow<UserEffect>
         field = MutableSharedFlow<UserEffect>()
 
-
     fun doLogin() {
         println("doLogin")
         val redirectUrl =
