@@ -6,6 +6,7 @@ import dev.kuro9.module.front.application.homepage.network.MahjongApiService
 import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongLayout
 import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongState
 import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongViewModel
+import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.multiplatform.common.types.app.homepage.common.DiscordIdAndName
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPagingResult
@@ -58,6 +59,7 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
 
     MahjongLayout(serverId, routeState) {
         H2 { Text("대국 기록") }
+        H5 { Text("기록에 대해 상세한 정보를 보려면 기록 칸을 클릭하십시오...") }
 
         // 검색 필터 UI
         Div(attrs = {
@@ -323,22 +325,100 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
         }
 
         for (record in content) {
-            Div {
-                Text("ID : ${record.id} / 기록자 : ${record.createdByName} / ${record.createdAt}")
-                Table {
+            Div(attrs = {
+                onClick {
+                    routeState.navigate(Route.Services.MahjongRecordDetail(serverId, record.id.toString()))
+                }
+                style {
+                    marginBottom(30.px)
+                    padding(20.px)
+                    backgroundColor(Color("#333"))
+                    borderRadius(8.px)
+                    border(1.px, LineStyle.Solid, Color("#444"))
+                    property("box-shadow", "0 4px 6px rgba(0,0,0,0.3)")
+                    cursor("pointer")
+                }
+            }) {
+                Div(attrs = {
+                    style {
+                        display(DisplayStyle.Flex)
+                        justifyContent(JustifyContent.SpaceBetween)
+                        alignItems(AlignItems.Center)
+                        marginBottom(15.px)
+                        paddingBottom(10.px)
+                        property("border-bottom", "1px solid #555")
+                        fontSize(0.9.em)
+                        color(Color("#bbb"))
+                    }
+                }) {
+                    Span { Text("ID: ${record.id}") }
+                    Span { Text("기록자: ${record.createdByName} (${record.createdAt})") }
+                }
+                Table(attrs = {
+                    style {
+                        width(100.percent)
+                        property("border-collapse", "collapse")
+                        textAlign("center")
+                    }
+                }) {
                     Thead {
-                        Th { Text("위치") }
-                        Th { Text("유저") }
-                        Th { Text("점수") }
-                        Th { Text("포인트 변화") }
+                        Tr {
+                            listOf("위치", "유저", "점수", "포인트 변화").forEach {
+                                Th(attrs = {
+                                    style {
+                                        padding(10.px)
+                                        backgroundColor(Color("#444"))
+                                        color(Color("#3498db"))
+                                        fontWeight("bold")
+                                        property("border", "1px solid #555")
+                                    }
+                                }) { Text(it) }
+                            }
+                        }
                     }
                     Tbody {
                         for (userInfo: MahjongRecord.UserScore in record.scoreOrders) {
                             Tr {
-                                Td { Text(userInfo.seki?.kanji?.toString() ?: "N/A>") }
-                                Td { Text(userInfo.userName) }
-                                Td { Text(userInfo.score.commaFormat()) }
-                                Td { Text(userInfo.pointDeltaStringified) }
+                                Td(attrs = {
+                                    style {
+                                        padding(10.px)
+                                        property("border", "1px solid #555")
+                                    }
+                                }) { Text(userInfo.seki?.kanji?.toString() ?: "N/A") }
+                                Td(attrs = {
+                                    title(userInfo.userId.toString())
+                                    onClick {
+                                        it.stopPropagation()
+                                        kotlinx.browser.window.navigator.clipboard.writeText(userInfo.userId.toString())
+                                        kotlinx.browser.window.alert("ID가 복사되었습니다: ${userInfo.userId}")
+                                    }
+                                    style {
+                                        padding(10.px)
+                                        property("border", "1px solid #555")
+                                        cursor("pointer")
+                                    }
+                                }) { Text(userInfo.userName) }
+                                Td(attrs = {
+                                    style {
+                                        padding(10.px)
+                                        property("border", "1px solid #555")
+                                        fontWeight("500")
+                                    }
+                                }) { Text(userInfo.score.commaFormat()) }
+                                Td(attrs = {
+                                    style {
+                                        padding(10.px)
+                                        property("border", "1px solid #555")
+                                        fontWeight("bold")
+                                        color(
+                                            when {
+                                                userInfo.pointDeltaStringified.startsWith("+") -> Color("#f1948a")
+                                                userInfo.pointDeltaStringified.startsWith("-") -> Color("#85c1e9")
+                                                else -> Color("#f1f1f1")
+                                            }
+                                        )
+                                    }
+                                }) { Text(userInfo.pointDeltaStringified) }
                             }
                         }
                     }
