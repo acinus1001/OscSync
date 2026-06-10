@@ -1,6 +1,7 @@
 package dev.kuro9.module.front.application.homepage.network
 
 import dev.kuro9.module.front.application.homepage.network.common.TokenRefreshService
+import dev.kuro9.module.front.application.homepage.state.user.UserViewModel
 import dev.kuro9.module.front.application.homepage.utils.getDefaultHttpClient
 import dev.kuro9.multiplatform.common.network.ServerInfo
 import dev.kuro9.multiplatform.common.serialization.minifyJson
@@ -11,8 +12,12 @@ import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 
-class AuthResourceManageApiService(serverInfo: ServerInfo, tokenRefreshService: TokenRefreshService) {
-    private val httpClient = getDefaultHttpClient(serverInfo, tokenRefreshService)
+class AuthResourceManageApiService(
+    serverInfo: ServerInfo,
+    tokenRefreshService: TokenRefreshService,
+    userViewModel: UserViewModel
+) {
+    private val httpClient = getDefaultHttpClient(serverInfo, tokenRefreshService, userViewModel)
 
     suspend fun getStringResourceList(): StringResourceListResponse {
         return httpClient.get("/resources/admin/strings").body()

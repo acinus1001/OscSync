@@ -226,8 +226,17 @@ private fun UtilButtons() {
                         window.location.href = effect.url
                     }
 
-                    is UserEffect.Logout -> {
-                        window.location.href = "/"
+                    is UserEffect.Logout -> run {
+                        if (window.location.pathname == "/") {
+                            return@run
+                        }
+                        println("logout: $effect")
+                        window.location.pathname = "/"
+                        window.alert("로그인 정보가 만료되었습니다. 다시 로그인해 주세요.")
+                    }
+
+                    is UserEffect.RefreshSuccess -> {
+                        window.location.reload()
                     }
                 }
             }

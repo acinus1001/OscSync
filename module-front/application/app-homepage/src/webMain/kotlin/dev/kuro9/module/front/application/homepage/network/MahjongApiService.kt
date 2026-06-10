@@ -1,6 +1,7 @@
 package dev.kuro9.module.front.application.homepage.network
 
 import dev.kuro9.module.front.application.homepage.network.common.TokenRefreshService
+import dev.kuro9.module.front.application.homepage.state.user.UserViewModel
 import dev.kuro9.module.front.application.homepage.utils.getDefaultHttpClient
 import dev.kuro9.multiplatform.common.network.ServerInfo
 import dev.kuro9.multiplatform.common.serialization.minifyJson
@@ -17,18 +18,23 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.ExperimentalSerializationApi
 
-class MahjongApiService(serverInfo: ServerInfo, tokenRefreshService: TokenRefreshService) {
+class MahjongApiService(
+    serverInfo: ServerInfo,
+    tokenRefreshService: TokenRefreshService,
+    userViewModel: UserViewModel
+) {
     @OptIn(ExperimentalSerializationApi::class)
-    private val httpClient = getDefaultHttpClient(serverInfo, tokenRefreshService) {
-        installOrReplace(ContentNegotiation) {
-            serialization(ContentType.parse("application/x-protobuf"), protoBuf)
-            json(minifyJson)
+    private val httpClient =
+        getDefaultHttpClient(serverInfo, tokenRefreshService, userViewModel) {
+            installOrReplace(ContentNegotiation) {
+                serialization(ContentType.parse("application/x-protobuf"), protoBuf)
+                json(minifyJson)
+            }
+            defaultRequest {
+                accept(ContentType.Application.ProtoBuf)
+                contentType(ContentType.Application.ProtoBuf)
+            }
         }
-        defaultRequest {
-            accept(ContentType.Application.ProtoBuf)
-            contentType(ContentType.Application.ProtoBuf)
-        }
-    }
 
     suspend fun getAllRecords(
         guildId: Long,
