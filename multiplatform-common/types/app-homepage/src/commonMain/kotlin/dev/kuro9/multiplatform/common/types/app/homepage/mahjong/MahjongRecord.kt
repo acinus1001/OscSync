@@ -34,7 +34,7 @@ data class MahjongRecord(
     val shaUser: UserScore get() = userScores.first { it.seki == MahjongSeki.SHA }
     val peiUser: UserScore get() = userScores.first { it.seki == MahjongSeki.PEI }
 
-    val scoreOrders: List<UserScore> get() = userScores.sortedBy { it.score }
+    val scoreOrders: List<UserScore> get() = userScores.sortedByDescending { it.score }
     val firstPlaceUser: UserScore get() = userScores.first { it.rank == 1 }
     val secondPlaceUser: UserScore get() = userScores.first { it.rank == 2 }
     val thirdPlaceUser: UserScore get() = userScores.first { it.rank == 3 }

@@ -21,6 +21,7 @@ import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
+import org.w3c.dom.HTMLElement
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -58,6 +59,7 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
 
     MahjongLayout(serverId, routeState) {
         H2 { Text("대국 기록") }
+        H5 { Text("기록에 대해 상세한 정보를 보려면 기록 칸을 클릭하십시오...") }
 
         // 검색 필터 UI
         Div(attrs = {
@@ -288,10 +290,10 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
                                         page = 1
                                     }
                                     onMouseEnter {
-                                        (it.target as? org.w3c.dom.HTMLElement)?.style?.backgroundColor = "#444"
+                                        (it.target as? HTMLElement)?.style?.backgroundColor = "#444"
                                     }
                                     onMouseLeave {
-                                        (it.target as? org.w3c.dom.HTMLElement)?.style?.backgroundColor =
+                                        (it.target as? HTMLElement)?.style?.backgroundColor =
                                             if (searchState.searchUserId == user.id) "#444" else "transparent"
                                     }
                                     style {
@@ -314,114 +316,206 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
 
         if (isLoading) {
             P { Text("로딩 중...") }
-        } else {
-            val content = result?.content ?: emptyList()
-            if (content.isEmpty()) {
-                P { Text("대국 기록이 없습니다.") }
-            } else {
+            return@MahjongLayout
+        }
+        val content = result?.content ?: emptyList()
+        if (content.isEmpty()) {
+            P { Text("대국 기록이 없습니다.") }
+            return@MahjongLayout
+        }
+
+        for (record in content) {
+            Div(attrs = {
+                onClick {
+                    routeState.navigate(Route.Services.MahjongRecordDetail(serverId, record.id.toString()))
+                }
+                style {
+                    marginBottom(30.px)
+                    padding(20.px)
+                    backgroundColor(Color("#333"))
+                    borderRadius(8.px)
+                    border(1.px, LineStyle.Solid, Color("#444"))
+                    property("box-shadow", "0 4px 6px rgba(0,0,0,0.3)")
+                    cursor("pointer")
+                }
+            }) {
+                Div(attrs = {
+                    style {
+                        display(DisplayStyle.Flex)
+                        justifyContent(JustifyContent.SpaceBetween)
+                        alignItems(AlignItems.Center)
+                        marginBottom(15.px)
+                        paddingBottom(10.px)
+                        property("border-bottom", "1px solid #555")
+                        fontSize(0.9.em)
+                        color(Color("#bbb"))
+                    }
+                }) {
+                    Span { Text("ID: ${record.id}") }
+                    Span { Text("기록자: ${record.createdByName} (${record.createdAt})") }
+                }
                 Table(attrs = {
                     style {
                         width(100.percent)
                         property("border-collapse", "collapse")
-                        marginTop(20.px)
+                        textAlign("center")
                     }
                 }) {
                     Thead {
                         Tr {
-                            Th { Text("날짜") }
-                            Th { Text("결과") }
-                            Th { Text("상세") }
+                            listOf("위치", "유저", "점수", "포인트 변화").forEach {
+                                Th(attrs = {
+                                    style {
+                                        padding(10.px)
+                                        backgroundColor(Color("#444"))
+                                        color(Color("#3498db"))
+                                        fontWeight("bold")
+                                        property("border", "1px solid #555")
+                                    }
+                                }) { Text(it) }
+                            }
                         }
                     }
                     Tbody {
-                        content.forEach { record ->
+                        for (userInfo: MahjongRecord.UserScore in record.scoreOrders) {
                             Tr {
                                 Td(attrs = {
                                     style {
-                                        padding(8.px); textAlign("center"); border(
-                                        1.px,
-                                        LineStyle.Solid,
-                                        Color("#444")
-                                    )
+                                        padding(10.px)
+                                        property("border", "1px solid #555")
                                     }
-                                }) {
-                                    Text(record.createdAt.date.toString())
-                                }
+                                }) { Text(userInfo.seki?.kanji?.toString() ?: "N/A") }
+                                Td(attrs = {
+                                    title(userInfo.userId.toString())
+                                    onClick {
+                                        it.stopPropagation()
+                                        kotlinx.browser.window.navigator.clipboard.writeText(userInfo.userId.toString())
+                                        kotlinx.browser.window.alert("ID가 복사되었습니다: ${userInfo.userId}")
+                                    }
+                                    style {
+                                        padding(10.px)
+                                        property("border", "1px solid #555")
+                                        cursor("pointer")
+                                    }
+                                }) { Text(userInfo.userName) }
                                 Td(attrs = {
                                     style {
-                                        padding(8.px); border(
-                                        1.px,
-                                        LineStyle.Solid,
-                                        Color("#444")
-                                    )
+                                        padding(10.px)
+                                        property("border", "1px solid #555")
+                                        fontWeight("500")
                                     }
-                                }) {
-                                    Div(attrs = {
-                                        style {
-                                            display(DisplayStyle.Flex)
-                                            justifyContent(JustifyContent.Center)
-                                            gap(10.px)
-                                        }
-                                    }) {
-                                        record.userScores.sortedBy { it.rank }.forEach { score ->
-                                            Span {
-                                                Text("${score.userName}: ${score.score} (${score.pointDeltaStringified})")
+                                }) { Text(userInfo.score.commaFormat()) }
+                                Td(attrs = {
+                                    style {
+                                        padding(10.px)
+                                        property("border", "1px solid #555")
+                                        fontWeight("bold")
+                                        color(
+                                            when {
+                                                userInfo.pointDeltaStringified.startsWith("+") -> Color("#f1948a")
+                                                userInfo.pointDeltaStringified.startsWith("-") -> Color("#85c1e9")
+                                                else -> Color("#f1f1f1")
                                             }
-                                        }
+                                        )
                                     }
-                                }
-                                Td(attrs = {
-                                    style {
-                                        padding(8.px); textAlign("center"); border(
-                                        1.px,
-                                        LineStyle.Solid,
-                                        Color("#444")
-                                    )
-                                    }
-                                }) {
-                                    Button(attrs = {
-                                        onClick {
-                                            routeState.navigate(
-                                                Route.Services.MahjongRecordDetail(
-                                                    serverId,
-                                                    record.id.toString()
-                                                )
-                                            )
-                                        }
-                                    }) {
-                                        Text("보기")
-                                    }
-                                }
+                                }) { Text(userInfo.pointDeltaStringified) }
                             }
                         }
                     }
                 }
+            }
+        }
 
-                // Simple Pagination
-                Div(attrs = {
+        // Simple Pagination
+        val maxPage = result?.maxPage ?: 1
+        var inputPage by remember(page) { mutableStateOf(page.toString()) }
+
+        Div(attrs = {
+            style {
+                display(DisplayStyle.Flex)
+                flexDirection(FlexDirection.Column)
+                alignItems(AlignItems.Center)
+                gap(10.px)
+                marginTop(20.px)
+            }
+        }) {
+            Div(attrs = {
+                style {
+                    display(DisplayStyle.Flex)
+                    justifyContent(JustifyContent.Center)
+                    alignItems(AlignItems.Center)
+                    gap(20.px)
+                }
+            }) {
+                Button(attrs = {
+                    if (page <= 1) disabled()
+                    onClick { if (page > 1) page-- }
+                }) {
+                    Text("이전")
+                }
+                Text("페이지 $page / $maxPage")
+                Button(attrs = {
+                    if (page >= maxPage) disabled()
+                    onClick { if (page < maxPage) page++ }
+                }) {
+                    Text("다음")
+                }
+            }
+
+            // 페이지 입력 이동
+            Div(attrs = {
+                style {
+                    display(DisplayStyle.Flex)
+                    alignItems(AlignItems.Center)
+                    gap(10.px)
+                }
+            }) {
+                Input(type = InputType.Number, attrs = {
+                    value(inputPage)
+                    onInput { inputPage = it.value?.toString() ?: "" }
+                    onKeyDown {
+                        if (it.key == "Enter") {
+                            val targetPage = inputPage.toIntOrNull()
+                            if (targetPage != null && targetPage in 1..maxPage) {
+                                page = targetPage
+                            }
+                        }
+                    }
                     style {
-                        display(DisplayStyle.Flex)
-                        justifyContent(JustifyContent.Center)
-                        alignItems(AlignItems.Center)
-                        gap(20.px)
-                        marginTop(20.px)
+                        width(50.px)
+                        padding(5.px)
+                        backgroundColor(Color("#444"))
+                        color(Color("#f1f1f1"))
+                        border(1.px, LineStyle.Solid, Color("#555"))
+                        textAlign("center")
+                    }
+                })
+                Button(attrs = {
+                    onClick {
+                        val targetPage = inputPage.toIntOrNull()
+                        if (targetPage != null && targetPage in 1..maxPage) {
+                            page = targetPage
+                        } else {
+                            kotlinx.browser.window.alert("1에서 $maxPage 사이의 숫자를 입력해주세요.")
+                        }
                     }
                 }) {
-                    Button(attrs = {
-                        if (page <= 1) disabled()
-                        onClick { if (page > 1) page-- }
-                    }) {
-                        Text("이전")
-                    }
-                    Text("페이지 $page / ${result?.maxPage ?: 1}")
-                    Button(attrs = {
-                        if (page >= (result?.maxPage ?: 1)) disabled()
-                        onClick { if (page < (result?.maxPage ?: 1)) page++ }
-                    }) {
-                        Text("다음")
-                    }
+                    Text("이동")
                 }
             }
         }
     }
+
 }
+
+private fun Int.commaFormat(): String {
+    val sign = if (this < 0) "-" else ""
+    val absStr = kotlin.math.abs(this).toString()
+
+    return sign + absStr
+        .reversed()
+        .chunked(3)
+        .joinToString(",")
+        .reversed()
+}
+
