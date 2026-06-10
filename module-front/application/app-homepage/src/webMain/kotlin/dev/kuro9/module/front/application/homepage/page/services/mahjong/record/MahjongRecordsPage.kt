@@ -21,6 +21,7 @@ import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
@@ -56,7 +57,7 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
     }
 
     MahjongLayout(serverId, routeState) {
-        H2 { Text("대국 기록 ($serverId)") }
+        H2 { Text("대국 기록") }
 
         // 검색 필터 UI
         Div(attrs = {
@@ -221,7 +222,7 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
 
                                 autocompleteJob?.cancel()
                                 autocompleteJob = scope.launch {
-                                    delay(500)
+                                    delay(500.milliseconds)
                                     try {
                                         autocompleteList = discordNameApiService.searchNames(keyword)
                                         isAutocompleteOpen = autocompleteList.isNotEmpty()

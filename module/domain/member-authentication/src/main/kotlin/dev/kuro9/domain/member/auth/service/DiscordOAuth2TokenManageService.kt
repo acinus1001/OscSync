@@ -80,6 +80,8 @@ class DiscordOAuth2TokenManageService(
         exists.expiresAt = response.expiresAt
         exists.updatedAt = LocalDateTime.now()
 
+        exists.flush()
+
         return exists
     }
 

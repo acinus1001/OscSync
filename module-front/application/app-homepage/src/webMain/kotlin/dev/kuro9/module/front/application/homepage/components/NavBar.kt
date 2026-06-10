@@ -225,6 +225,18 @@ private fun UtilButtons() {
                         println("openOAuth: $effect")
                         window.location.href = effect.url
                     }
+
+                    is UserEffect.Logout -> run {
+                        if (window.location.pathname == "/") {
+                            return@run
+                        }
+                        println("logout: $effect")
+                        window.location.pathname = "/"
+                    }
+
+                    is UserEffect.RefreshSuccess -> {
+                        window.location.reload()
+                    }
                 }
             }
         }
