@@ -50,6 +50,7 @@ class OAuth2LoginSecurityConfig {
             authorizeHttpRequests {
                 authorize(HttpMethod.OPTIONS, "/**", permitAll)
                 authorize("/error", permitAll)
+                authorize("/auth/refresh", permitAll)
                 authorize("/users/me", authenticated)
 
                 for (handler in authorizeHandlerList) {
