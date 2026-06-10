@@ -21,7 +21,7 @@ fun MahjongLayout(
     val currentServer = servers.find { it.id == serverId }
     var isDropdownOpen by remember { mutableStateOf(false) }
 
-    val mahjongMenu: @Composable () -> Unit = {
+    val mahjongMenu: @Composable (onClose: () -> Unit) -> Unit = { onClose ->
         Div(attrs = {
             style {
                 display(DisplayStyle.Flex)
@@ -108,6 +108,7 @@ fun MahjongLayout(
                                     if (server.id != serverId) {
                                         routeState.navigate(Route.Services.MahjongServer(server.id))
                                     }
+                                    onClose()
                                 }
                                 style {
                                     display(DisplayStyle.Flex)
@@ -154,13 +155,14 @@ fun MahjongLayout(
             }
 
             MahjongMenuItem("대국 기록", routeState.nowPage is Route.Services.MahjongRecords) {
-                routeState.navigate(Route.Services.MahjongRecords(serverId))
+                routeState.navigate(Route.Services.MahjongRecords(serverId)); onClose()
+
             }
             MahjongMenuItem("통계", routeState.nowPage is Route.Services.MahjongStats) {
-                routeState.navigate(Route.Services.MahjongStats(serverId))
+                routeState.navigate(Route.Services.MahjongStats(serverId)); onClose()
             }
             MahjongMenuItem("순위", routeState.nowPage is Route.Services.MahjongRanks) {
-                routeState.navigate(Route.Services.MahjongRanks(serverId))
+                routeState.navigate(Route.Services.MahjongRanks(serverId)); onClose()
             }
         }
     }
@@ -195,7 +197,7 @@ fun MahjongLayout(
                 property("border-right", "1px solid #444")
             }
         }) {
-            mahjongMenu()
+            mahjongMenu {}
         }
 
         // 메인 콘텐츠 영역

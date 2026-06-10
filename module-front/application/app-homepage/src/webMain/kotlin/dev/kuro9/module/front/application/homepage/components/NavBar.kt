@@ -152,9 +152,8 @@ private fun MobileMenu(isOpen: Boolean, onClose: () -> Unit) {
                 property("border-bottom", "1px solid #333")
                 padding(10.px, 0.px)
             }
-            onClick { onClose() }
         }) {
-            MobileMenuState.customMenu?.invoke()?.also { return@Div }
+            MobileMenuState.customMenu?.invoke(onClose)?.also { return@Div }
 
             Text("추가 메뉴가 있을 경우"); Br();
             Text("여기에 표시됩니다...")
