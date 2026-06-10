@@ -5,6 +5,7 @@ import dev.kuro9.module.front.application.homepage.GlobalStyles
 import dev.kuro9.module.front.application.homepage.state.MobileMenuState
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
+import dev.kuro9.module.front.application.homepage.utils.requireAnyAuthority
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
@@ -14,7 +15,7 @@ fun MahjongLayout(
     serverId: Long,
     routeState: RouteViewModel,
     content: @Composable () -> Unit
-) {
+) = requireAnyAuthority(routeState, koinInject(), "AUTHORITY_HOMEPAGE_MAHJONG-GUILD_$serverId") {
     val mahjongViewModel: MahjongViewModel = koinInject()
     val servers = mahjongViewModel.state.servers
     val currentServer = servers.find { it.id == serverId }

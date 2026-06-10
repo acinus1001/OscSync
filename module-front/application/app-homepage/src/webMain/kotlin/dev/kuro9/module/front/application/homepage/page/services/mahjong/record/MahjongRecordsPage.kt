@@ -6,7 +6,6 @@ import dev.kuro9.module.front.application.homepage.network.MahjongApiService
 import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongLayout
 import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongState
 import dev.kuro9.module.front.application.homepage.page.services.mahjong.MahjongViewModel
-import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
 import dev.kuro9.multiplatform.common.types.app.homepage.common.DiscordIdAndName
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPagingResult
@@ -21,6 +20,7 @@ import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 import org.koin.compose.koinInject
+import org.w3c.dom.HTMLElement
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -288,10 +288,10 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
                                         page = 1
                                     }
                                     onMouseEnter {
-                                        (it.target as? org.w3c.dom.HTMLElement)?.style?.backgroundColor = "#444"
+                                        (it.target as? HTMLElement)?.style?.backgroundColor = "#444"
                                     }
                                     onMouseLeave {
-                                        (it.target as? org.w3c.dom.HTMLElement)?.style?.backgroundColor =
+                                        (it.target as? HTMLElement)?.style?.backgroundColor =
                                             if (searchState.searchUserId == user.id) "#444" else "transparent"
                                     }
                                     style {
@@ -314,114 +314,74 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
 
         if (isLoading) {
             P { Text("로딩 중...") }
-        } else {
-            val content = result?.content ?: emptyList()
-            if (content.isEmpty()) {
-                P { Text("대국 기록이 없습니다.") }
-            } else {
-                Table(attrs = {
-                    style {
-                        width(100.percent)
-                        property("border-collapse", "collapse")
-                        marginTop(20.px)
-                    }
-                }) {
+            return@MahjongLayout
+        }
+        val content = result?.content ?: emptyList()
+        if (content.isEmpty()) {
+            P { Text("대국 기록이 없습니다.") }
+            return@MahjongLayout
+        }
+
+        for (record in content) {
+            Div {
+                Text("ID : ${record.id} / 기록자 : ${record.createdByName} / ${record.createdAt}")
+                Table {
                     Thead {
-                        Tr {
-                            Th { Text("날짜") }
-                            Th { Text("결과") }
-                            Th { Text("상세") }
-                        }
+                        Th { Text("위치") }
+                        Th { Text("유저") }
+                        Th { Text("점수") }
+                        Th { Text("포인트 변화") }
                     }
                     Tbody {
-                        content.forEach { record ->
+                        for (userInfo: MahjongRecord.UserScore in record.scoreOrders) {
                             Tr {
-                                Td(attrs = {
-                                    style {
-                                        padding(8.px); textAlign("center"); border(
-                                        1.px,
-                                        LineStyle.Solid,
-                                        Color("#444")
-                                    )
-                                    }
-                                }) {
-                                    Text(record.createdAt.date.toString())
-                                }
-                                Td(attrs = {
-                                    style {
-                                        padding(8.px); border(
-                                        1.px,
-                                        LineStyle.Solid,
-                                        Color("#444")
-                                    )
-                                    }
-                                }) {
-                                    Div(attrs = {
-                                        style {
-                                            display(DisplayStyle.Flex)
-                                            justifyContent(JustifyContent.Center)
-                                            gap(10.px)
-                                        }
-                                    }) {
-                                        record.userScores.sortedBy { it.rank }.forEach { score ->
-                                            Span {
-                                                Text("${score.userName}: ${score.score} (${score.pointDeltaStringified})")
-                                            }
-                                        }
-                                    }
-                                }
-                                Td(attrs = {
-                                    style {
-                                        padding(8.px); textAlign("center"); border(
-                                        1.px,
-                                        LineStyle.Solid,
-                                        Color("#444")
-                                    )
-                                    }
-                                }) {
-                                    Button(attrs = {
-                                        onClick {
-                                            routeState.navigate(
-                                                Route.Services.MahjongRecordDetail(
-                                                    serverId,
-                                                    record.id.toString()
-                                                )
-                                            )
-                                        }
-                                    }) {
-                                        Text("보기")
-                                    }
-                                }
+                                Td { Text(userInfo.seki?.kanji?.toString() ?: "N/A>") }
+                                Td { Text(userInfo.userName) }
+                                Td { Text(userInfo.score.commaFormat()) }
+                                Td { Text(userInfo.pointDeltaStringified) }
                             }
                         }
                     }
                 }
+            }
+        }
 
-                // Simple Pagination
-                Div(attrs = {
-                    style {
-                        display(DisplayStyle.Flex)
-                        justifyContent(JustifyContent.Center)
-                        alignItems(AlignItems.Center)
-                        gap(20.px)
-                        marginTop(20.px)
-                    }
-                }) {
-                    Button(attrs = {
-                        if (page <= 1) disabled()
-                        onClick { if (page > 1) page-- }
-                    }) {
-                        Text("이전")
-                    }
-                    Text("페이지 $page / ${result?.maxPage ?: 1}")
-                    Button(attrs = {
-                        if (page >= (result?.maxPage ?: 1)) disabled()
-                        onClick { if (page < (result?.maxPage ?: 1)) page++ }
-                    }) {
-                        Text("다음")
-                    }
-                }
+        // Simple Pagination
+        Div(attrs = {
+            style {
+                display(DisplayStyle.Flex)
+                justifyContent(JustifyContent.Center)
+                alignItems(AlignItems.Center)
+                gap(20.px)
+                marginTop(20.px)
+            }
+        }) {
+            Button(attrs = {
+                if (page <= 1) disabled()
+                onClick { if (page > 1) page-- }
+            }) {
+                Text("이전")
+            }
+            Text("페이지 $page / ${result?.maxPage ?: 1}")
+            Button(attrs = {
+                if (page >= (result?.maxPage ?: 1)) disabled()
+                onClick { if (page < (result?.maxPage ?: 1)) page++ }
+            }) {
+                Text("다음")
             }
         }
     }
+
 }
+
+private fun Int.commaFormat(): String {
+    val sign = if (this < 0) "-" else ""
+    val absStr = kotlin.math.abs(this).toString()
+
+    return sign + absStr
+        .reversed()
+        .chunked(3)
+        .joinToString(",")
+        .reversed()
+}
+
