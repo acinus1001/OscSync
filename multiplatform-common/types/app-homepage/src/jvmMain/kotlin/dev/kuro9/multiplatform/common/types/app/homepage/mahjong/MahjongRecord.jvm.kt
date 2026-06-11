@@ -20,3 +20,21 @@ fun MahjongRecord.UserScore.Companion.of(
         userName = userName
     )
 }
+
+fun MahjongDetailRecord.UserScore.Companion.of(
+    userId: Long,
+    userName: String,
+    rank: Int,
+    score: Int,
+    seki: MahjongSeki?,
+    pointDelta: BigDecimal,
+): MahjongDetailRecord.UserScore {
+    return MahjongDetailRecord.UserScore(
+        userId = userId,
+        rank = rank,
+        score = score,
+        seki = seki,
+        pointDeltaStringified = "%+,.1f".format(pointDelta),
+        userName = userName
+    )
+}

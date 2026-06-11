@@ -44,10 +44,10 @@ sealed class Route(val path: String) {
         class MahjongRecords(val serverId: Long) : Route("/services/mahjong/guilds/$serverId/records"), Services
         class MahjongStats(val serverId: Long) : Route("/services/mahjong/guilds/$serverId/stats"), Services
         class MahjongRanks(val serverId: Long) : Route("/services/mahjong/guilds/$serverId/ranks"), Services
-        class MahjongRecordDetail(val serverId: Long, val recordId: String) :
+        class MahjongRecordDetail(val serverId: Long, val recordId: Long) :
             Route("/services/mahjong/guilds/$serverId/records/$recordId"), Services
 
-        class MahjongUserStats(val serverId: Long, val userId: String) :
+        class MahjongUserStats(val serverId: Long, val userId: Long) :
             Route("/services/mahjong/guilds/$serverId/stats/$userId"), Services
     }
 
@@ -85,12 +85,12 @@ sealed class Route(val path: String) {
 
                         return when (subPath) {
                             "records" -> {
-                                if (detailId.isNotEmpty()) Services.MahjongRecordDetail(serverId, detailId)
+                                if (detailId.isNotEmpty()) Services.MahjongRecordDetail(serverId, detailId.toLong())
                                 else Services.MahjongRecords(serverId)
                             }
 
                             "stats" -> {
-                                if (detailId.isNotEmpty()) Services.MahjongUserStats(serverId, detailId)
+                                if (detailId.isNotEmpty()) Services.MahjongUserStats(serverId, detailId.toLong())
                                 else Services.MahjongStats(serverId)
                             }
 

@@ -14,7 +14,7 @@ import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongRecord
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.toLocalDate
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.disabled
 import org.jetbrains.compose.web.attributes.placeholder
@@ -95,7 +95,7 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
                             value(searchState.searchStartDate?.toString() ?: "")
                             onInput {
                                 val value = it.value
-                                searchState.searchStartDate = if (value.isBlank()) null else value.toLocalDate()
+                                searchState.searchStartDate = if (value.isBlank()) null else LocalDate.parse(value)
                                 page = 1
                             }
                             style {
@@ -138,7 +138,7 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
                             value(searchState.searchEndDate?.toString() ?: "")
                             onInput {
                                 val value = it.value
-                                searchState.searchEndDate = if (value.isBlank()) null else value.toLocalDate()
+                                searchState.searchEndDate = if (value.isBlank()) null else LocalDate.parse(value)
                                 page = 1
                             }
                             style {
@@ -327,7 +327,7 @@ fun MahjongRecordsPage(serverId: Long, routeState: RouteViewModel) {
         for (record in content) {
             Div(attrs = {
                 onClick {
-                    routeState.navigate(Route.Services.MahjongRecordDetail(serverId, record.id.toString()))
+                    routeState.navigate(Route.Services.MahjongRecordDetail(serverId, record.id))
                 }
                 style {
                     marginBottom(30.px)

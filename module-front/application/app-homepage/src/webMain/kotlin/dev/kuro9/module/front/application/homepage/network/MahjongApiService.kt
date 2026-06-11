@@ -6,6 +6,7 @@ import dev.kuro9.module.front.application.homepage.utils.getDefaultHttpClient
 import dev.kuro9.multiplatform.common.network.ServerInfo
 import dev.kuro9.multiplatform.common.serialization.minifyJson
 import dev.kuro9.multiplatform.common.serialization.protoBuf
+import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongDetailRecord
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPagingResult
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongRecord
 import io.ktor.client.call.*
@@ -49,5 +50,13 @@ class MahjongApiService(
             endInclusive?.let { parameter("endInclusive", it.toString()) }
             userId?.let { parameter("userId", it) }
         }.body<MahjongPagingResult<MahjongRecord>>()
+    }
+
+    suspend fun getRecord(
+        guildId: Long,
+        recordId: Long,
+    ): MahjongDetailRecord {
+        return httpClient.get("/services/mahjong/guilds/$guildId/records/$recordId")
+            .body<MahjongDetailRecord>()
     }
 }

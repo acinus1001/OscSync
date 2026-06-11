@@ -15,6 +15,7 @@ fun requireAnyAuthority(
     vararg authority: String,
     content: @Composable (isLoading: Boolean) -> Unit
 ) {
+    if (user.isLoaded.not()) return
     if (user.userInfo == null) {
         window.alert("로그인이 필요합니다.")
         route.navigate(Route.HOME)
