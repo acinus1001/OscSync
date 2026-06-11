@@ -21,6 +21,10 @@ fun MahjongLayout(
     val currentServer = servers.find { it.id == serverId }
     var isDropdownOpen by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        mahjongViewModel.updateServers()
+    }
+
     val mahjongMenu: @Composable (onClose: () -> Unit) -> Unit = { onClose ->
         Div(attrs = {
             style {
