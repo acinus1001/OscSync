@@ -16,7 +16,7 @@ fun MahjongStatsPage(serverId: Long, routeState: RouteViewModel) {
 }
 
 @Composable
-fun MahjongUserStatsPage(serverId: Long, userId: String, routeState: RouteViewModel) {
+fun MahjongUserStatsPage(serverId: Long, userId: Long, routeState: RouteViewModel) {
     MahjongLayout(serverId, routeState) {
         H2 { Text("사용자 통계 ($serverId - $userId)") }
         P { Text("사용자 $userId 에 대한 상세 통계가 여기에 표시됩니다.") }

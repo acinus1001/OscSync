@@ -1,19 +1,23 @@
 package dev.kuro9.application.homepage.mahjong.controller
 
+import dev.kuro9.application.homepage.mahjong.utils.toDetailedDto
 import dev.kuro9.application.homepage.mahjong.utils.toDto
 import dev.kuro9.domain.discord.name.service.DiscordSearchService
 import dev.kuro9.domain.mahjong.core.repository.MahjongGames
 import dev.kuro9.domain.mahjong.core.service.MahjongRankService
 import dev.kuro9.domain.mahjong.core.service.MahjongStatService
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
+import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongDetailRecord
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPagingResult
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongRecord
 import kotlinx.datetime.LocalDate
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 
 @Transactional(readOnly = true)
 @RestController
@@ -65,5 +69,17 @@ class MahjongRecordController(
             totalElementCount = totalCount,
             content = searchResultList,
         )
+    }
+
+    @GetMapping("/{recordId}", produces = [MediaType.APPLICATION_PROTOBUF_VALUE])
+    fun getRecord(
+        @AuthenticationPrincipal user: DiscordUserDetail,
+        @PathVariable guildId: Long,
+        @PathVariable recordId: Long,
+    ): MahjongDetailRecord {
+        val gameInfo = rankService.getGameById(recordId)?.takeIf { it.guildId == guildId }
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+
+        return gameInfo.toDetailedDto { userId -> discordSearchService.findById(userId)?.name ?: "<unknown:$userId>" }
     }
 }
