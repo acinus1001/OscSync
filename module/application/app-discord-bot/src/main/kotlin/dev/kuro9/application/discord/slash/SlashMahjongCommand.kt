@@ -635,6 +635,10 @@ class SlashMahjongCommand(
                             label = "점수 수정",
                             uniqueId = 1603
                         )
+                        linkButton(
+                            url = "https://kuro9.dev/services/mahjong/guilds/${event.guild!!.idLong}/records/${game.id.value}",
+                            label = "웹에서 확인 (로그인 필요)"
+                        )
                     }
                 }
                 container(uniqueId = 2000) {
