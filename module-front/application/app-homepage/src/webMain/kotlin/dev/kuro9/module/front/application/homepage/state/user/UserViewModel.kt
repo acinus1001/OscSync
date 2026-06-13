@@ -39,6 +39,14 @@ class UserViewModel(
         }
             .recoverCatching { // 요청 실패 시
                 if (it !is MemberApiException.Unauthorized) throw it
+                // 토큰 리프레시 실행
+                val isRefreshSucceed = tokenRefreshService.tryRefresh()
+                if (isRefreshSucceed) {
+                    println("refresh success")
+                    val info = memberApiService.getMyInfo()
+                    onRefreshSuccess(info)
+                    return@recoverCatching null
+                }
                 if (userState.userInfo == null) {
                     // 원래 로그아웃 상태
                     println("not in refresh condition. skipping.")
@@ -46,16 +54,9 @@ class UserViewModel(
                     return@recoverCatching null
                 }
 
-                // 토큰 리프레시 실행
-                val refreshResult = tokenRefreshService.tryRefresh()
-                if (!refreshResult) {
-                    println("refresh failed")
-                    onRefreshFailure()
-                    throw it
-                }
-                println("refresh success")
-                val info = memberApiService.getMyInfo()
-                onRefreshSuccess(info)
+                println("refresh failed")
+                onRefreshFailure()
+                throw it
             }.onFailure {
                 println("getMyInfo failed: ${it.message}")
                 userState.userInfo = null
