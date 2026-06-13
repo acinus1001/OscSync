@@ -42,6 +42,7 @@ class UserViewModel(
                 if (userState.userInfo == null) {
                     // 원래 로그아웃 상태
                     println("not in refresh condition. skipping.")
+                    userState.isLoaded = true
                     return@recoverCatching null
                 }
 
