@@ -1,22 +1,20 @@
 package dev.kuro9.domain.mahjong.core.service
 
 import dev.kuro9.domain.database.between
+import dev.kuro9.domain.database.yearMonth
 import dev.kuro9.domain.mahjong.core.annotation.MahjongInternalApi
+import dev.kuro9.domain.mahjong.core.dto.MahjongGuildStat
 import dev.kuro9.domain.mahjong.core.event.MahjongRankEvent
 import dev.kuro9.domain.mahjong.core.repository.*
 import dev.kuro9.multiplatform.common.date.util.now
 import dev.kuro9.multiplatform.common.date.util.toRangeOfMonth
 import io.github.harryjhin.slf4j.extension.info
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.YearMonth
-import kotlinx.datetime.yearMonth
+import kotlinx.datetime.*
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.dao.load
 import org.jetbrains.exposed.v1.dao.with
-import org.jetbrains.exposed.v1.jdbc.andWhere
-import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.upsert
-import org.jetbrains.exposed.v1.jdbc.upsertReturning
+import org.jetbrains.exposed.v1.jdbc.*
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -25,6 +23,7 @@ import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 import java.math.BigDecimal
 import kotlin.time.measureTime
+import kotlin.time.measureTimedValue
 
 @Service
 @Transactional(readOnly = true)
@@ -51,6 +50,60 @@ class MahjongStatService {
                     if (ofGameId == null) return@let it
                     return@let it and (MahjongGames.id lessEq ofGameId)
                 }).count()
+    }
+
+    @Cacheable("mahjong-guild-cache", key = "#guildId")
+    fun getServerStat(guildId: Long): MahjongGuildStat {
+        info { "cache miss. calculating guild stat for guildId=$guildId" }
+        val now = LocalDateTime.now()
+        val nowMonth = now.date.yearMonth
+        val (result, duration) = measureTimedValue {
+            val totalGameCount = MahjongGameEntity.all().count()
+            val gameCountPerMonthDescending = MahjongGames.select(intLiteral(1).count())
+                .where { MahjongGames.guildId eq guildId }
+                .andWhere { MahjongGames.deletedAt.isNull() }
+                .andWhere {
+                    MahjongGames.createdAt greaterEq nowMonth.minus(10, DateTimeUnit.MONTH).onDay(1)
+                        .atTime(LocalTime(0, 0))
+                }
+                .groupBy(MahjongGames.createdAt.yearMonth())
+                .associate { resultRow ->
+                    val yearMonth = YearMonth.parse(resultRow[MahjongGames.createdAt.yearMonth()])
+                    val count = resultRow[intLiteral(1).count()]
+                    yearMonth to count
+                }
+                .toSortedMap(reverseOrder())
+            val highScoreGame = MahjongGames
+                .innerJoin(MahjongGameResults)
+                .selectAll()
+                .where { MahjongGames.guildId eq guildId }
+                .andWhere { MahjongGames.deletedAt.isNull() }
+                .andWhere { MahjongGameResults.rank eq 1 }
+                .orderBy(MahjongGameResults.score to SortOrder.DESC)
+                .limit(1)
+                .let { MahjongGameEntity.wrapRows(it).firstOrNull() }
+            val lowScoreGame = MahjongGames
+                .innerJoin(MahjongGameResults)
+                .selectAll()
+                .where { MahjongGames.guildId eq guildId }
+                .andWhere { MahjongGames.deletedAt.isNull() }
+                .andWhere { MahjongGameResults.rank eq 4 }
+                .orderBy(MahjongGameResults.score to SortOrder.ASC)
+                .limit(1)
+                .let { MahjongGameEntity.wrapRows(it).firstOrNull() }
+
+            MahjongGuildStat(
+                guildId = guildId,
+                totalGameCount = totalGameCount,
+                gameCountPerMonthDescending = gameCountPerMonthDescending,
+                highScore = highScoreGame?.results?.maxOf { it.score },
+                highScoreGameId = highScoreGame?.id?.value,
+                lowScore = lowScoreGame?.results?.minOf { it.score },
+                lowScoreGameId = lowScoreGame?.id?.value,
+            )
+        }
+        info { "guild stat calculated in $duration" }
+        return result
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

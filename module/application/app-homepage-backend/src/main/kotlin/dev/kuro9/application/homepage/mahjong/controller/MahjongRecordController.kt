@@ -5,7 +5,6 @@ import dev.kuro9.application.homepage.mahjong.utils.toDto
 import dev.kuro9.domain.discord.name.service.DiscordSearchService
 import dev.kuro9.domain.mahjong.core.repository.MahjongGames
 import dev.kuro9.domain.mahjong.core.service.MahjongRankService
-import dev.kuro9.domain.mahjong.core.service.MahjongStatService
 import dev.kuro9.domain.member.auth.model.DiscordUserDetail
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongDetailRecord
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPagingResult
@@ -23,7 +22,6 @@ import org.springframework.web.server.ResponseStatusException
 @RestController
 @RequestMapping("/services/mahjong/guilds/{guildId}/records")
 class MahjongRecordController(
-    private val statService: MahjongStatService,
     private val rankService: MahjongRankService,
     private val discordSearchService: DiscordSearchService,
 ) {

@@ -1,5 +1,6 @@
 package dev.kuro9.domain.database
 
+import kotlinx.datetime.LocalDateTime
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.Query
 import org.jetbrains.exposed.v1.jdbc.select
@@ -18,3 +19,19 @@ fun <T> Query.fetchFirstOrNull(exp: Expression<T>) = this.fetchFirstOrNull()?.ge
 fun Query.exists(): Boolean = Table.Dual.select(intLiteral(1))
     .where(exists(this@exists))
     .count() != 0L
+
+/**
+ * use if only pgsql
+ */
+fun ExpressionWithColumnType<LocalDateTime>.yearMonth(): org.jetbrains.exposed.v1.core.Function<String> {
+    return YearMonthFunction(this)
+}
+
+class YearMonthFunction(
+    val expr: ExpressionWithColumnType<LocalDateTime>
+) : org.jetbrains.exposed.v1.core.Function<String>(VarCharColumnType(7)) {
+
+    override fun toQueryBuilder(queryBuilder: QueryBuilder) {
+        queryBuilder.append("TO_CHAR(", expr, ", 'YYYY-MM')")
+    }
+}
