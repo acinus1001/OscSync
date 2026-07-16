@@ -32,11 +32,42 @@ class MjCalculateService {
         return result
     }
 
-    fun parseTeHai(teHai: List<MjPai>, agariHai: MjAgariHai, vararg huroBody: MjBody): MjTeHai {
-        return MjTeHai.parse(teHai, agariHai, *huroBody).maxBy { it.getTopFuuHan() }
+    fun parseTeHai(teHai: List<MjPai>, agariHai: MjAgariHai, vararg huroBody: MjBody): MjTeHai? {
+        return MjTeHai.parse(teHai, agariHai, *huroBody).maxByOrNull { it.getTopFuuHan() }
     }
 
-    private fun parse(str: String): List<MjPai> {
+    /**
+     * 대기 계산
+     */
+    fun calculateMachi(
+        teHaiStr: String,
+        huroBody: Array<String> = emptyArray(),
+        anKanBody: Array<String> = emptyArray(),
+    ): List<MjTeHai> {
+        val parsedHuro = huroBody.map { MjBody.of(parse(it), isHuro = true) }.toTypedArray()
+        val parsedAnKang: Array<MjBody> = anKanBody.map { MjBody.of(parse(it), isHuro = false) }.toTypedArray()
+
+        require(parsedAnKang.all { it is KanBody }) {
+            "입력된 값이 깡이 아닙니다."
+        }
+
+        val outerBody = (parsedHuro + parsedAnKang)
+
+        val teHai = parse(teHaiStr)
+
+        // 가능한 주변 패 bruteforce
+        val possibleAgariHaiSet = teHai.toMutableSet()
+        teHai.filter { it.type != PaiType.Z }.distinct().forEach { pai: MjPai ->
+            if (pai.num >= 2) possibleAgariHaiSet.add(pai.copy(num = pai.num - 1))
+            if (pai.num <= 8) possibleAgariHaiSet.add(pai.copy(num = pai.num + 1))
+        }
+
+        return possibleAgariHaiSet.mapNotNull { agariHai ->
+            parseTeHai(teHai, MjAgariHai.Ron(agariHai), *outerBody)
+        }
+    }
+
+    fun parse(str: String): List<MjPai> {
         var typePtr: PaiType = PaiType.of(str.last())
         val resultList = mutableListOf<MjPai>()
 

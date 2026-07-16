@@ -85,6 +85,54 @@ class MjHandPictureService {
         return finalImage
     }
 
+    fun getHandPicture(
+        teHai: List<MjPai>,
+        gameInfo: MjGameInfoVo = MjGameInfoVo.Default,
+        vararg huroBody: MjBody
+    ): BufferedImage {
+        val contentImage = getImage(teHai, *huroBody)
+        val padding = 50      // 상하좌우 여백
+        val titleHeight = 60  // 제목을 위한 추가 공간
+
+        // 새로운 크기 계산
+        val width = contentImage.width + (padding * 2)
+        val height = contentImage.height + (padding * 2) + titleHeight
+
+        // 새 이미지 생성
+        val finalImage = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+        val graphics = finalImage.createGraphics()
+
+        // 배경 그리기
+        graphics.color = Color(0x36, 0x39, 0x3F)
+        graphics.fillRect(0, 0, width, height)
+
+        // 텍스트 설정 및 그리기
+        graphics.color = Color.WHITE
+        graphics.font = getKoreanFont(36)
+
+        // 텍스트 중앙 정렬을 위한 계산
+        val text = "${gameInfo.gameSeq} ${gameInfo.honba}본장 ${gameInfo.zikaze.toKrString()}가, 25000"
+        val fontMetrics = graphics.fontMetrics
+        val textWidth = fontMetrics.stringWidth(text)
+        val textX = (width - textWidth) / 2
+        val textY = padding + fontMetrics.ascent
+
+        // 텍스트 그리기
+        graphics.drawString(text, textX, textY)
+
+        // 콘텐츠 이미지 그리기
+        graphics.drawImage(
+            contentImage,
+            padding,                    // x 위치
+            padding + titleHeight,      // y 위치
+            null
+        )
+
+        graphics.dispose()
+
+        return finalImage
+    }
+
     private fun MjPai.getImage(): BufferedImage {
         val path = "image/pai/${
             when (this.type) {
@@ -123,6 +171,53 @@ class MjHandPictureService {
 
         // 후로 몸통들을 개별적으로 추가
         body.filter { it.isHuro() || (it is KanBody) }.forEach { mjBody ->
+            val huroImages = mjBody.getHuroImage()
+            if (huroImages.isNotEmpty()) {
+                groupImageLists.add(huroImages)
+            }
+        }
+
+        // 전체 너비 계산 (각 그룹의 너비 합 + 마진)
+        val totalWidth = groupImageLists.sumOf { it.sumOf { img -> img.width } } +
+                (groupImageLists.size - 1) * marginBetweenGroups
+
+        val merge = BufferedImage(totalWidth, height, BufferedImage.TYPE_INT_ARGB)
+        val graphic = merge.getGraphics() as Graphics2D
+
+        graphic.color = Color(0x36, 0x39, 0x3F)
+        graphic.fillRect(0, 0, totalWidth, height)
+
+        var widthSum = 0
+
+        // 각 그룹을 순차적으로 그리기
+        groupImageLists.forEachIndexed { groupIndex, images ->
+            // 현재 그룹의 이미지들 그리기
+            images.forEach { image ->
+                // 이미지를 아래쪽에 맞춰서 그리기
+                val yPosition = height - image.height
+                graphic.drawImage(image, widthSum, yPosition, null)
+                widthSum += image.width
+            }
+
+            // 마지막 그룹이 아니면 마진 추가
+            if (groupIndex < groupImageLists.size - 1) {
+                widthSum += marginBetweenGroups
+            }
+        }
+
+        graphic.dispose()
+        return merge
+    }
+
+    private fun getImage(teHai: List<MjPai>, vararg huroBody: MjBody): BufferedImage {
+        val marginBetweenGroups = 20
+        val height = 100
+
+        val groupImageLists = mutableListOf<List<BufferedImage>>()
+
+        groupImageLists.add(teHai.map { it.getImage() })
+
+        huroBody.filter { it.isHuro() || (it is KanBody) }.forEach { mjBody ->
             val huroImages = mjBody.getHuroImage()
             if (huroImages.isNotEmpty()) {
                 groupImageLists.add(huroImages)

@@ -16,6 +16,8 @@ import dev.kuro9.internal.discord.handler.model.ModalInteractionHandler
 import dev.kuro9.internal.discord.slash.model.SlashCommandComponent
 import dev.kuro9.internal.mahjong.calc.enums.MjKaze
 import dev.kuro9.internal.mahjong.calc.enums.MjYaku
+import dev.kuro9.internal.mahjong.calc.enums.PaiType
+import dev.kuro9.internal.mahjong.calc.model.MjBody
 import dev.kuro9.internal.mahjong.calc.model.MjGameInfoVo
 import dev.kuro9.internal.mahjong.calc.model.MjTeHai
 import dev.kuro9.internal.mahjong.calc.service.MjCalculateService
@@ -77,7 +79,7 @@ class SlashMahjongCommand(
 ) : SlashCommandComponent, ButtonInteractionHandler, ModalInteractionHandler, EntitySelectInteractionHandler {
     override val commandData: SlashCommandData = Command("mj", "마작 관련 명령어") {
         group("util", "마작 관련 유틸성 명령어") {
-            subcommand("calculate", "부수/판수, 역 계산.") {
+            subcommand("calculate", "부수/판수, 역 계산. tehai에는 화료패를 제외하고 입력해야 하며, tsumo 또는 ron 중 하나는 입력해야 합니다.") {
                 option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
                 option<String>("tsumo", "쯔모한 패. 1m 과 같은 형식으로 입력하세요. ron 파라미터와 동시에 입력하지 마십시오.", required = false)
                 option<String>("ron", "론한 패. 1m 과 같은 형식으로 입력하세요. tsumo 파라미터와 동시에 입력하지 마십시오.", required = false)
@@ -95,6 +97,12 @@ class SlashMahjongCommand(
                 option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
                 option<String>("bakaze", "장풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
                 option<String>("zikaze", "자풍패. 동/남/서/북 중 하나. 기본값=동", required = false, autocomplete = true)
+            }
+
+            subcommand("machi", "대기패 계산") {
+                option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
+                option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+                option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
             }
         }
 
@@ -180,6 +188,7 @@ class SlashMahjongCommand(
                 "util" -> when (event.subcommandName) {
                     "calculate" -> return calculateScore(event, deferReply)
                     "image" -> return generateImage(event, deferReply)
+                    "machi" -> return calculateMachi(event, deferReply)
                 }
 
                 "record" -> when (event.subcommandName) {
@@ -460,6 +469,77 @@ class SlashMahjongCommand(
 
         val fileUpload = FileUpload.fromData(handImage, "hand.png")
         deferReply.await().sendFiles(fileUpload).await()
+        deferReply.await().editOriginalEmbeds(resultEmbed).await()
+    }
+
+    private suspend fun calculateMachi(event: SlashCommandInteractionEvent, deferReply: Deferred<InteractionHook>) {
+
+        val tehai = event.getOption("tehai")!!.asString
+        val huro = event.getOption("huro")?.asString
+        val ankang = event.getOption("ankang")?.asString
+
+        val huroBody = huro?.removeSurrounding(" ")?.split(" ")?.toTypedArray()
+        val ankangBody = ankang?.removeSurrounding(" ")?.split(" ")?.toTypedArray()
+
+        val possibleTeHai = mjCalculateService
+            .calculateMachi(
+                teHaiStr = tehai,
+                huroBody = huroBody ?: emptyArray(),
+                anKanBody = ankangBody ?: emptyArray(),
+            )
+
+        val handImage = withContext(Dispatchers.Default) {
+            async {
+                val parsedHuroBodies = mutableListOf<MjBody>()
+
+                huroBody?.forEach { bodyStr ->
+                    MjBody.of(mjCalculateService.parse(bodyStr), isHuro = true).let { parsedHuroBodies += it }
+                }
+                ankangBody?.forEach { bodyStr ->
+                    MjBody.of(mjCalculateService.parse(bodyStr), isHuro = false).let { parsedHuroBodies += it }
+                }
+
+                val image = mjImageService.getHandPicture(
+                    teHai = mjCalculateService.parse(tehai).sorted(),
+                    gameInfo = MjGameInfoVo.Default,
+                    *parsedHuroBodies.toTypedArray(),
+                )
+                ByteArrayOutputStream().use { baos ->
+                    ImageIO.write(image, "png", baos)
+                    baos.toByteArray()
+                }
+            }
+        }
+
+        val possibleMachi = possibleTeHai
+            .map { it.agariHai.pai }
+            .sorted()
+
+        val sujiGroup = possibleMachi
+            .filter { it.type != PaiType.Z }
+            .groupBy { "${it.num % 3}${it.type}" }
+            .values
+
+        val nonSujiPaiList = possibleMachi - (sujiGroup.flatten().toSet())
+
+        val resultEmbed = Embed {
+            title = "손패 대기 계산 결과"
+            description = $$"""```
+대기패 : $${possibleMachi.size} 개
+
+[ $${sujiGroup.joinToString(", ") { it.joinToString("-") { pai -> pai.num.toString() } + it.first().type }}$${
+                run {
+                    if (nonSujiPaiList.isEmpty()) return@run ""
+
+                    ", " + nonSujiPaiList.joinToString(", ")
+                }
+            } ]
+```""".trimIndent()
+
+            footer { name = "M=만수패/P=통수패/S=삭수패/Z=자패" }
+        }
+
+        deferReply.await().sendFiles(FileUpload.fromData(handImage.await(), "hand.png")).await()
         deferReply.await().editOriginalEmbeds(resultEmbed).await()
     }
 
