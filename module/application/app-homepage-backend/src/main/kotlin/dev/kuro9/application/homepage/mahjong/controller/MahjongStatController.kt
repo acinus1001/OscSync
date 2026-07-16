@@ -44,6 +44,8 @@ class MahjongStatController(
             gameCountPerMonthDescending = stat.gameCountPerMonthDescending,
             highScore = stat.highScore,
             highScoreGameId = stat.highScoreGameId,
+            lowScore = stat.lowScore,
+            lowScoreGameId = stat.lowScoreGameId,
         )
     }
 

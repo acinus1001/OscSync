@@ -157,7 +157,7 @@ data class MjTeHai(
             (teHai + agariHai.pai).forEach { paiMap[it.type]!!.add(it) }
             paiMap.values.forEach { it.sort() }
 
-            require(paiMap.values.flatMap { it }.groupingBy { it }.eachCount().values.all { it <= 4 }) {
+            require(paiMap.values.flatten().groupingBy { it }.eachCount().values.all { it <= 4 }) {
                 "같은 패는 4개 이하만 사용해야 합니다."
             }
 

@@ -11,7 +11,7 @@ import kotlinx.serialization.protobuf.ProtoNumber
 data class MahjongGuildStat(
     @ProtoNumber(1) val guildId: Long,
     @ProtoNumber(2) val totalGameCount: Long,
-    @ProtoNumber(3) val gameCountPerMonthDescending: Map<YearMonth, Long>,
+    @ProtoNumber(3) val gameCountPerMonthDescending: List<Pair<YearMonth, Long>>,
     @ProtoNumber(4) val highScore: Int? = null,
     @ProtoNumber(5) val highScoreGameId: Long? = null,
     @ProtoNumber(6) val lowScore: Int? = null,
