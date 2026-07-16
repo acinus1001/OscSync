@@ -10,6 +10,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.spring.boot.starter.aop)
+    implementation(libs.spring.boot.starter.redis)
 
     runtimeOnly(libs.aspectj.runtime)
     runtimeOnly(libs.aspectj.weaver)

@@ -1,8 +1,11 @@
 package dev.kuro9.application.homepage.mahjong.utils
 
 import dev.kuro9.domain.mahjong.core.repository.MahjongGameEntity
+import dev.kuro9.domain.mahjong.core.repository.MahjongMonthStatEntity
+import dev.kuro9.domain.mahjong.core.repository.MahjongTotalStatEntity
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongDetailRecord
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongRecord
+import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongUserStat
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.enums.MahjongSeki
 import dev.kuro9.multiplatform.common.types.app.homepage.mahjong.of
 import kotlin.io.encoding.Base64
@@ -68,7 +71,7 @@ fun MahjongGameEntity.toDetailedDto(getNameById: (Long) -> String): MahjongDetai
     ),
     imageBase64Url = run {
         val format = this.imageMime ?: return@run null
-        val header = "data:image/$format;base64,"
+        val header = "data:$format;base64,"
         val imageEncoded = Base64.encode(this.image?.bytes ?: return@run null)
         return@run "$header$imageEncoded"
     },
@@ -97,4 +100,48 @@ fun MahjongGameEntity.toDetailedDto(getNameById: (Long) -> String): MahjongDetai
             createdByName = getNameById(log.createdBy)
         )
     }
+)
+
+fun MahjongTotalStatEntity.toDto(imageUrl: String) = MahjongUserStat(
+    guildId = this.guildId,
+    userId = this.userId,
+    umaRank = this.umaRank,
+    gameCountRank = this.gameCountRank,
+    totalUmaSumString = "%,.1f".format(this.totalUmaSum),
+    totalGameCount = this.totalGameCount,
+    firstPlaceCount = this.firstPlaceCount,
+    secondPlaceCount = this.secondPlaceCount,
+    thirdPlaceCount = this.thirdPlaceCount,
+    fourthPlaceCount = this.fourthPlaceCount,
+    tobiCount = this.tobiCount,
+    firstPlaceRateString = "%.2f".format(this.firstPlaceRate),
+    secondPlaceRateString = "%.2f".format(this.secondPlaceRate),
+    thirdPlaceRateString = "%.2f".format(this.thirdPlaceRate),
+    fourthPlaceRateString = "%.2f".format(this.fourthPlaceRate),
+    tobiRateString = "%.2f".format(this.tobiRate),
+    avgPlaceString = "%.2f".format(this.avgPlace),
+    avgUmaString = "%+.1f".format(this.avgUma),
+    graphImgUrl = imageUrl,
+)
+
+fun MahjongMonthStatEntity.toDto(imageUrl: String) = MahjongUserStat(
+    guildId = this.totalStat.guildId,
+    userId = this.totalStat.userId,
+    umaRank = this.umaRank,
+    gameCountRank = this.gameCountRank,
+    totalUmaSumString = "%,.1f".format(this.totalUmaSum),
+    totalGameCount = this.totalGameCount,
+    firstPlaceCount = this.firstPlaceCount,
+    secondPlaceCount = this.secondPlaceCount,
+    thirdPlaceCount = this.thirdPlaceCount,
+    fourthPlaceCount = this.fourthPlaceCount,
+    tobiCount = this.tobiCount,
+    firstPlaceRateString = "%.2f".format(this.firstPlaceRate),
+    secondPlaceRateString = "%.2f".format(this.secondPlaceRate),
+    thirdPlaceRateString = "%.2f".format(this.thirdPlaceRate),
+    fourthPlaceRateString = "%.2f".format(this.fourthPlaceRate),
+    tobiRateString = "%.2f".format(this.tobiRate),
+    avgPlaceString = "%.2f".format(this.avgPlace),
+    avgUmaString = "%+.1f".format(this.avgUma),
+    graphImgUrl = imageUrl,
 )
