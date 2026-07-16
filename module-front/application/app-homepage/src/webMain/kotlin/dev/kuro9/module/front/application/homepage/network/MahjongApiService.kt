@@ -59,4 +59,28 @@ class MahjongApiService(
         return httpClient.get("/services/mahjong/guilds/$guildId/records/$recordId")
             .body<MahjongDetailRecord>()
     }
+
+    suspend fun getGuildStat(
+        guildId: Long,
+    ): dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongGuildStat {
+        return httpClient.get("/services/mahjong/guilds/$guildId/stats")
+            .body<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongGuildStat>()
+    }
+
+    suspend fun getUserStat(
+        guildId: Long,
+        userId: Long,
+    ): dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongUserStat {
+        return httpClient.get("/services/mahjong/guilds/$guildId/stats/$userId")
+            .body<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongUserStat>()
+    }
+
+    suspend fun getUserStatByYearMonth(
+        guildId: Long,
+        userId: Long,
+        yearMonth: String,
+    ): dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongUserStat {
+        return httpClient.get("/services/mahjong/guilds/$guildId/stats/$userId/yearmonth/$yearMonth")
+            .body<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongUserStat>()
+    }
 }

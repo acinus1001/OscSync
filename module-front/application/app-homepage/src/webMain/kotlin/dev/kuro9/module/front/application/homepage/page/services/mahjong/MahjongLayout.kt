@@ -5,6 +5,7 @@ import dev.kuro9.module.front.application.homepage.GlobalStyles
 import dev.kuro9.module.front.application.homepage.state.MobileMenuState
 import dev.kuro9.module.front.application.homepage.state.route.Route
 import dev.kuro9.module.front.application.homepage.state.route.RouteViewModel
+import dev.kuro9.module.front.application.homepage.state.user.UserState
 import dev.kuro9.module.front.application.homepage.utils.requireAnyAuthority
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
@@ -17,6 +18,7 @@ fun MahjongLayout(
     content: @Composable () -> Unit
 ) = requireAnyAuthority(routeState, koinInject(), "AUTHORITY_HOMEPAGE_MAHJONG-GUILD_$serverId") {
     val mahjongViewModel: MahjongViewModel = koinInject()
+    val userState: UserState = koinInject()
     val servers = mahjongViewModel.state.servers
     val currentServer = servers.find { it.id == serverId }
     var isDropdownOpen by remember { mutableStateOf(false) }
@@ -162,8 +164,18 @@ fun MahjongLayout(
                 routeState.navigate(Route.Services.MahjongRecords(serverId)); onClose()
 
             }
-            MahjongMenuItem("통계", routeState.nowPage is Route.Services.MahjongStats) {
+            MahjongMenuItem("서버 통계", routeState.nowPage is Route.Services.MahjongStats) {
                 routeState.navigate(Route.Services.MahjongStats(serverId)); onClose()
+            }
+            MahjongMenuItem("유저 통계", routeState.nowPage is Route.Services.MahjongUserStats) {
+                val targetUserId = mahjongViewModel.state.searchUserId ?: userState.userInfo?.userId
+                if (targetUserId != null) {
+                    routeState.navigate(Route.Services.MahjongUserStats(serverId, targetUserId))
+                } else {
+                    // 유저 ID를 알 수 없는 경우 서버 통계로 보냄 (또는 아무것도 안 함)
+                    routeState.navigate(Route.Services.MahjongStats(serverId))
+                }
+                onClose()
             }
             MahjongMenuItem("순위", routeState.nowPage is Route.Services.MahjongRanks) {
                 routeState.navigate(Route.Services.MahjongRanks(serverId)); onClose()
