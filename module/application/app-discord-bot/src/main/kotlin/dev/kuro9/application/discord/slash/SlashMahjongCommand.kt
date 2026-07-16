@@ -1,6 +1,8 @@
 package dev.kuro9.application.discord.slash
 
 import dev.kuro9.application.discord.service.DiscordUserNameService
+import dev.kuro9.application.discord.util.checkPermission
+import dev.kuro9.domain.error.handler.discord.exception.DiscordEmbedException
 import dev.kuro9.domain.mahjong.core.annotation.MahjongInternalApi
 import dev.kuro9.domain.mahjong.core.dto.MahjongGameDetailInput
 import dev.kuro9.domain.mahjong.core.enums.MahjongLogType
@@ -103,11 +105,12 @@ class SlashMahjongCommand(
                 option<String>("tehai", "손패. 123m123s12333p77z 과 같은 형식으로 입력하세요.", required = true)
                 option<String>("huro", "후로한 패. 123m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
                 option<String>("ankang", "안깡한 패. 1111m 4444s 와 같이 공백으로 구분해 입력하세요.", required = false)
+                option<Boolean>("is_hidden", "True 시 결과를 본인에게만 보이도록 설정합니다. (isEphemeral)", required = false)
             }
         }
 
         group("record", "마작 기록 관련 명령어") {
-            restrict(guild = true)
+//            restrict(guild = true)
             subcommand("add", "대국 결과를 기록합니다.") {
                 option<User>("user_tou", "동가 (東)", required = true)
                 option<Int>("score_tou", "동가 점수", required = true)
@@ -123,7 +126,7 @@ class SlashMahjongCommand(
         }
 
         group("stat", "마작 기록을 통한 통계를 가져옵니다.") {
-            restrict(guild = true)
+//            restrict(guild = true)
             subcommand("month", "월별 유저의 통계를 확인합니다.") {
                 option<User>("user", "확인할 유저 선택. 기본값=본인", required = false)
                 option<Int>("year", "확인할 년도 선택. 기본값=현재", required = false)
@@ -135,7 +138,7 @@ class SlashMahjongCommand(
         }
 
         group("rank", "마작 기록을 통한 서버 내 순위를 확인합니다.") {
-            restrict(guild = true)
+//            restrict(guild = true)
             subcommand("month", "월별 서버 내 순위를 확인합니다.") {
                 option<Int>("type", "확인할 순위표 종류를 선택. 기본값=포인트(구 우마)", required = false) {
                     choice("포인트(구 우마)", 0)
@@ -153,10 +156,10 @@ class SlashMahjongCommand(
         }
 
         group("admin", "기타 관리를 위한 명령어입니다.") {
-            restrict(guild = true, Permission.ADMINISTRATOR)
+//            restrict(guild = true, Permission.ADMINISTRATOR)
             subcommand("stat-refresh", "통계 재계산(사용 불가)")
             subcommand("setting", "기록 시 반영될 우마/오카 및 반환점 등의 설정을 변경합니다. 설정은 소급적용되지 않습니다.") {
-                restrict(guild = true, Permission.ADMINISTRATOR)
+//                restrict(guild = true, Permission.ADMINISTRATOR)
                 option<Int>("uma_1st", "1위 우마. (참고용 : 작혼 = +15)", required = true)
                 option<Int>("uma_2nd", "2위 우마. (참고용 : 작혼 = +5)", required = true)
                 option<Int>("uma_3rd", "3위 우마. (참고용 : 작혼 = -5)", required = true)
@@ -181,7 +184,8 @@ class SlashMahjongCommand(
     private val selectPrefix = "mj_select"
 
     override suspend fun handleEvent(event: SlashCommandInteractionEvent) {
-        val deferReply: Deferred<InteractionHook> = event.asyncDeferReply()
+        val isHidden = event.getOption("is_hidden")?.asBoolean ?: false
+        val deferReply: Deferred<InteractionHook> = event.asyncDeferReply(isHidden)
 
         runCatching {
             when (event.subcommandGroup) {
@@ -191,24 +195,41 @@ class SlashMahjongCommand(
                     "machi" -> return calculateMachi(event, deferReply)
                 }
 
-                "record" -> when (event.subcommandName) {
-                    "add" -> return recordAdd(event, deferReply)
+                "record" -> {
+                    checkIsServer(event)
+
+                    when (event.subcommandName) {
+                        "add" -> return recordAdd(event, deferReply)
+                    }
                 }
 
-                "stat" -> when (event.subcommandName) {
-                    "month" -> return recordStatMonth(event, deferReply)
-                    "all" -> return recordStatAll(event, deferReply)
+                "stat" -> {
+                    checkIsServer(event)
+
+                    when (event.subcommandName) {
+                        "month" -> return recordStatMonth(event, deferReply)
+                        "all" -> return recordStatAll(event, deferReply)
+                    }
                 }
 
-                "rank" -> when (event.subcommandName) {
-                    "month" -> return recordRankMonth(event, deferReply)
-                    "all" -> return recordRankAll(event, deferReply)
+                "rank" -> {
+                    checkIsServer(event)
+
+                    when (event.subcommandName) {
+                        "month" -> return recordRankMonth(event, deferReply)
+                        "all" -> return recordRankAll(event, deferReply)
+                    }
                 }
 
-                "admin" -> when (event.subcommandName) {
-                    "stat-refresh" -> return internalStatRefresh(event, deferReply)
-                    "setting" -> return recordSetting(event, deferReply)
-                    "setting-list" -> return recordSettingList(event, deferReply)
+                "admin" -> {
+                    checkIsServer(event)
+                    checkPermission(event, Permission.ADMINISTRATOR)
+
+                    when (event.subcommandName) {
+                        "stat-refresh" -> return internalStatRefresh(event, deferReply)
+                        "setting" -> return recordSetting(event, deferReply)
+                        "setting-list" -> return recordSettingList(event, deferReply)
+                    }
                 }
             }
 
@@ -1474,6 +1495,14 @@ class SlashMahjongCommand(
                 color = Color.RED.rgb
             }
 
+            is IllegalAccessException -> Embed {
+                title = "403 Forbidden"
+                description = "이 명령어는 서버 전용입니다."
+                color = Color.RED.rgb
+            }
+
+            is DiscordEmbedException -> t.embed
+
             else -> throw t
         }.also { error(t) { "handled err" } }
 
@@ -1970,4 +1999,8 @@ class SlashMahjongCommand(
 
     private fun getUserDeepLink(displayName: String, userId: Long): String =
         "[$displayName](discord://-/users/${userId})"
+
+    private fun checkIsServer(event: SlashCommandInteractionEvent) {
+        if (event.guild == null) throw IllegalAccessException()
+    }
 }
