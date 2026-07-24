@@ -44,9 +44,10 @@ class KaraokeTjNewSongService(
         )
 
         val songs = response.body<TjNewSongResponseDto>()
+        val japaneseSingers = karaokeRepo.getAllSinger(supportBrand)
 
         return songs.resultData.items
-            .filter { it.pro in 52894..53000 || it.pro in 52400..52599 || it.indexTitle.isJapanese() }
+            .filter { it.pro in 52894..53000 || it.pro in 52400..52599 || it.indexTitle.isJapanese() || it.indexSong in japaneseSingers }
             .map {
                 KaraokeSongDto(
                     brand = supportBrand,

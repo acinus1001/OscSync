@@ -13,6 +13,7 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.insertIgnore
+import org.jetbrains.exposed.v1.jdbc.select
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -73,5 +74,13 @@ class KaraokeRepo {
             }
             .let(KaraokeSongEntity::find)
             .toList()
+    }
+
+    fun getAllSinger(brand: KaraokeBrand): Set<String> {
+        return KaraokeSongs.select(KaraokeSongs.singer)
+            .where { KaraokeSongs.brand eq brand }
+            .withDistinct(true)
+            .map { it[KaraokeSongs.singer] }
+            .toSet()
     }
 }
