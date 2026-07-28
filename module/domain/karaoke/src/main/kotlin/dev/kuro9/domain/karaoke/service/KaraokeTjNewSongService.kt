@@ -14,6 +14,8 @@ import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.datetime.LocalDate
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.YearMonth
@@ -22,6 +24,7 @@ import java.time.YearMonth
 @Transactional(readOnly = true)
 class KaraokeTjNewSongService(
     private val karaokeRepo: KaraokeRepo,
+    private val database: Database,
 ) : KaraokeSongServiceI {
     private val httpClient = httpClient {
         install(ContentNegotiation) {
@@ -33,6 +36,8 @@ class KaraokeTjNewSongService(
         expectSuccess = true
     }
     override val supportBrand: KaraokeBrand = KaraokeBrand.TJ
+
+    @Transactional(readOnly = true)
     override suspend fun fetchNewReleaseSongs(): List<KaraokeSongDto> {
         val requestYearMonth = YearMonth.now()
         val basicIsoYearMonth = "${requestYearMonth.year}${requestYearMonth.monthValue.toString().padStart(2, '0')}"
@@ -44,10 +49,12 @@ class KaraokeTjNewSongService(
         )
 
         val songs = response.body<TjNewSongResponseDto>()
-        val japaneseSingers = karaokeRepo.getAllSinger(supportBrand)
+        val japaneseSingers = transaction(database) {
+            karaokeRepo.getAllSinger(supportBrand)
+        }
 
         return songs.resultData.items
-            .filter { it.pro in 52894..53000 || it.pro in 52400..52599 || it.indexTitle.isJapanese() || it.indexSong in japaneseSingers }
+            .filter { it.pro in 52894..53000 || it.pro in 52400..52599 || it.pro in 52664..52699 || it.indexTitle.isJapanese() || it.indexSong in japaneseSingers }
             .map {
                 KaraokeSongDto(
                     brand = supportBrand,
