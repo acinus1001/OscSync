@@ -238,7 +238,7 @@ class MahjongStatService {
     }
 
     // 유저 스탯 계산
-    private fun calculateUserStat(userId: Long, guildId: Long, yearMonth: YearMonth): MahjongTotalStatEntity {
+    private fun calculateUserStat(userId: Long, guildId: Long, yearMonth: YearMonth) {
         val userGames = MahjongGameResults.innerJoin(MahjongGames).select(MahjongGameResults.columns)
             .where { MahjongGameResults.userId eq userId }
             .andWhere { MahjongGames.guildId eq guildId }
@@ -255,6 +255,28 @@ class MahjongStatService {
         val thirdPlaceCount = userGames.count { g -> g.rank == 3 }
         val fourthPlaceCount = userGames.count { g -> g.rank == 4 }
         val tobiCount = userGames.count { g -> g.score < 0 }
+
+        if (totalGameCount <= 0) {
+            // delete all stat
+            info { "no game result found for user=$userId, guild=$guildId. deleting all stats" }
+
+            val existTotalStatId = MahjongTotalStats.select(MahjongTotalStats.id)
+                .where { (MahjongTotalStats.guildId eq guildId) and (MahjongTotalStats.userId eq userId) }
+                .limit(1)
+                .firstOrNull()
+                ?.get(MahjongTotalStats.id)
+                ?.value
+
+            if (existTotalStatId == null) {
+                info { "no game stat found for user=$userId, guild=$guildId. skipping delete" }
+                return
+            }
+
+            MahjongMonthStats.deleteWhere { (MahjongMonthStats.totalStat eq existTotalStatId) }
+            MahjongTotalStats.deleteWhere { (MahjongTotalStats.id eq existTotalStatId) }
+
+            return
+        }
 
         val totalStat = MahjongTotalStats.upsertReturning(
             MahjongTotalStats.guildId, MahjongTotalStats.userId,
@@ -300,6 +322,14 @@ class MahjongStatService {
         val monthFourthPlaceCount = monthGames.count { g -> g.rank == 4 }
         val monthTobiCount = monthGames.count { g -> g.score < 0 }
 
+        if (monthTotalGameCount <= 0) {
+            info { "no game result found for user=$userId, guild=$guildId, yearMonth=$yearMonth. delete month stat." }
+
+            MahjongMonthStats.deleteWhere { (MahjongMonthStats.totalStat eq totalStat.id) and (MahjongMonthStats.yearMonth eq yearMonth) }
+
+            return
+        }
+
         MahjongMonthStats.upsert(
             MahjongMonthStats.totalStat, MahjongMonthStats.yearMonth,
             onUpdateExclude = listOf(MahjongMonthStats.umaRank, MahjongMonthStats.gameCountRank),
@@ -332,8 +362,6 @@ class MahjongStatService {
 
             it[this.updatedAt] = LocalDateTime.now()
         }
-
-        return totalStat
     }
 
     // 해당 길드(서버)의 랭킹 재계산.
