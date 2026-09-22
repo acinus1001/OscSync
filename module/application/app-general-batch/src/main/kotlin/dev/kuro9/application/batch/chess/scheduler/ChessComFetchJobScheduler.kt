@@ -5,7 +5,6 @@ import kotlinx.datetime.LocalDateTime
 import org.springframework.batch.core.JobParametersBuilder
 import org.springframework.batch.core.configuration.JobRegistry
 import org.springframework.batch.core.launch.JobLauncher
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
 
@@ -15,7 +14,7 @@ class ChessComFetchJobScheduler(
     private val jobRegistry: JobRegistry,
 ) {
 
-    @Scheduled(cron = "0 10 * * * *", zone = "Asia/Seoul")
+    //    @Scheduled(cron = "0 10 * * * *", zone = "Asia/Seoul")
     fun runChessComFetchJob() {
         val job = jobRegistry.getJob("chessComFetchJob")
         val currentTime = LocalDateTime.now().time
