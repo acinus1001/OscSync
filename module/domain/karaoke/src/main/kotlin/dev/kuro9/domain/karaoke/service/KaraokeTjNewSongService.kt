@@ -54,7 +54,7 @@ class KaraokeTjNewSongService(
         }
 
         return songs.resultData.items
-            .filter { it.pro in 52894..53000 || it.pro in 52400..52599 || it.pro in 52664..52699 || it.indexTitle.isJapanese() || it.indexSong in japaneseSingers }
+            .filter { it.pro in 52894..53000 || it.pro in 52400..52599 || it.pro in 52664..52699 || it.pro in 90100..90199 || it.indexTitle.isJapanese() || it.indexSong in japaneseSingers }
             .map {
                 KaraokeSongDto(
                     brand = supportBrand,
