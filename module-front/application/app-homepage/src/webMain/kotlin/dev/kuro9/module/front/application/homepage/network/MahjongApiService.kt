@@ -17,6 +17,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.YearMonth
 import kotlinx.serialization.ExperimentalSerializationApi
 
 class MahjongApiService(
@@ -82,5 +83,43 @@ class MahjongApiService(
     ): dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongUserStat {
         return httpClient.get("/services/mahjong/guilds/$guildId/stats/$userId/yearmonth/$yearMonth")
             .body<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongUserStat>()
+    }
+
+    suspend fun getPointRank(
+        guildId: Long,
+        page: Int,
+    ): MahjongPagingResult<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPointRank> {
+        return httpClient.get("/services/mahjong/guilds/$guildId/ranks/all/point") {
+            parameter("page", page)
+        }.body<MahjongPagingResult<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPointRank>>()
+    }
+
+    suspend fun getGameCountRank(
+        guildId: Long,
+        page: Int,
+    ): MahjongPagingResult<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongGameCountRank> {
+        return httpClient.get("/services/mahjong/guilds/$guildId/ranks/all/game-count") {
+            parameter("page", page)
+        }.body<MahjongPagingResult<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongGameCountRank>>()
+    }
+
+    suspend fun getPointRankByYearMonth(
+        guildId: Long,
+        page: Int,
+        yearMonth: YearMonth,
+    ): MahjongPagingResult<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPointRank> {
+        return httpClient.get("/services/mahjong/guilds/$guildId/ranks/$yearMonth/point") {
+            parameter("page", page)
+        }.body<MahjongPagingResult<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongPointRank>>()
+    }
+
+    suspend fun getGameCountRankByYearMonth(
+        guildId: Long,
+        page: Int,
+        yearMonth: YearMonth,
+    ): MahjongPagingResult<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongGameCountRank> {
+        return httpClient.get("/services/mahjong/guilds/$guildId/ranks/$yearMonth/game-count") {
+            parameter("page", page)
+        }.body<MahjongPagingResult<dev.kuro9.multiplatform.common.types.app.homepage.mahjong.MahjongGameCountRank>>()
     }
 }
