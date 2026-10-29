@@ -90,8 +90,7 @@ jobs:
         run: |
           echo "$COMPOSE_FILE_LOC"
           /opt/homebrew/bin/docker pull "$IMAGE_NAME"
-          /opt/homebrew/bin/docker-compose -f "$COMPOSE_FILE_LOC" down
-          /opt/homebrew/bin/docker-compose -f "$COMPOSE_FILE_LOC" up -d
+          /opt/homebrew/bin/docker-compose -f "$COMPOSE_FILE_LOC" up -d --force-recreate
 
   dependency-submission:
     if: inputs.do_build

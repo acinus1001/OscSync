@@ -9,8 +9,8 @@ services:
     env_file:
       - ${ENV_FILE_LOC}
     networks:
-      - database
+      - oscsync-infra
 
 networks:
-  database:
+  oscsync-infra:
     external: true
