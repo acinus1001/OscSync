@@ -1,7 +1,7 @@
 services:
   app:
     container_name: app
-    image: kurovine9/app-discord-bot
+    image: ghcr.io/acinus1001/oscsync-app-discord-bot:latest
     ports:
       - "8080:8080"
     expose:
