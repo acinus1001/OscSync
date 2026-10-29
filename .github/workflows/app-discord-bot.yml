@@ -64,7 +64,7 @@ jobs:
           context: .
           file: ./script/backend/app-discord-bot/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/acinus1001/oscsync-app-discord-bot:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
