@@ -41,3 +41,4 @@ out/
 
 /credential/
 credential.env
+credential.prod.env
