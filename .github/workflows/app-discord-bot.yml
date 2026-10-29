@@ -78,7 +78,7 @@ jobs:
       contents: read
       packages: read
     env:
-      COMPOSE_FILE_LOC: "/var/services/homes/github-cd/app-discord-bot/docker-compose-deploy.yml"
+      COMPOSE_FILE_LOC: "/Volumes/External0001/docker/app-discord-bot/docker-compose.yml"
       IMAGE_NAME: "ghcr.io/acinus1001/oscsync-app-discord-bot:latest"
 
     steps:
