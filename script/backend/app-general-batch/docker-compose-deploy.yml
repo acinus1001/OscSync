@@ -1,12 +1,17 @@
 services:
   app:
     container_name: app-batch
-    image: kurovine9/app-general-batch
+    image: ghcr.io/acinus1001/oscsync-app-general-batch:latest
     env_file:
       - ${ENV_FILE_LOC}
     networks:
-      - database
+      - oscsync-infra
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 networks:
-  database:
+  oscsync-infra:
     external: true
