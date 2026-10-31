@@ -8,8 +8,8 @@ import dev.kuro9.internal.chess.api.service.ChessComApiService
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.jdbc.select
 import org.springframework.batch.core.configuration.annotation.StepScope
-import org.springframework.batch.item.Chunk
-import org.springframework.batch.item.ExecutionContext
+import org.springframework.batch.infrastructure.item.Chunk
+import org.springframework.batch.infrastructure.item.ExecutionContext
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 

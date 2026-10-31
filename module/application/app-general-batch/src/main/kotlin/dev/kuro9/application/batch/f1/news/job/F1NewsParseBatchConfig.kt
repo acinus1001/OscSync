@@ -12,8 +12,8 @@ import dev.kuro9.application.batch.f1.news.tasklet.F1NewsWebhookTesklet
 import dev.kuro9.application.batch.f1.news.tasklet.dto.F1NewsTargetWebhookDto
 import dev.kuro9.application.batch.f1.news.tasklet.dto.F1NewsTaskletDto
 import dev.kuro9.domain.f1.dto.F1NewsHtmlDto
-import org.springframework.batch.core.Job
-import org.springframework.batch.core.Step
+import org.springframework.batch.core.job.Job
+import org.springframework.batch.core.step.Step
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
