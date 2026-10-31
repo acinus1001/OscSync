@@ -3,6 +3,9 @@ spring:
     include:
       - database
       - ai
+  batch:
+    job:
+      enabled: false
 
 
 dev:
