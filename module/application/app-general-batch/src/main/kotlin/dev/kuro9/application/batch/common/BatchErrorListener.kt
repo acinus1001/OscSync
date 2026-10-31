@@ -1,11 +1,11 @@
 package dev.kuro9.application.batch.common
 
-import org.springframework.batch.core.ChunkListener
+import org.springframework.batch.core.listener.ChunkListener
 import org.springframework.batch.core.scope.context.ChunkContext
 import org.springframework.stereotype.Component
 
 @Component
-class BatchErrorListener : ChunkListener {
+class BatchErrorListener : ChunkListener<Any, Any> {
 
     override fun afterChunkError(context: ChunkContext) {
         context.stepContext.stepExecution.executionContext.put("step", context.stepContext.stepName)

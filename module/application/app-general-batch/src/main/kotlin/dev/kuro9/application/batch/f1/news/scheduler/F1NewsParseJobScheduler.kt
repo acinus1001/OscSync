@@ -2,8 +2,8 @@ package dev.kuro9.application.batch.f1.news.scheduler
 
 import dev.kuro9.multiplatform.common.date.util.now
 import kotlinx.datetime.LocalDateTime
-import org.springframework.batch.core.JobParametersBuilder
 import org.springframework.batch.core.configuration.JobRegistry
+import org.springframework.batch.core.job.parameters.JobParametersBuilder
 import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component

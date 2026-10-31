@@ -4,8 +4,8 @@ import dev.kuro9.domain.cache.interfaces.CustomCacheConfigurer
 import dev.kuro9.domain.cache.serializer.KotlinRedisJsonSerializer
 import dev.kuro9.domain.cache.serializer.KotlinRedisProtoBufSerializer
 import kotlinx.serialization.serializer
-import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.cache.autoconfigure.RedisCacheManagerBuilderCustomizer
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.EnableCaching
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager

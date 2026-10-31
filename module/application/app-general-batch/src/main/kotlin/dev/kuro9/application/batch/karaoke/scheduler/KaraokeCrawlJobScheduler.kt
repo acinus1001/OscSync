@@ -5,8 +5,8 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.number
 import kotlinx.datetime.toJavaLocalDate
-import org.springframework.batch.core.JobParametersBuilder
 import org.springframework.batch.core.configuration.JobRegistry
+import org.springframework.batch.core.job.parameters.JobParametersBuilder
 import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component

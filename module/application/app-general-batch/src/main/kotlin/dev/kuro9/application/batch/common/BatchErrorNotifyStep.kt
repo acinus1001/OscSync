@@ -6,10 +6,10 @@ import dev.kuro9.application.batch.discord.dto.DiscordWebhookPayload
 import dev.kuro9.application.batch.discord.dto.Embed
 import dev.kuro9.application.batch.discord.service.DiscordWebhookService
 import kotlinx.coroutines.runBlocking
-import org.springframework.batch.core.Step
-import org.springframework.batch.core.StepContribution
 import org.springframework.batch.core.scope.context.ChunkContext
-import org.springframework.batch.repeat.RepeatStatus
+import org.springframework.batch.core.step.Step
+import org.springframework.batch.core.step.StepContribution
+import org.springframework.batch.infrastructure.repeat.RepeatStatus
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager

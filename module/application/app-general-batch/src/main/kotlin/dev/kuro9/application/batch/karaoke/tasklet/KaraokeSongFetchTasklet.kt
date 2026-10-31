@@ -6,8 +6,8 @@ import dev.kuro9.domain.karaoke.repository.KaraokeRepo
 import dev.kuro9.domain.karaoke.service.KaraokeNewSongService
 import kotlinx.coroutines.runBlocking
 import org.springframework.batch.core.configuration.annotation.StepScope
-import org.springframework.batch.item.Chunk
-import org.springframework.batch.item.ExecutionContext
+import org.springframework.batch.infrastructure.item.Chunk
+import org.springframework.batch.infrastructure.item.ExecutionContext
 import org.springframework.stereotype.Component
 
 @[StepScope Component]
@@ -20,7 +20,7 @@ class KaraokeSongFetchTasklet(
         return runBlocking { newSongService.fetchNewSongs().await() }
     }
 
-    override fun write(chunk: Chunk<out KaraokeSongDto?>) {
+    override fun write(chunk: Chunk<out KaraokeSongDto>) {
         karaokeRepo.batchInsertSongs(chunk)
     }
 }

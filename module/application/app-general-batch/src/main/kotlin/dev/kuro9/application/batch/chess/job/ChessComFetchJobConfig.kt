@@ -7,8 +7,8 @@ import com.navercorp.spring.batch.plus.kotlin.step.adapter.asItemStreamWriter
 import dev.kuro9.application.batch.chess.tasklet.ChessComUserStatFetchTasklet
 import dev.kuro9.application.batch.common.BatchErrorListener
 import dev.kuro9.application.batch.common.handleFlow
-import org.springframework.batch.core.Job
-import org.springframework.batch.core.Step
+import org.springframework.batch.core.job.Job
+import org.springframework.batch.core.step.Step
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
