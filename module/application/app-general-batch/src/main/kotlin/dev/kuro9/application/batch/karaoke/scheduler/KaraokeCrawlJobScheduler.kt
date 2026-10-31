@@ -5,35 +5,32 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.number
 import kotlinx.datetime.toJavaLocalDate
-import org.springframework.batch.core.configuration.JobRegistry
+import org.springframework.batch.core.job.Job
 import org.springframework.batch.core.job.parameters.JobParametersBuilder
-import org.springframework.batch.core.launch.JobLauncher
+import org.springframework.batch.core.launch.JobOperator
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
 class KaraokeCrawlJobScheduler(
-    private val jobLauncher: JobLauncher,
-    private val jobRegistry: JobRegistry,
+    private val jobOperator: JobOperator,
+    private val karaokeCrawlJob: Job
 ) {
 
     @Scheduled(cron = "10 10 9,10,12,18 * * *", zone = "Asia/Seoul")
     fun runKaraokeJob() {
-        val job = jobRegistry.getJob("karaokeCrawlJob")
-        jobLauncher.run(
-            job,
-            JobParametersBuilder()
-                .addLocalDate("executeDate", LocalDate.now().toJavaLocalDate())
-                .addString(
-                    "executeTimeKey", "${
-                        LocalDate.now().let {
-                            "${it.year}${it.month.number.toString().padStart(2, '0')}${
-                                it.day.toString().padStart(2, '0')
-                            }"
-                        }
-                    }-${LocalTime.now().hour}"
-                )
-                .toJobParameters()
-        )
+        JobParametersBuilder()
+            .addLocalDate("executeDate", LocalDate.now().toJavaLocalDate())
+            .addString(
+                "executeTimeKey", "${
+                    LocalDate.now().let {
+                        "${it.year}${it.month.number.toString().padStart(2, '0')}${
+                            it.day.toString().padStart(2, '0')
+                        }"
+                    }
+                }-${LocalTime.now().hour}"
+            )
+            .toJobParameters()
+            .let { jobOperator.start(karaokeCrawlJob, it) }
     }
 }
