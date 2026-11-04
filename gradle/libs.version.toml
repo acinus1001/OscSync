@@ -19,6 +19,8 @@ aspectj = "1.9.23"
 
 junit = "4.13.2"
 
+jackson = "2.22.4"
+
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -132,6 +134,8 @@ apache-commons-exec = { module = "org.apache.commons:commons-exec", version = "1
 smartapp-core = { module = "com.smartthings.sdk:smartapp-core", version = "0.0.4-PREVIEW" }
 smartthings-client = { module = "com.smartthings.sdk:smartthings-client", version = "0.0.4-PREVIEW" }
 smartapp-spring = { module = "com.smartthings.sdk:smartapp-spring", version = "0.0.4-PREVIEW" }
+
+jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
 
 
 

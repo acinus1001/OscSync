@@ -6,12 +6,14 @@ plugins {
 
 dependencies {
     implementation(libs.spring.boot.starter.web)
-    
+
     implementation(projects.module.domain.database)
     implementation(projects.module.common.logger)
 
     implementation(projects.multiplatformCommon.date)
     implementation(projects.multiplatformCommon.types.smartthings)
+
+    implementation(platform(libs.jackson.bom))
 
     implementation(libs.smartapp.core)
     implementation(libs.smartapp.spring)
